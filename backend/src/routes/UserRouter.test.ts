@@ -11,6 +11,11 @@ const mockUserController = {
   getById: jest.fn((req, res) =>
     res.status(StatusCodes.OK).json({ id: req.params.id }),
   ),
+  getMe: jest.fn((req, res) =>
+    res
+      .status(StatusCodes.OK)
+      .json({ id: req.signedInUser?.token?.id ?? null }),
+  ),
   create: jest.fn((req, res) => res.status(StatusCodes.CREATED).json(req.body)),
   update: jest.fn((req, res) => res.status(StatusCodes.OK).json(req.body)),
   delete: jest.fn((req, res) =>
@@ -37,6 +42,24 @@ const userRouter = new UserRouter(router, mockUserController);
 app.use("/users", userRouter.getRouter());
 
 const BASE_URL = "/users";
+
+function buildApp(role?: RoleType, id = 1): express.Express {
+  const scopedApp = express();
+  scopedApp.use(express.json());
+  scopedApp.use((req, _res, next) => {
+    if (role) {
+      (req as AuthenticatedJWTRequest).signedInUser = {
+        token: { id, email: `${role.toLowerCase()}@test.com`, role },
+      };
+    }
+    next();
+  });
+  scopedApp.use(
+    BASE_URL,
+    new UserRouter(Router(), mockUserController).getRouter(),
+  );
+  return scopedApp;
+}
 
 describe("UserRouter", () => {
   beforeEach(() => {
@@ -68,6 +91,47 @@ describe("UserRouter", () => {
     expect(mockUserController.getById).toHaveBeenCalled();
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body).toEqual({ id });
+  });
+
+  it("GET /users/me calls getMe and not the admin-only getById", async () => {
+    // Arrange - /me must be registered ahead of /:id or it matches as an id
+    const scopedApp = buildApp(RoleType.Employee, 7);
+
+    // Act
+    const response = await request(scopedApp).get(`${BASE_URL}/me`);
+
+    // Assert
+    expect(mockUserController.getMe).toHaveBeenCalled();
+    expect(mockUserController.getById).not.toHaveBeenCalled();
+    expect(response.status).toBe(StatusCodes.OK);
+    expect(response.body).toEqual({ id: 7 });
+  });
+
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "GET /users/me is reachable by role %s",
+    async (role) => {
+      // Arrange
+      const scopedApp = buildApp(role);
+
+      // Act
+      const response = await request(scopedApp).get(`${BASE_URL}/me`);
+
+      // Assert
+      expect(mockUserController.getMe).toHaveBeenCalled();
+      expect(response.status).toBe(StatusCodes.OK);
+    },
+  );
+
+  it("GET /users/me is refused with 403 when the request carries no token", async () => {
+    // Arrange
+    const scopedApp = buildApp(undefined);
+
+    // Act
+    const response = await request(scopedApp).get(`${BASE_URL}/me`);
+
+    // Assert
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
+    expect(mockUserController.getMe).not.toHaveBeenCalled();
   });
 
   it("POST /users calls create", async () => {

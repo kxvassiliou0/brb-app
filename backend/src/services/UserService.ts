@@ -1,6 +1,7 @@
 import { validate } from "class-validator";
 import { StatusCodes } from "http-status-codes";
 import type { Repository } from "typeorm";
+import { UserDTOProfile, UserDTORelation } from "../dto/UserDTOProfile.ts";
 import { User } from "../entities/User.entity.ts";
 import { AppError } from "../helpers/AppError.ts";
 import { PasswordHandler } from "../helpers/PasswordHandler.ts";
@@ -21,6 +22,28 @@ export class UserService implements IUserService {
         StatusCodes.NOT_FOUND,
       );
     return user;
+  }
+
+  async getOwnProfile(id: number): Promise<UserDTOProfile> {
+    const user = await this.repo.findOne({
+      where: { id },
+      relations: { department: true, jobRole: true },
+    });
+    if (!user)
+      throw new AppError(
+        `User not found with ID: ${id}`,
+        StatusCodes.NOT_FOUND,
+      );
+    return new UserDTOProfile(
+      user.id,
+      user.firstName,
+      user.lastName,
+      user.email,
+      user.role,
+      user.annualLeaveAllowance,
+      new UserDTORelation(user.department.id, user.department.name),
+      new UserDTORelation(user.jobRole.id, user.jobRole.name),
+    );
   }
 
   async create(data: Partial<User>): Promise<User> {

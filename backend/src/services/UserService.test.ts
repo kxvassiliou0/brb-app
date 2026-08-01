@@ -2,8 +2,9 @@ import { StatusCodes } from "http-status-codes";
 import { mock, MockProxy } from "jest-mock-extended";
 import type { DeleteResult, Repository } from "typeorm";
 import { User } from "../entities/User.entity";
+import { RoleType } from "../enums/index";
 import { AppError } from "../helpers/AppError";
-import { makeUser } from "../test/ObjectMother";
+import { makeDepartment, makeJobRole, makeUser } from "../test/ObjectMother";
 import { UserService } from "./UserService";
 
 let mockRepo: MockProxy<Repository<User>>;
@@ -49,6 +50,90 @@ describe("UserService.getById", () => {
 
     // Act & Assert
     await expect(service.getById(99)).rejects.toThrow(
+      new AppError("User not found with ID: 99", StatusCodes.NOT_FOUND),
+    );
+  });
+});
+
+describe("UserService.getOwnProfile", () => {
+  it("populates department and jobRole as objects rather than bare IDs", async () => {
+    // Arrange
+    const user = makeUser({
+      department: makeDepartment(),
+      jobRole: makeJobRole(),
+    });
+    mockRepo.findOne.mockResolvedValue(user);
+
+    // Act
+    const result = await service.getOwnProfile(1);
+
+    // Assert
+    expect(result.department).toEqual({ id: 1, name: "Engineering" });
+    expect(result.jobRole).toEqual({ id: 1, name: "Contractor" });
+  });
+
+  it("requests the department and jobRole relations from the repository", async () => {
+    // Arrange
+    mockRepo.findOne.mockResolvedValue(
+      makeUser({ department: makeDepartment(), jobRole: makeJobRole() }),
+    );
+
+    // Act
+    await service.getOwnProfile(1);
+
+    // Assert
+    expect(mockRepo.findOne).toHaveBeenCalledWith({
+      where: { id: 1 },
+      relations: { department: true, jobRole: true },
+    });
+  });
+
+  it("returns the profile fields the caller needs", async () => {
+    // Arrange
+    mockRepo.findOne.mockResolvedValue(
+      makeUser({ department: makeDepartment(), jobRole: makeJobRole() }),
+    );
+
+    // Act
+    const result = await service.getOwnProfile(1);
+
+    // Assert
+    expect(result).toEqual({
+      id: 1,
+      firstName: "Alice",
+      lastName: "Smith",
+      email: "alice@company.com",
+      role: RoleType.Employee,
+      annualLeaveAllowance: 25,
+      department: { id: 1, name: "Engineering" },
+      jobRole: { id: 1, name: "Contractor" },
+    });
+  });
+
+  it("omits password and salt even when the entity carries them", async () => {
+    // Arrange
+    const user = makeUser({
+      password: "hashed",
+      salt: "somesalt",
+      department: makeDepartment(),
+      jobRole: makeJobRole(),
+    });
+    mockRepo.findOne.mockResolvedValue(user);
+
+    // Act
+    const result = await service.getOwnProfile(1);
+
+    // Assert
+    expect(result).not.toHaveProperty("password");
+    expect(result).not.toHaveProperty("salt");
+  });
+
+  it("throws NOT_FOUND AppError when user does not exist", async () => {
+    // Arrange
+    mockRepo.findOne.mockResolvedValue(null);
+
+    // Act & Assert
+    await expect(service.getOwnProfile(99)).rejects.toThrow(
       new AppError("User not found with ID: 99", StatusCodes.NOT_FOUND),
     );
   });
