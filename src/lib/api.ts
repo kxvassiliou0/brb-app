@@ -1,5 +1,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 const TOKEN_KEY = 'lbs_token'
+export const HTTP_TOO_MANY_REQUESTS = 429
+const RATE_LIMIT_MESSAGE =
+  'Too many requests. Please wait a few minutes and try again.'
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
@@ -20,6 +23,9 @@ export async function apiFetch<T>(
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
+  if (res.status === HTTP_TOO_MANY_REQUESTS) {
+    throw new Error(RATE_LIMIT_MESSAGE)
+  }
   const body = await res.json().catch(() => null)
   if (!res.ok) {
     throw new Error(body?.error ?? `Request failed with status ${res.status}`)
@@ -36,6 +42,9 @@ export async function loginRequest(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
+  if (res.status === HTTP_TOO_MANY_REQUESTS) {
+    throw new Error(RATE_LIMIT_MESSAGE)
+  }
   const text = await res.text()
   if (!res.ok) {
     let message = 'Login failed'

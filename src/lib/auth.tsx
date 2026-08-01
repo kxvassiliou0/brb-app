@@ -5,7 +5,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { getStoredToken, loginRequest, setStoredToken } from './api'
+import { getStoredToken, loginRequest, setStoredToken } from '@/lib/api'
+
+const MS_PER_SECOND = 1000
 
 export interface AuthUser {
   id: number
@@ -22,14 +24,25 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function decodeUser(token: string): AuthUser | null {
+function decodeTokenPayload(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split('.')[1]
     const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(json).token ?? null
+    return JSON.parse(json)
   } catch {
     return null
   }
+}
+
+function decodeUser(token: string): AuthUser | null {
+  const payload = decodeTokenPayload(token)
+  return (payload?.token as AuthUser | undefined) ?? null
+}
+
+export function isTokenExpired(token: string): boolean {
+  const payload = decodeTokenPayload(token)
+  const exp = payload?.exp
+  return typeof exp !== 'number' || Date.now() >= exp * MS_PER_SECOND
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -41,6 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setStoredToken(token)
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const payload = decodeTokenPayload(token)
+    const exp = payload?.exp
+    if (typeof exp !== 'number') return
+    const msRemaining = exp * MS_PER_SECOND - Date.now()
+    if (msRemaining <= 0) {
+      logout()
+      return
+    }
+    const timer = setTimeout(logout, msRemaining)
+    return () => clearTimeout(timer)
   }, [token])
 
   async function login(email: string, password: string): Promise<AuthUser> {
