@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 function decodeTokenPayload(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split('.')[1]
+    if (!payload) return null
     const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
     return JSON.parse(json)
   } catch {

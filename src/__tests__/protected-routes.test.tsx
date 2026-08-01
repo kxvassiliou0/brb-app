@@ -12,13 +12,15 @@ function renderAt(path: string) {
   render(
     <AuthProvider>
       <RouterProvider router={router} />
-    </AuthProvider>,
+    </AuthProvider>
   )
   return router
 }
 
 function seedUser(role: Role) {
-  setStoredToken(makeUserJwt({ id: 1, email: `${role.toLowerCase()}@company.com`, role }))
+  setStoredToken(
+    makeUserJwt({ id: 1, email: `${role.toLowerCase()}@company.com`, role })
+  )
 }
 
 beforeEach(() => {
@@ -50,7 +52,12 @@ const allowedPaths: Record<Role, { path: string; testId: string }[]> = {
 const disallowedPaths: Record<Role, string[]> = {
   Admin: ['/employee', '/employee/my-requests'],
   Manager: ['/admin', '/admin/employees', '/employee', '/employee/my-requests'],
-  Employee: ['/admin', '/admin/employees', '/manager', '/manager/team-calendar'],
+  Employee: [
+    '/admin',
+    '/admin/employees',
+    '/manager',
+    '/manager/team-calendar',
+  ],
 }
 
 describe('role-scoped route access', () => {
@@ -81,7 +88,9 @@ describe('cross-role allowances that mirror the backend', () => {
     seedUser('Admin')
     renderAt('/manager/team-calendar')
 
-    expect(await screen.findByTestId('screen-team-calendar')).toBeInTheDocument()
+    expect(
+      await screen.findByTestId('screen-team-calendar')
+    ).toBeInTheDocument()
   })
 })
 
@@ -95,7 +104,9 @@ describe('unauthenticated access', () => {
 
 describe('expired token', () => {
   it('logs out and redirects to /login', async () => {
-    setStoredToken(makeExpiredUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' }))
+    setStoredToken(
+      makeExpiredUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' })
+    )
     renderAt('/admin')
 
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
@@ -109,8 +120,9 @@ describe('post-login redirect preservation', () => {
       'fetch',
       vi.fn(async () => ({
         ok: true,
-        text: async () => makeUserJwt({ id: 1, email: 'manager@company.com', role: 'Manager' }),
-      })),
+        text: async () =>
+          makeUserJwt({ id: 1, email: 'manager@company.com', role: 'Manager' }),
+      }))
     )
 
     const router = renderAt('/manager/team-calendar')
@@ -126,7 +138,9 @@ describe('post-login redirect preservation', () => {
       fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     })
 
-    expect(await screen.findByTestId('screen-team-calendar')).toBeInTheDocument()
+    expect(
+      await screen.findByTestId('screen-team-calendar')
+    ).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/manager/team-calendar')
   })
 })

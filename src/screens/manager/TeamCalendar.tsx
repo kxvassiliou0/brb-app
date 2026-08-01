@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
+import type { ApiSuccess, CalendarEntry } from '@/types/api'
 import PageHeader from '../../components/PageHeader'
-
-interface CalendarRow {
-  employee_id: number
-  name: string
-  leave_type: string
-  start_date: string
-  end_date: string
-}
 
 function currentMonthRange(): { from: string; to: string } {
   const now = new Date()
@@ -19,18 +12,23 @@ function currentMonthRange(): { from: string; to: string } {
 }
 
 export default function TeamCalendar() {
-  const [rows, setRows] = useState<CalendarRow[]>([])
+  const [rows, setRows] = useState<CalendarEntry[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const { from, to } = currentMonthRange()
     let cancelled = false
-    apiFetch<{ data: CalendarRow[] }>(`/api/leave-requests/calendar?from=${from}&to=${to}`)
+    apiFetch<ApiSuccess<CalendarEntry[]>>(
+      `/api/leave-requests/calendar?from=${from}&to=${to}`
+    )
       .then((res) => {
         if (!cancelled) setRows(res.data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load team calendar')
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : 'Failed to load team calendar'
+          )
       })
     return () => {
       cancelled = true
@@ -39,7 +37,10 @@ export default function TeamCalendar() {
 
   return (
     <div data-testid="screen-team-calendar">
-      <PageHeader title="Team calendar" description="Approved time off this month." />
+      <PageHeader
+        title="Team calendar"
+        description="Approved time off this month."
+      />
       {error && <p role="alert">{error}</p>}
       <table>
         <thead>

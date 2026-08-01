@@ -21,11 +21,11 @@ describe('decodeUser (via AuthProvider)', () => {
     render(
       <AuthProvider>
         <Probe />
-      </AuthProvider>,
+      </AuthProvider>
     )
 
     expect(screen.getByTestId('probe')).toHaveTextContent(
-      JSON.stringify({ id: 1, email: 'a@company.com', role: 'Admin' }),
+      JSON.stringify({ id: 1, email: 'a@company.com', role: 'Admin' })
     )
   })
 
@@ -36,7 +36,7 @@ describe('decodeUser (via AuthProvider)', () => {
     render(
       <AuthProvider>
         <Probe />
-      </AuthProvider>,
+      </AuthProvider>
     )
 
     expect(screen.getByTestId('probe')).toHaveTextContent('null')
@@ -50,7 +50,11 @@ describe('isTokenExpired', () => {
   })
 
   it('returns true for a token with a past exp', () => {
-    const jwt = makeExpiredUserJwt({ id: 1, email: 'a@company.com', role: 'Admin' })
+    const jwt = makeExpiredUserJwt({
+      id: 1,
+      email: 'a@company.com',
+      role: 'Admin',
+    })
     expect(isTokenExpired(jwt)).toBe(true)
   })
 

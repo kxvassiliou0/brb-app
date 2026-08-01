@@ -7,7 +7,9 @@ import { User } from "../entities/User.entity";
 import { LeaveStatus, LeaveType, RoleType } from "../enums/index";
 import type { AuthenticatedJWTRequest } from "../interfaces/AuthenticatedJWTRequest.interface";
 
-export function mockRequest<P extends Record<string, string> = Record<string, string>>(
+export function mockRequest<
+  P extends Record<string, string> = Record<string, string>,
+>(
   params: P = {} as P,
   body: Record<string, unknown> = {},
 ): Request & { params: P } {

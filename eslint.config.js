@@ -1,18 +1,36 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
+import prettier from 'eslint-config-prettier/flat'
 
 export default tseslint.config([
-  { ignores: ['dist', 'backend'] },
+  { ignores: ['dist', 'backend', 'coverage'] },
   {
     files: ['**/*.{ts,tsx}'],
-    extends: [js.configs.recommended, tseslint.configs.recommended],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat['recommended-latest'],
+      prettier,
+    ],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
     },
     rules: {
       'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
+  {
+    files: ['cypress/**/*.ts', 'cypress.config.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.mocha,
+        cy: 'readonly',
+        Cypress: 'readonly',
+      },
     },
   },
 ])

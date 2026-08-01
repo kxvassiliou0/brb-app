@@ -12,13 +12,20 @@ export function makeJwt(payload: Record<string, unknown>): string {
   return `${header}.${body}.signature`
 }
 
-type JwtUser = { id: number; email: string; role: 'Admin' | 'Manager' | 'Employee' }
+type JwtUser = {
+  id: number
+  email: string
+  role: 'Admin' | 'Manager' | 'Employee'
+}
 
 export function makeUserJwt(
   user: JwtUser,
-  expiresInMs: number = DEFAULT_TOKEN_LIFETIME_MS,
+  expiresInMs: number = DEFAULT_TOKEN_LIFETIME_MS
 ): string {
-  return makeJwt({ token: user, exp: Math.floor((Date.now() + expiresInMs) / MS_PER_SECOND) })
+  return makeJwt({
+    token: user,
+    exp: Math.floor((Date.now() + expiresInMs) / MS_PER_SECOND),
+  })
 }
 
 export function makeExpiredUserJwt(user: JwtUser): string {

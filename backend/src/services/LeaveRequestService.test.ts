@@ -372,7 +372,10 @@ describe("LeaveRequestService.approveLeaveRequest", () => {
     await expect(
       service.approveLeaveRequest(token, { leave_request_id: 1 }),
     ).rejects.toThrow(
-      new AppError("Leave request is not in a pending state", StatusCodes.BAD_REQUEST),
+      new AppError(
+        "Leave request is not in a pending state",
+        StatusCodes.BAD_REQUEST,
+      ),
     );
   });
 
@@ -449,7 +452,10 @@ describe("LeaveRequestService.rejectLeaveRequest", () => {
     await expect(
       service.rejectLeaveRequest(token, { leave_request_id: 1 }),
     ).rejects.toThrow(
-      new AppError("Leave request is not in a pending state", StatusCodes.BAD_REQUEST),
+      new AppError(
+        "Leave request is not in a pending state",
+        StatusCodes.BAD_REQUEST,
+      ),
     );
   });
 

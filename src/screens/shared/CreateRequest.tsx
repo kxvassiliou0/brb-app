@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { apiFetch } from '../../lib/api'
+import type { CreateLeaveRequestBody, LeaveType } from '@/types/api'
 import PageHeader from '../../components/PageHeader'
 
 export default function CreateRequest() {
   const navigate = useNavigate()
-  const [leaveType, setLeaveType] = useState('Vacation')
+  const [leaveType, setLeaveType] = useState<LeaveType>('Vacation')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [reason, setReason] = useState('')
@@ -17,14 +18,15 @@ export default function CreateRequest() {
     setError(null)
     setSubmitting(true)
     try {
+      const payload: CreateLeaveRequestBody = {
+        start_date: startDate,
+        end_date: endDate,
+        leave_type: leaveType,
+        reason: reason || undefined,
+      }
       await apiFetch('/api/leave-requests', {
         method: 'POST',
-        body: JSON.stringify({
-          start_date: startDate,
-          end_date: endDate,
-          leave_type: leaveType,
-          reason: reason || undefined,
-        }),
+        body: JSON.stringify(payload),
       })
       navigate(-1)
     } catch (err) {
@@ -36,12 +38,19 @@ export default function CreateRequest() {
 
   return (
     <div data-testid="screen-create-request">
-      <PageHeader title="Create a request" description="Submit a new time-off request for approval." />
+      <PageHeader
+        title="Create a request"
+        description="Submit a new time-off request for approval."
+      />
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="leave-type">Type</label>
           <br />
-          <select id="leave-type" value={leaveType} onChange={(e) => setLeaveType(e.target.value)}>
+          <select
+            id="leave-type"
+            value={leaveType}
+            onChange={(e) => setLeaveType(e.target.value as LeaveType)}
+          >
             <option value="Vacation">Vacation</option>
             <option value="Sick">Sick</option>
             <option value="Personal">Personal</option>
@@ -61,12 +70,22 @@ export default function CreateRequest() {
         <div>
           <label htmlFor="end-date">End date</label>
           <br />
-          <input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+          <input
+            id="end-date"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            required
+          />
         </div>
         <div>
           <label htmlFor="reason">Reason</label>
           <br />
-          <textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <textarea
+            id="reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
         </div>
         <button type="submit" disabled={submitting}>
           {submitting ? 'Submitting…' : 'Submit request'}
