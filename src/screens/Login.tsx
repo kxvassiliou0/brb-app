@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
-import { useAuth } from '../lib/auth'
+import { useLocation, useNavigate, type Location } from 'react-router'
+import { useAuth } from '@/lib/auth'
+import { ROLE_HOME } from '@/lib/routeAccess'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: Location } | null)?.from
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -16,7 +19,9 @@ export default function Login() {
     setSubmitting(true)
     try {
       const user = await login(email, password)
-      navigate(`/${user.role.toLowerCase()}`)
+      navigate(from ? `${from.pathname}${from.search}` : ROLE_HOME[user.role], {
+        replace: true,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

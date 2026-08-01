@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router'
+import { useAuth } from '@/lib/auth'
 
 type NavItem = { to: string; label: string; end?: boolean }
 
@@ -24,16 +25,10 @@ const navByRole: Record<'admin' | 'employee' | 'manager', NavItem[]> = {
   ],
 }
 
-export function roleFromPathname(pathname: string): 'admin' | 'employee' | 'manager' | null {
-  if (pathname.startsWith('/admin')) return 'admin'
-  if (pathname.startsWith('/employee')) return 'employee'
-  if (pathname.startsWith('/manager')) return 'manager'
-  return null
-}
-
 export default function Sidebar() {
+  const { user } = useAuth()
   const location = useLocation()
-  const role = roleFromPathname(location.pathname)
+  const role = user ? (user.role.toLowerCase() as 'admin' | 'employee' | 'manager') : null
   const links = role ? navByRole[role] : []
 
   return (

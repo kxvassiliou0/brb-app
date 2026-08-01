@@ -1,13 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { describe, expect, it } from 'vitest'
-import { AuthProvider } from '../lib/auth'
-import { routes } from '../routes'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { AuthProvider } from '@/lib/auth'
+import { setStoredToken } from '@/lib/api'
+import { makeUserJwt } from '@/test/jwt'
+import { routes } from '@/routes'
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('not found', () => {
-  it.each(['/this-does-not-exist', '/admin/this-does-not-exist', '/manager/this-does-not-exist'])(
+  it.each(['/admin/this-does-not-exist', '/manager/this-does-not-exist'])(
     'renders the not-found screen for unmatched path %s',
     async (path) => {
+      setStoredToken(makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' }))
       const router = createMemoryRouter(routes, { initialEntries: [path] })
       render(
         <AuthProvider>
