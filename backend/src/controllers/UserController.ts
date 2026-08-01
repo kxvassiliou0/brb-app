@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { AppError } from "../helpers/AppError.ts";
+import { AUTH_ERRORS } from "../helpers/AuthErrors.ts";
 import { Logger } from "../helpers/Logger.ts";
 import { ResponseHandler } from "../helpers/ResponseHandler.ts";
+import type { AuthenticatedJWTRequest } from "../interfaces/AuthenticatedJWTRequest.interface.ts";
 import type { IUserService } from "../types/IUserService.ts";
 
 export class UserController {
@@ -47,6 +49,38 @@ export class UserController {
         return;
       }
       Logger.error("Unexpected error in UserController.getById", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      ResponseHandler.sendErrorResponse(
+        res,
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to retrieve user",
+      );
+    }
+  };
+
+  public getMe = async (
+    req: AuthenticatedJWTRequest,
+    res: Response,
+  ): Promise<void> => {
+    const id = req.signedInUser?.token?.id;
+    if (!id) {
+      ResponseHandler.sendErrorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        AUTH_ERRORS.TOKEN_IS_INVALID,
+      );
+      return;
+    }
+    try {
+      const profile = await this.service.getOwnProfile(id);
+      ResponseHandler.sendSuccessResponse(res, profile);
+    } catch (error) {
+      if (error instanceof AppError) {
+        ResponseHandler.sendErrorResponse(res, error.statusCode, error.message);
+        return;
+      }
+      Logger.error("Unexpected error in UserController.getMe", {
         error: error instanceof Error ? error.message : String(error),
       });
       ResponseHandler.sendErrorResponse(

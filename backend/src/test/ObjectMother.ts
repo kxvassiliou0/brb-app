@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { UserDTOProfile, UserDTORelation } from "../dto/UserDTOProfile";
 import { Department } from "../entities/Department.entity";
 import { JobRole } from "../entities/JobRole.entity";
 import { LeaveRequest } from "../entities/LeaveRequest.entity";
@@ -59,6 +60,24 @@ export function makeUser(overrides: Partial<User> = {}): User {
     jobRoleId: 1,
     ...overrides,
   });
+}
+
+export function makeUserProfile(
+  overrides: Partial<UserDTOProfile> = {},
+): UserDTOProfile {
+  return Object.assign(
+    new UserDTOProfile(
+      1,
+      "Alice",
+      "Smith",
+      "alice@company.com",
+      RoleType.Employee,
+      25,
+      new UserDTORelation(1, "Engineering"),
+      new UserDTORelation(1, "Contractor"),
+    ),
+    overrides,
+  );
 }
 
 export function makeLeaveRequest(

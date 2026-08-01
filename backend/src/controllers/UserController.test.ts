@@ -1,9 +1,18 @@
 import { mock, MockProxy } from "jest-mock-extended";
 import { StatusCodes } from "http-status-codes";
 import { UserController } from "./UserController";
+import { RoleType } from "../enums/index";
 import { AppError } from "../helpers/AppError";
+import { AUTH_ERRORS } from "../helpers/AuthErrors";
+import type { AuthenticatedJWTRequest } from "../interfaces/AuthenticatedJWTRequest.interface";
 import type { IUserService } from "../types/IUserService";
-import { makeUser, mockRequest, mockResponse } from "../test/ObjectMother";
+import {
+  makeAuthRequest,
+  makeUser,
+  makeUserProfile,
+  mockRequest,
+  mockResponse,
+} from "../test/ObjectMother";
 
 let mockService: MockProxy<IUserService>;
 let controller: UserController;
@@ -105,6 +114,107 @@ describe("UserController.getById", () => {
 
     // Act
     await controller.getById(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.INTERNAL_SERVER_ERROR);
+  });
+});
+
+describe("UserController.getMe", () => {
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "returns 200 with the caller's own profile for role %s",
+    async (role) => {
+      // Arrange
+      const profile = makeUserProfile({ role });
+      mockService.getOwnProfile.mockResolvedValue(profile);
+      const req = makeAuthRequest({ id: 1, role });
+      const res = mockResponse();
+
+      // Act
+      await controller.getMe(req, res);
+
+      // Assert
+      expect(mockService.getOwnProfile).toHaveBeenCalledWith(1);
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
+      expect(res.json).toHaveBeenCalledWith({ data: profile });
+    },
+  );
+
+  it("resolves the user from the token, ignoring params, body and query", async () => {
+    // Arrange
+    mockService.getOwnProfile.mockResolvedValue(makeUserProfile({ id: 7 }));
+    const req = makeAuthRequest({
+      id: 7,
+      role: RoleType.Employee,
+      params: { id: "999" },
+      body: { id: 999 },
+      query: { id: "999" },
+    });
+    const res = mockResponse();
+
+    // Act
+    await controller.getMe(req, res);
+
+    // Assert
+    expect(mockService.getOwnProfile).toHaveBeenCalledTimes(1);
+    expect(mockService.getOwnProfile).toHaveBeenCalledWith(7);
+    expect(mockService.getOwnProfile).not.toHaveBeenCalledWith(999);
+  });
+
+  it("refuses an unauthenticated request with 401 and never reaches the service", async () => {
+    // Arrange
+    const req = mockRequest() as AuthenticatedJWTRequest;
+    const res = mockResponse();
+
+    // Act
+    await controller.getMe(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.UNAUTHORIZED);
+    expect(res.json).toHaveBeenCalledWith({
+      error: AUTH_ERRORS.TOKEN_IS_INVALID,
+    });
+    expect(mockService.getOwnProfile).not.toHaveBeenCalled();
+  });
+
+  it("does not include password or salt in the response body", async () => {
+    // Arrange
+    mockService.getOwnProfile.mockResolvedValue(makeUserProfile());
+    const req = makeAuthRequest({ id: 1, role: RoleType.Employee });
+    const res = mockResponse();
+
+    // Act
+    await controller.getMe(req, res);
+
+    // Assert
+    const body = (res.json as jest.Mock).mock.calls[0][0];
+    expect(body.data).not.toHaveProperty("password");
+    expect(body.data).not.toHaveProperty("salt");
+  });
+
+  it("returns 404 when service throws NOT_FOUND AppError", async () => {
+    // Arrange
+    mockService.getOwnProfile.mockRejectedValue(
+      new AppError("User not found with ID: 1", StatusCodes.NOT_FOUND),
+    );
+    const req = makeAuthRequest({ id: 1, role: RoleType.Employee });
+    const res = mockResponse();
+
+    // Act
+    await controller.getMe(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.NOT_FOUND);
+  });
+
+  it("returns 500 on unexpected non-AppError from service", async () => {
+    // Arrange
+    mockService.getOwnProfile.mockRejectedValue(new Error("DB failure"));
+    const req = makeAuthRequest({ id: 1, role: RoleType.Employee });
+    const res = mockResponse();
+
+    // Act
+    await controller.getMe(req, res);
 
     // Assert
     expect(res.status).toHaveBeenCalledWith(StatusCodes.INTERNAL_SERVER_ERROR);

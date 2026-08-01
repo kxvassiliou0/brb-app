@@ -29,6 +29,11 @@ export class UserRouter implements IRouter {
       this.userController.getAll,
     );
     this.router.get(
+      "/me",
+      requireRole(RoleType.Employee, RoleType.Manager, RoleType.Admin),
+      this.userController.getMe,
+    );
+    this.router.get(
       "/:id",
       requireRole(RoleType.Admin),
       this.userController.getById,
