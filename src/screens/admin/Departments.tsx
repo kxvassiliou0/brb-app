@@ -18,7 +18,10 @@ export default function Departments() {
         if (!cancelled) setDepartments(res.data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load departments')
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : 'Failed to load departments'
+          )
       })
     return () => {
       cancelled = true
@@ -27,7 +30,10 @@ export default function Departments() {
 
   return (
     <div data-testid="screen-departments">
-      <PageHeader title="Departments" description="Departments in your organization." />
+      <PageHeader
+        title="Departments"
+        description="Departments in your organization."
+      />
       {error && <p role="alert">{error}</p>}
       <ul>
         {departments.map((d) => (

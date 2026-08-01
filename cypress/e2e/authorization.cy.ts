@@ -23,7 +23,11 @@ describe('role-based route authorization', () => {
 
   it('only shows Employee nav items regardless of the URL typed', () => {
     cy.visit('/manager/team-calendar')
-    cy.get('[data-testid="sidebar"]').contains('a', 'Book time off').should('be.visible')
-    cy.get('[data-testid="sidebar"]').contains('a', 'Team calendar').should('not.exist')
+    cy.get('[data-testid="sidebar"]')
+      .contains('a', 'Book time off')
+      .should('be.visible')
+    cy.get('[data-testid="sidebar"]')
+      .contains('a', 'Team calendar')
+      .should('not.exist')
   })
 })

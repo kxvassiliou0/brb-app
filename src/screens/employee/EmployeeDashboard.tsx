@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
+import type { ApiSuccess, RemainingLeave } from '@/types/api'
 import { useAuth } from '../../lib/auth'
 import PageHeader from '../../components/PageHeader'
-
-interface RemainingLeave {
-  annual_allowance: number
-  days_used: number
-  days_remaining: number
-}
 
 export default function EmployeeDashboard() {
   const { user } = useAuth()
@@ -17,12 +12,17 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     if (!user) return
     let cancelled = false
-    apiFetch<{ data: RemainingLeave }>(`/api/leave-requests/remaining/${user.id}`)
+    apiFetch<ApiSuccess<RemainingLeave>>(
+      `/api/leave-requests/remaining/${user.id}`
+    )
       .then((res) => {
         if (!cancelled) setRemaining(res.data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load leave balance')
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : 'Failed to load leave balance'
+          )
       })
     return () => {
       cancelled = true

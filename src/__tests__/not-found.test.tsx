@@ -14,15 +14,17 @@ describe('not found', () => {
   it.each(['/admin/this-does-not-exist', '/manager/this-does-not-exist'])(
     'renders the not-found screen for unmatched path %s',
     async (path) => {
-      setStoredToken(makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' }))
+      setStoredToken(
+        makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' })
+      )
       const router = createMemoryRouter(routes, { initialEntries: [path] })
       render(
         <AuthProvider>
           <RouterProvider router={router} />
-        </AuthProvider>,
+        </AuthProvider>
       )
 
       expect(await screen.findByTestId('not-found')).toBeInTheDocument()
-    },
+    }
   )
 })

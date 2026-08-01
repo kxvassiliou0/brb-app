@@ -28,7 +28,9 @@ const navByRole: Record<'admin' | 'employee' | 'manager', NavItem[]> = {
 export default function Sidebar() {
   const { user } = useAuth()
   const location = useLocation()
-  const role = user ? (user.role.toLowerCase() as 'admin' | 'employee' | 'manager') : null
+  const role = user
+    ? (user.role.toLowerCase() as 'admin' | 'employee' | 'manager')
+    : null
   const links = role ? navByRole[role] : []
 
   return (

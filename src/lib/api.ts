@@ -1,4 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+export const DEFAULT_API_BASE_URL = 'http://localhost:3000'
+
+export function resolveApiBaseUrl(env: ImportMetaEnv): string {
+  const configured = env.VITE_API_URL?.trim()
+  return (configured || DEFAULT_API_BASE_URL).replace(/\/+$/, '')
+}
+
+const API_BASE_URL = resolveApiBaseUrl(import.meta.env)
 const TOKEN_KEY = 'lbs_token'
 export const HTTP_TOO_MANY_REQUESTS = 429
 const RATE_LIMIT_MESSAGE =

@@ -29,7 +29,10 @@ export default function AdminDashboard() {
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : 'Failed to load dashboard data'
+          )
       })
     return () => {
       cancelled = true
@@ -38,7 +41,10 @@ export default function AdminDashboard() {
 
   return (
     <div data-testid="screen-admin-dashboard">
-      <PageHeader title="Admin dashboard" description="Overview of organization-wide activity." />
+      <PageHeader
+        title="Admin dashboard"
+        description="Overview of organization-wide activity."
+      />
       {error && <p role="alert">{error}</p>}
       {counts && (
         <ul>

@@ -55,7 +55,10 @@ export const routes: RouteObject[] = [
             element: <ProtectedRoute allowedRoles={SUBTREE_ROLES.manager} />,
             children: [
               { index: true, element: <ManagerDashboard /> },
-              { path: 'requests', element: <RequestsList basePath="/manager" /> },
+              {
+                path: 'requests',
+                element: <RequestsList basePath="/manager" />,
+              },
               { path: 'requests/new', element: <CreateRequest /> },
               { path: 'requests/:requestId', element: <RequestReview /> },
               { path: 'team-calendar', element: <TeamCalendar /> },

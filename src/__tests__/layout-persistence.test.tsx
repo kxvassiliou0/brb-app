@@ -12,7 +12,9 @@ beforeEach(() => {
 
 describe('layout persistence', () => {
   it('does not remount the shell when navigating between sibling screens', async () => {
-    setStoredToken(makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' }))
+    setStoredToken(
+      makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' })
+    )
     const router = createMemoryRouter(routes, { initialEntries: ['/admin'] })
     render(
       <AuthProvider>

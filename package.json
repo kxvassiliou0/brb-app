@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -18,12 +20,14 @@
     "backend:seed": "npm --prefix backend run seed",
     "backend:test": "npm --prefix backend run test",
     "backend:lint": "npm --prefix backend run lint",
+    "backend:format": "npm --prefix backend run format",
+    "backend:format:check": "npm --prefix backend run format:check",
     "backend:typecheck": "npm --prefix backend run typecheck"
   },
   "dependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "^7.18.2"
+    "react-router": "7.18.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -37,8 +41,11 @@
     "@vitejs/plugin-react": "^6.0.4",
     "cypress": "^14.5.4",
     "eslint": "^9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
     "globals": "^17.8.0",
     "jsdom": "^27.0.1",
+    "prettier": "3.9.6",
     "start-server-and-test": "^2.1.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",

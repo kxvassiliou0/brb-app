@@ -11,12 +11,17 @@ export default function ManagerDashboard() {
   useEffect(() => {
     if (!user) return
     let cancelled = false
-    apiFetch<{ data: unknown[] }>(`/api/leave-requests/pending/manager/${user.id}`)
+    apiFetch<{ data: unknown[] }>(
+      `/api/leave-requests/pending/manager/${user.id}`
+    )
       .then((res) => {
         if (!cancelled) setPendingCount(res.data.length)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : 'Failed to load dashboard data'
+          )
       })
     return () => {
       cancelled = true
@@ -25,7 +30,10 @@ export default function ManagerDashboard() {
 
   return (
     <div data-testid="screen-manager-dashboard">
-      <PageHeader title="Manager dashboard" description="Overview of your team's activity." />
+      <PageHeader
+        title="Manager dashboard"
+        description="Overview of your team's activity."
+      />
       {error && <p role="alert">{error}</p>}
       {pendingCount !== null && <p>Pending requests: {pendingCount}</p>}
     </div>

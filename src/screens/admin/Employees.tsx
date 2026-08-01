@@ -21,7 +21,10 @@ export default function Employees() {
         if (!cancelled) setEmployees(res.data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load employees')
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : 'Failed to load employees'
+          )
       })
     return () => {
       cancelled = true
@@ -30,7 +33,10 @@ export default function Employees() {
 
   return (
     <div data-testid="screen-employees">
-      <PageHeader title="Employees" description="Everyone in your organization." />
+      <PageHeader
+        title="Employees"
+        description="Everyone in your organization."
+      />
       {error && <p role="alert">{error}</p>}
       <table>
         <thead>

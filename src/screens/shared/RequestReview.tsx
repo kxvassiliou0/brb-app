@@ -1,14 +1,14 @@
+import type { LeaveRequest, ReviewLeaveRequestBody } from '@/types/api'
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
-import { apiFetch } from '../../lib/api'
 import PageHeader from '../../components/PageHeader'
-import type { LeaveRow } from './RequestsList'
+import { apiFetch } from '../../lib/api'
 
 export default function RequestReview() {
   const { requestId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const row = (location.state as { request?: LeaveRow } | null)?.request
+  const row = (location.state as { request?: LeaveRequest } | null)?.request
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -16,13 +16,18 @@ export default function RequestReview() {
     setError(null)
     setSubmitting(true)
     try {
+      const payload: ReviewLeaveRequestBody = {
+        leave_request_id: Number(requestId),
+      }
       await apiFetch(`/api/leave-requests/${action}`, {
         method: 'PATCH',
-        body: JSON.stringify({ leave_request_id: Number(requestId) }),
+        body: JSON.stringify(payload),
       })
       navigate(-1)
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${action} request`)
+      setError(
+        err instanceof Error ? err.message : `Failed to ${action} request`
+      )
     } finally {
       setSubmitting(false)
     }
@@ -30,7 +35,10 @@ export default function RequestReview() {
 
   return (
     <div data-testid="screen-request-review">
-      <PageHeader title={`Review request #${requestId}`} description="Approve or decline this time-off request." />
+      <PageHeader
+        title={`Review request #${requestId}`}
+        description="Approve or decline this time-off request."
+      />
       {row ? (
         <dl>
           <div>
@@ -49,11 +57,14 @@ export default function RequestReview() {
           </div>
           <div>
             <dt>Reason</dt>
-            <dd>{row.reason ?? '—'}</dd>
+            <dd>{row.reason ?? '-'}</dd>
           </div>
         </dl>
       ) : (
-        <p>No details were passed in — open this screen from the requests list to see them.</p>
+        <p>
+          No details were passed in - open this screen from the requests list to
+          see them.
+        </p>
       )}
       <button onClick={() => decide('reject')} disabled={submitting}>
         Decline
