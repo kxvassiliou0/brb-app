@@ -1,0 +1,904 @@
+{
+  "info": {
+    "name": "Leave Booking System Demo",
+    "_postman_id": "c8f2e7b4-1a5d-4e9f-8c3b-7d6a2f0e1b95",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    { "key": "jwt_admin", "value": "", "type": "string" },
+    { "key": "jwt_manager_bob", "value": "", "type": "string" },
+    { "key": "jwt_manager_carol", "value": "", "type": "string" },
+    { "key": "jwt_employee_david", "value": "", "type": "string" },
+    { "key": "jwt_employee_eve", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login - Alice (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('jwt_admin', pm.response.text())"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.thompson@company.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Bob (Manager - team: David, Eve)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('jwt_manager_bob', pm.response.text())"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bob.mitchell@company.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Carol (Manager - team: Frank)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('jwt_manager_carol', pm.response.text())"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"carol.reeves@company.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - David (Employee - manager: Bob)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('jwt_employee_david', pm.response.text())"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"david.jones@company.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Eve (Employee - manager: Bob)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('jwt_employee_eve', pm.response.text())"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"eve.knowles@company.com\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Wrong password (negative path)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.thompson@company.com\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Staff (David)",
+      "item": [
+        {
+          "name": "1a. View - Balance (start: 25 allowance, 5 used, 20 remaining)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests/remaining/4"
+          }
+        },
+        {
+          "name": "1b. View - Status history (LR1 Approved, LR2 Pending)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests/status/4"
+          }
+        },
+        {
+          "name": "1c. Auth Error - Try to view another employee's balance (403)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests/remaining/5"
+          }
+        },
+        {
+          "name": "1d. Validation - Missing dates (400)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Vacation\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1e. Validation - Bad date format (400)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"01-09-2027\",\n  \"end_date\": \"05-09-2027\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1f. Validation - End before start (400)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"2027-09-10\",\n  \"end_date\": \"2027-09-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1g. Validation - Invalid leave type 'Holiday' (400)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Holiday\",\n  \"start_date\": \"2027-10-01\",\n  \"end_date\": \"2027-10-03\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1h. Validation - Exceeds balance (31 days, only 20 left) (400)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"2026-08-01\",\n  \"end_date\": \"2026-08-31\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1i. Validation - Overlapping with LR1 (409)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"2026-04-07\",\n  \"end_date\": \"2026-04-11\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1j. Create - Valid Vacation Sep 1-5 2027 (201, becomes LR7)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"2027-09-01\",\n  \"end_date\": \"2027-09-05\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1k. Cancel pending LR2 (no days restored - was Pending)",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": { "mode": "raw", "raw": "{\n  \"leave_request_id\": 2\n}" }
+          }
+        },
+        {
+          "name": "1l. Cancel approved LR1 (BRIEF: 5 days RESTORED)",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": { "mode": "raw", "raw": "{\n  \"leave_request_id\": 1\n}" }
+          }
+        },
+        {
+          "name": "1m. View - Balance after cancellations (25/0/25 - days back)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests/remaining/4"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Manager (Bob)",
+      "item": [
+        {
+          "name": "2a. View team's pending requests (LR6 + LR7)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests/pending/manager/2"
+          }
+        },
+        {
+          "name": "2b. View team's pending - date filtered (only LR6)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests/pending/manager/2?from=2026-07-01&to=2026-07-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests", "pending", "manager", "2"],
+              "query": [
+                { "key": "from", "value": "2026-07-01" },
+                { "key": "to", "value": "2026-07-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2c. Auth Error - Try to view Frank's balance (Carol's team) (403)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests/remaining/6"
+          }
+        },
+        {
+          "name": "2d. Approve LR6 (Eve's vacation)",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_request_id\": 6,\n  \"reason\": \"Approved - enjoy your break!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2e. Auth Error - Try to approve LR4 (Frank's, Carol's team) (403)",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests/approve",
+            "body": { "mode": "raw", "raw": "{\n  \"leave_request_id\": 4\n}" }
+          }
+        },
+        {
+          "name": "2f. Reject LR7 (David's vacation)",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests/reject",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_request_id\": 7,\n  \"reason\": \"Team at capacity during this period.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2g. Already-decided guard - approve LR7 again (400)",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests/approve",
+            "body": { "mode": "raw", "raw": "{\n  \"leave_request_id\": 7\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Admin (Alice)",
+      "item": [
+        {
+          "name": "3a. View - All leave requests, no filter",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": "{{baseUrl}}/leave-requests"
+          }
+        },
+        {
+          "name": "3b. Filter - by employee_id=5 (Eve only)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests?employee_id=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests"],
+              "query": [{ "key": "employee_id", "value": "5" }]
+            }
+          }
+        },
+        {
+          "name": "3c. Filter - by manager_id=2 (Bob's team)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests?manager_id=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests"],
+              "query": [{ "key": "manager_id", "value": "2" }]
+            }
+          }
+        },
+        {
+          "name": "3d. Filter - leave_type=Vacation, business year",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests?leave_type=Vacation&from=2026-04-01&to=2027-03-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests"],
+              "query": [
+                { "key": "leave_type", "value": "Vacation" },
+                { "key": "from", "value": "2026-04-01" },
+                { "key": "to", "value": "2027-03-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3e. Filter - both employee_id and manager_id (400)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests?employee_id=4&manager_id=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests"],
+              "query": [
+                { "key": "employee_id", "value": "4" },
+                { "key": "manager_id", "value": "2" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3f. Add new staff - Henry (id 8)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Henry\",\n  \"lastName\": \"James\",\n  \"email\": \"henry.james@company.com\",\n  \"password\": \"Password123!\",\n  \"role\": \"Employee\",\n  \"annualLeaveAllowance\": 25,\n  \"departmentId\": 1,\n  \"jobRoleId\": 1,\n  \"managerId\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "3g. Auth Error - Employee tries to create user (403)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_employee_david}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Henry\",\n  \"lastName\": \"James\",\n  \"email\": \"henry.james@company.com\",\n  \"password\": \"Password123!\",\n  \"role\": \"Employee\",\n  \"annualLeaveAllowance\": 25,\n  \"departmentId\": 1,\n  \"jobRoleId\": 1,\n  \"managerId\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "3h. Amend Henry - department + manager",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users/8",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"departmentId\": 3,\n  \"managerId\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "3i. Amend Henry - allowance to 30",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users/8",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"annualLeaveAllowance\": 30\n}"
+            }
+          }
+        },
+        {
+          "name": "3j. Submit leave on behalf of David (LR8)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 4,\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"2027-10-01\",\n  \"end_date\": \"2027-10-03\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3k. Approve LR8 on behalf of manager",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_request_id\": 8,\n  \"reason\": \"Approved by admin on behalf of manager.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3l. Cleanup - Delete Henry",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": "{{baseUrl}}/users/8"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Additional Functionality",
+      "item": [
+        {
+          "name": "4a. Calendar - June 2026 (Bob's team view)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests/calendar?from=2026-06-01&to=2026-06-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests", "calendar"],
+              "query": [
+                { "key": "from", "value": "2026-06-01" },
+                { "key": "to", "value": "2026-06-30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4b. Usage report - Bob's team, business year",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_manager_bob}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests/reports/usage?from=2026-04-01&to=2027-03-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests", "reports", "usage"],
+              "query": [
+                { "key": "from", "value": "2026-04-01" },
+                { "key": "to", "value": "2027-03-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4c. CSV export - Admin downloads report",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leave-requests/reports/export?from=2026-04-01&to=2027-03-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["leave-requests", "reports", "export"],
+              "query": [
+                { "key": "from", "value": "2026-04-01" },
+                { "key": "to", "value": "2027-03-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4d. Add Christmas Day public holiday",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/public-holidays",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-12-25\",\n  \"name\": \"Christmas Day\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4e. Try to book leave overlapping Christmas (400)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{jwt_admin}}", "type": "string" }
+              ]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/leave-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 4,\n  \"leave_type\": \"Vacation\",\n  \"start_date\": \"2026-12-24\",\n  \"end_date\": \"2026-12-26\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+classDiagram
+    class RoleType {
+        <<enumeration>>
+        Employee
+        Manager
+        Admin
+    }
+
+    class LeaveType {
+        <<enumeration>>
+        Vacation
+        Sick
+        Personal
+    }
+
+    class LeaveStatus {
+        <<enumeration>>
+        Pending
+        Approved
+        Rejected
+        Cancelled
+    }
+
+    class DepartmentInterface["Department"] {
+        <<interface>>
+        +number departmentId
+        +string name
+    }
+
+    class JobRoleInterface["JobRole"] {
+        <<interface>>
+        +number jobRoleId
+        +string name
+    }
+
+    class RoleInterface["Role"] {
+        <<interface>>
+        +number roleId
+        +RoleType name
+    }
+
+    class UserInterface["User"] {
+        <<interface>>
+        +number userId
+        +string firstname
+        +string surname
+        +string email
+        +string password
+        +string salt
+        +Role role
+        +JobRole jobRole
+        +Department department
+        +number annualLeaveBalance
+    }
+
+    class LeaveRequestInterface["LeaveRequest"] {
+        <<interface>>
+        +number leaveRequestId
+        +number userId
+        +LeaveType leaveType
+        +Date startDate
+        +Date endDate
+        +LeaveStatus status
+        +string reason
+    }
+
+    class UserManagementInterface["UserManagement"] {
+        <<interface>>
+        +number id
+        +number userId
+        +number managerId
+        +Date startDate
+        +Date endDate
+    }
+
+    class Department {
+        +number departmentId
+        +string name
+        +toString() string
+    }
+
+    class JobRole {
+        +number jobRoleId
+        +string name
+        +toString() string
+    }
+
+    class Role {
+        +number roleId
+        +RoleType name
+        +toString() string
+    }
+
+    class User {
+        +number userId
+        +string firstname
+        +string surname
+        +string email
+        +string password
+        +string salt
+        +Role role
+        +JobRole jobRole
+        +Department department
+        +number annualLeaveBalance
+        +toString() string
+    }
+
+    class LeaveRequest {
+        +number leaveRequestId
+        +number userId
+        +LeaveType leaveType
+        +Date startDate
+        +Date endDate
+        +LeaveStatus status
+        +string reason
+        +toString() string
+    }
+
+    class UserManagement {
+        +number id
+        +number userId
+        +number managerId
+        +Date startDate
+        +Date endDate
+        +toString() string
+    }
+
+    class UserDTOToken {
+        +number id
+        +string email
+        +RoleType role
+    }
+
+    class LoginController {
+        -userRepository Repository~User~
+        +ERROR_USER_NOT_FOUND$ string
+        +ERROR_PASSWORD_INCORRECT$ string
+        +login(req, res) Promise~void~
+    }
+
+    class LoginRouter {
+        -router Router
+        -loginController LoginController
+        +getRouter() Router
+        -addRoutes() void
+    }
+
+    class Server {
+        -app Application
+        -port string|number
+        +ERROR_TOKEN_IS_INVALID$ string
+        +ERROR_TOKEN_NOT_FOUND$ string
+        +ERROR_TOKEN_SECRET_NOT_DEFINED$ string
+        +start() Promise~void~
+        -initialiseRoutes() void
+        -authenticateToken(req, res, next) void
+    }
+
+    class requireRole {
+        <<function>>
+        +requireRole(...roles RoleType[]) Middleware
+    }
+
+    Department ..|> DepartmentInterface : implements
+    JobRole ..|> JobRoleInterface : implements
+    Role ..|> RoleInterface : implements
+    User ..|> UserInterface : implements
+    LeaveRequest ..|> LeaveRequestInterface : implements
+    UserManagement ..|> UserManagementInterface : implements
+
+    User *-- Role : systemRole
+    User *-- JobRole : jobRole
+    User *-- Department : department
+    Role ..> RoleType : uses
+    LeaveRequest ..> LeaveType : uses
+    LeaveRequest ..> LeaveStatus : uses
+
+    Server --> LoginRouter : routes /api/login
+    LoginRouter --> LoginController
+    LoginController --> UserDTOToken : builds payload
+    LoginController ..> User : queries (with password+salt)
+    UserDTOToken ..> RoleType : uses
+    Server ..> requireRole : uses in routes
+    requireRole ..> RoleType : checks
