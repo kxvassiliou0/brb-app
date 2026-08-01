@@ -1,0 +1,49 @@
+{
+  "name": "brb-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cypress:open": "cypress open",
+    "test:e2e": "start-server-and-test dev http://localhost:5173 'cypress run'",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:start": "npm --prefix backend run start",
+    "backend:seed": "npm --prefix backend run seed",
+    "backend:test": "npm --prefix backend run test",
+    "backend:lint": "npm --prefix backend run lint",
+    "backend:typecheck": "npm --prefix backend run typecheck"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^7.18.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "cypress": "^14.5.4",
+    "eslint": "^9.39.5",
+    "globals": "^17.8.0",
+    "jsdom": "^27.0.1",
+    "start-server-and-test": "^2.1.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}

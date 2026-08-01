@@ -1,0 +1,56 @@
+graph TD
+    subgraph Client["Client"]
+        Browser["REST Client (Browser / Postman)"]
+    end
+
+    subgraph App["Application - Node.js with Express"]
+        MW["Middleware: Helmet, Rate Limiter, Morgan, JWT Auth"]
+
+        subgraph RC["Routes & Controllers"]
+            Login["/api/login - LoginController"]
+            Users["/api/users - UserController"]
+            Depts["/api/departments - DepartmentController"]
+            Roles["/api/jobroles - JobRoleController"]
+            Leave["/api/leave-requests - LeaveRequestController"]
+            Holidays["/api/public-holidays - PublicHolidayController"]
+        end
+
+        subgraph Svc["Services"]
+            LoginSvc["LoginService"]
+            UserSvc["UserService"]
+            DeptSvc["DepartmentService"]
+            JobRoleSvc["JobRoleService"]
+            LeaveSvc["LeaveRequestService"]
+            HolidaySvc["PublicHolidayService"]
+        end
+
+        ORM["TypeORM"]
+    end
+
+    subgraph DB["Database - MySQL"]
+        UsersTable[("users")]
+        LeaveTable[("leave_requests")]
+        DeptTable[("departments")]
+        JobRoleTable[("job_roles")]
+        HolidayTable[("public_holiday")]
+    end
+
+    Browser -->|"HTTP Request"| MW
+    MW --> Login & Users & Depts & Roles & Leave & Holidays
+
+    Login --> LoginSvc
+    Users --> UserSvc
+    Depts --> DeptSvc
+    Roles --> JobRoleSvc
+    Leave --> LeaveSvc
+    Holidays --> HolidaySvc
+
+    LoginSvc & UserSvc & DeptSvc & JobRoleSvc & LeaveSvc & HolidaySvc --> ORM
+
+    ORM <-->|"SQL queries"| UsersTable
+    ORM <-->|"SQL queries"| LeaveTable
+    ORM <-->|"SQL queries"| DeptTable
+    ORM <-->|"SQL queries"| JobRoleTable
+    ORM <-->|"SQL queries"| HolidayTable
+
+    ORM -->|"JSON Response"| Browser

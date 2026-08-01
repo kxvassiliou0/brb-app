@@ -1,0 +1,46 @@
+erDiagram
+direction LR
+    JOB_ROLE {
+        int id PK
+        string name
+    }
+    DEPARTMENT {
+        int id PK
+        string name
+    }
+    USER {
+        int id PK
+        int departmentId FK
+        int jobRoleId FK
+        int managerId FK
+        int annualLeaveAllowance
+        RoleType role
+        string email
+        string firstName
+        string lastName
+        string password
+        string salt
+    }
+    LEAVEREQUEST {
+        int id PK
+        int reviewedById FK
+        int userId FK
+        date endDate
+        date startDate
+        datetime createdAt
+        int daysRequested
+        LeaveStatus status
+        LeaveType leaveType
+        text managerNote
+        text reason
+    }
+    PUBLIC_HOLIDAY {
+        int id PK
+        date date
+        string name
+    }
+    DEPARTMENT ||--o{ USER : departmentId
+    JOB_ROLE ||--o{ USER : jobRoleId
+    USER ||--o{ LEAVEREQUEST : reviewedById
+    USER ||--o{ LEAVEREQUEST : userId
+    USER ||--o{ USER : managerId
