@@ -46,6 +46,48 @@ export class UserService implements IUserService {
     );
   }
 
+  async changeOwnPassword(
+    id: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.repo
+      .createQueryBuilder("user")
+      .addSelect(["user.password", "user.salt"])
+      .where("user.id = :id", { id })
+      .getOne();
+
+    if (!user)
+      throw new AppError(
+        `User not found with ID: ${id}`,
+        StatusCodes.NOT_FOUND,
+      );
+
+    if (
+      !PasswordHandler.verifyPassword(currentPassword, user.password, user.salt)
+    )
+      throw new AppError(
+        "Current password is incorrect",
+        StatusCodes.UNAUTHORIZED,
+      );
+
+    const candidate = Object.assign(new User(), user, {
+      password: newPassword,
+    });
+    const errors = await validate(candidate, { skipMissingProperties: true });
+    if (errors.length > 0) {
+      throw new AppError(
+        errors.map((e) => Object.values(e.constraints ?? {})).join(", "),
+        StatusCodes.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const { hashedPassword, salt } = PasswordHandler.hashPassword(newPassword);
+    user.password = hashedPassword;
+    user.salt = salt;
+    await this.repo.save(user);
+  }
+
   async create(data: Partial<User>): Promise<User> {
     const user = new User();
     Object.assign(user, data);
