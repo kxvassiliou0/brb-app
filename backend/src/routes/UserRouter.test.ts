@@ -18,6 +18,11 @@ const mockUserController = {
   ),
   create: jest.fn((req, res) => res.status(StatusCodes.CREATED).json(req.body)),
   update: jest.fn((req, res) => res.status(StatusCodes.OK).json(req.body)),
+  changeOwnPassword: jest.fn((req, res) =>
+    res
+      .status(StatusCodes.OK)
+      .json({ id: req.signedInUser?.token?.id ?? null }),
+  ),
   delete: jest.fn((req, res) =>
     res.status(StatusCodes.OK).json({ id: req.params.id }),
   ),
@@ -168,6 +173,74 @@ describe("UserRouter", () => {
     expect(reqArg.body).toStrictEqual(updateData);
     expect(mockUserController.update).toHaveBeenCalled();
     expect(response.status).toBe(StatusCodes.OK);
+  });
+
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "PATCH /users/me/password is reachable by role %s",
+    async (role) => {
+      // Arrange
+      const scopedApp = buildApp(role, 7);
+
+      // Act
+      const response = await request(scopedApp)
+        .patch(`${BASE_URL}/me/password`)
+        .send({
+          currentPassword: "CurrentPassword1!",
+          newPassword: "BrandNewPassword1!",
+        });
+
+      // Assert
+      expect(mockUserController.changeOwnPassword).toHaveBeenCalled();
+      expect(response.status).toBe(StatusCodes.OK);
+      expect(response.body).toEqual({ id: 7 });
+    },
+  );
+
+  it("PATCH /users/me/password calls changeOwnPassword and not the admin-only update", async () => {
+    // Arrange - /me/password must not fall through to the /:id update route
+    const scopedApp = buildApp(RoleType.Employee, 7);
+
+    // Act
+    await request(scopedApp).patch(`${BASE_URL}/me/password`).send({
+      currentPassword: "CurrentPassword1!",
+      newPassword: "BrandNewPassword1!",
+    });
+
+    // Assert
+    expect(mockUserController.changeOwnPassword).toHaveBeenCalled();
+    expect(mockUserController.update).not.toHaveBeenCalled();
+  });
+
+  it("PATCH /users/me/password is refused with 403 when the request carries no token", async () => {
+    // Arrange
+    const scopedApp = buildApp(undefined);
+
+    // Act
+    const response = await request(scopedApp)
+      .patch(`${BASE_URL}/me/password`)
+      .send({
+        currentPassword: "CurrentPassword1!",
+        newPassword: "BrandNewPassword1!",
+      });
+
+    // Assert
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
+    expect(mockUserController.changeOwnPassword).not.toHaveBeenCalled();
+  });
+
+  it("PATCH /users/:id remains Admin-only and does not reach changeOwnPassword", async () => {
+    // Arrange
+    const scopedApp = buildApp(RoleType.Employee, 7);
+
+    // Act
+    const response = await request(scopedApp)
+      .patch(`${BASE_URL}/2`)
+      .send({ password: "BrandNewPassword1!" });
+
+    // Assert
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
+    expect(mockUserController.update).not.toHaveBeenCalled();
+    expect(mockUserController.changeOwnPassword).not.toHaveBeenCalled();
   });
 
   it("DELETE /users/:id calls delete", async () => {

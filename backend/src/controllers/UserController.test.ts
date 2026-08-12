@@ -221,6 +221,236 @@ describe("UserController.getMe", () => {
   });
 });
 
+describe("UserController.changeOwnPassword", () => {
+  const CURRENT_PASSWORD = "CurrentPassword1!";
+  const NEW_PASSWORD = "BrandNewPassword1!";
+  const VALID_BODY = {
+    currentPassword: CURRENT_PASSWORD,
+    newPassword: NEW_PASSWORD,
+  };
+
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "returns 200 and changes the caller's own password for role %s",
+    async (role) => {
+      // Arrange
+      mockService.changeOwnPassword.mockResolvedValue();
+      const req = makeAuthRequest({ id: 1, role, body: { ...VALID_BODY } });
+      const res = mockResponse();
+
+      // Act
+      await controller.changeOwnPassword(req, res);
+
+      // Assert
+      expect(mockService.changeOwnPassword).toHaveBeenCalledWith(
+        1,
+        CURRENT_PASSWORD,
+        NEW_PASSWORD,
+      );
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
+    },
+  );
+
+  it("resolves the user from the token, ignoring params, body and query", async () => {
+    // Arrange
+    mockService.changeOwnPassword.mockResolvedValue();
+    const req = makeAuthRequest({
+      id: 7,
+      role: RoleType.Employee,
+      params: { id: "7" },
+      body: { ...VALID_BODY, id: 7 },
+      query: { id: "999" },
+    });
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    expect(mockService.changeOwnPassword).toHaveBeenCalledTimes(1);
+    expect(mockService.changeOwnPassword).toHaveBeenCalledWith(
+      7,
+      CURRENT_PASSWORD,
+      NEW_PASSWORD,
+    );
+  });
+
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "refuses with 403 when role %s targets another user's ID in the body",
+    async (role) => {
+      // Arrange
+      const req = makeAuthRequest({
+        id: 1,
+        role,
+        body: { ...VALID_BODY, id: 2 },
+      });
+      const res = mockResponse();
+
+      // Act
+      await controller.changeOwnPassword(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.FORBIDDEN);
+      expect(mockService.changeOwnPassword).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "refuses with 403 when role %s targets another user's ID via userId",
+    async (role) => {
+      // Arrange
+      const req = makeAuthRequest({
+        id: 1,
+        role,
+        body: { ...VALID_BODY, userId: 2 },
+      });
+      const res = mockResponse();
+
+      // Act
+      await controller.changeOwnPassword(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.FORBIDDEN);
+      expect(mockService.changeOwnPassword).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([RoleType.Employee, RoleType.Manager, RoleType.Admin])(
+    "refuses with 403 when role %s targets another user's ID in the route params",
+    async (role) => {
+      // Arrange
+      const req = makeAuthRequest({
+        id: 1,
+        role,
+        params: { id: "2" },
+        body: { ...VALID_BODY },
+      });
+      const res = mockResponse();
+
+      // Act
+      await controller.changeOwnPassword(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(StatusCodes.FORBIDDEN);
+      expect(mockService.changeOwnPassword).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns 401 for an unauthenticated request and never reaches the service", async () => {
+    // Arrange
+    const req = mockRequest({}, { ...VALID_BODY }) as AuthenticatedJWTRequest;
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.UNAUTHORIZED);
+    expect(res.json).toHaveBeenCalledWith({
+      error: AUTH_ERRORS.TOKEN_IS_INVALID,
+    });
+    expect(mockService.changeOwnPassword).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["current password missing", { newPassword: NEW_PASSWORD }],
+    ["new password missing", { currentPassword: CURRENT_PASSWORD }],
+    ["current password empty", { ...VALID_BODY, currentPassword: "" }],
+    ["new password not a string", { ...VALID_BODY, newPassword: 12345 }],
+    ["body empty", {}],
+  ])("returns 400 when the %s", async (_case, body) => {
+    // Arrange
+    const req = makeAuthRequest({ id: 1, role: RoleType.Employee, body });
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST);
+    expect(mockService.changeOwnPassword).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when the service rejects an incorrect current password", async () => {
+    // Arrange
+    mockService.changeOwnPassword.mockRejectedValue(
+      new AppError("Current password is incorrect", StatusCodes.UNAUTHORIZED),
+    );
+    const req = makeAuthRequest({
+      id: 1,
+      role: RoleType.Employee,
+      body: { ...VALID_BODY },
+    });
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.UNAUTHORIZED);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Current password is incorrect",
+    });
+  });
+
+  it("returns 422 when the service rejects a new password under 10 characters", async () => {
+    // Arrange
+    mockService.changeOwnPassword.mockRejectedValue(
+      new AppError(
+        "Password must be at least 10 characters long",
+        StatusCodes.UNPROCESSABLE_ENTITY,
+      ),
+    );
+    const req = makeAuthRequest({
+      id: 1,
+      role: RoleType.Employee,
+      body: { ...VALID_BODY, newPassword: "Short1!" },
+    });
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.UNPROCESSABLE_ENTITY);
+  });
+
+  it("never echoes the submitted passwords back in the response", async () => {
+    // Arrange
+    mockService.changeOwnPassword.mockResolvedValue();
+    const req = makeAuthRequest({
+      id: 1,
+      role: RoleType.Employee,
+      body: { ...VALID_BODY },
+    });
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    const body = JSON.stringify((res.json as jest.Mock).mock.calls[0][0]);
+    expect(body).not.toContain(CURRENT_PASSWORD);
+    expect(body).not.toContain(NEW_PASSWORD);
+  });
+
+  it("returns 500 on unexpected non-AppError from service", async () => {
+    // Arrange
+    mockService.changeOwnPassword.mockRejectedValue(new Error("DB failure"));
+    const req = makeAuthRequest({
+      id: 1,
+      role: RoleType.Employee,
+      body: { ...VALID_BODY },
+    });
+    const res = mockResponse();
+
+    // Act
+    await controller.changeOwnPassword(req, res);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.INTERNAL_SERVER_ERROR);
+  });
+});
+
 describe("UserController.create", () => {
   it("returns 201 with created user on success", async () => {
     // Arrange
