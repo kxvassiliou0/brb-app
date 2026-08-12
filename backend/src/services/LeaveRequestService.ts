@@ -17,6 +17,7 @@ import { Logger } from "../helpers/Logger.ts";
 import type {
   CsvExportResult,
   DateRangeQuery,
+  ExcludedPublicHoliday,
   ILeaveRequestService,
   ServiceResult,
   TokenPayload,
@@ -38,6 +39,26 @@ export class LeaveRequestService implements ILeaveRequestService {
 
   private toDateString(date: Date): string {
     return date.toISOString().split("T")[0];
+  }
+
+  private holidaysWithinRange(
+    holidays: Array<PublicHoliday>,
+    start: Date,
+    end: Date,
+  ): Array<ExcludedPublicHoliday> {
+    const startKey = this.toDateString(start);
+    const endKey = this.toDateString(end);
+    const seen = new Set<string>();
+    const within: Array<ExcludedPublicHoliday> = [];
+
+    for (const holiday of holidays) {
+      const date = this.toDateString(new Date(holiday.date));
+      if (date < startKey || date > endKey || seen.has(date)) continue;
+      seen.add(date);
+      within.push({ date, name: holiday.name });
+    }
+
+    return within.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   getBusinessYear(referenceDate: Date = new Date()): {
@@ -177,7 +198,24 @@ export class LeaveRequestService implements ILeaveRequestService {
       throw new AppError("Invalid employee ID", StatusCodes.BAD_REQUEST);
     }
 
-    const daysRequested = this.calculateDays(start, end);
+    const holidays = await this.publicHolidayRepo.find({
+      where: { date: Between(start, end) },
+      order: { date: "ASC" },
+    });
+    const excludedHolidays = this.holidaysWithinRange(holidays, start, end);
+    const daysRequested =
+      this.calculateDays(start, end) - excludedHolidays.length;
+
+    if (daysRequested < 1) {
+      const names = excludedHolidays
+        .map((h) => `${h.name} (${h.date})`)
+        .join(", ");
+      throw new AppError(
+        `Date range contains only public holiday(s): ${names}. No leave days would be booked`,
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+
     const usedDays = await this.getUsedDays(Number(employee_id), start);
     if (usedDays + daysRequested > user.annualLeaveAllowance) {
       throw new AppError(
@@ -205,20 +243,6 @@ export class LeaveRequestService implements ILeaveRequestService {
       );
     }
 
-    const holidays = await this.publicHolidayRepo.find({
-      where: { date: Between(start, end) },
-      order: { date: "ASC" },
-    });
-    if (holidays.length > 0) {
-      const names = holidays
-        .map((h) => `${h.name} (${this.toDateString(new Date(h.date))})`)
-        .join(", ");
-      throw new AppError(
-        `Date range includes public holiday(s): ${names}`,
-        StatusCodes.BAD_REQUEST,
-      );
-    }
-
     const leaveRequest = this.leaveRepo.create({
       userId: Number(employee_id),
       startDate: start,
@@ -235,10 +259,19 @@ export class LeaveRequestService implements ILeaveRequestService {
     }
 
     const saved = await this.leaveRepo.save(leaveRequest);
-    Logger.info("Leave request created", { id: saved.id, employee_id });
+    Logger.info("Leave request created", {
+      id: saved.id,
+      employee_id,
+      days_requested: daysRequested,
+      excluded_public_holidays: excludedHolidays.length,
+    });
     return {
       message: "Leave request has been submitted for review",
-      data: this.formatLeaveRequest(saved),
+      data: {
+        ...this.formatLeaveRequest(saved),
+        days_requested: daysRequested,
+        excluded_public_holidays: excludedHolidays,
+      },
     };
   }
 
