@@ -6,7 +6,11 @@ import { PublicHoliday } from "../entities/PublicHoliday.entity";
 import { User } from "../entities/User.entity";
 import { LeaveStatus, LeaveType, RoleType } from "../enums/index";
 import { AppError } from "../helpers/AppError";
-import { makeLeaveRequest, makeUser } from "../test/ObjectMother";
+import {
+  makeLeaveRequest,
+  makePublicHoliday,
+  makeUser,
+} from "../test/ObjectMother";
 import { LeaveRequestService } from "./LeaveRequestService";
 
 let mockUserRepo: MockProxy<Repository<User>>;
@@ -32,6 +36,18 @@ const mockQBNoOverlap = (): SelectQueryBuilder<LeaveRequest> =>
     andWhere: jest.fn().mockReturnThis(),
     getOne: jest.fn().mockResolvedValue(null),
   }) as unknown as SelectQueryBuilder<LeaveRequest>;
+
+const arrangeSuccessfulCreate = (holidays: Array<PublicHoliday>): void => {
+  const saved = makeLeaveRequest({ userId: 4 });
+  mockUserRepo.findOne.mockResolvedValue(
+    makeUser({ id: 4, annualLeaveAllowance: 25 }),
+  );
+  mockLeaveRepo.find.mockResolvedValue([]);
+  mockLeaveRepo.createQueryBuilder.mockReturnValue(mockQBNoOverlap());
+  mockPublicHolidayRepo.find.mockResolvedValue(holidays);
+  mockLeaveRepo.create.mockReturnValue(saved);
+  mockLeaveRepo.save.mockResolvedValue(saved);
+};
 
 describe("LeaveRequestService.createLeaveRequest", () => {
   it("throws BAD_REQUEST when start_date or end_date is missing", async () => {
@@ -100,6 +116,7 @@ describe("LeaveRequestService.createLeaveRequest", () => {
     const user = makeUser({ id: 4, annualLeaveAllowance: 5 });
     mockUserRepo.findOne.mockResolvedValue(user);
     mockLeaveRepo.find.mockResolvedValue([]);
+    mockPublicHolidayRepo.find.mockResolvedValue([]);
 
     // Act & Assert
     await expect(
@@ -122,6 +139,7 @@ describe("LeaveRequestService.createLeaveRequest", () => {
     const user = makeUser({ id: 4, annualLeaveAllowance: 25 });
     mockUserRepo.findOne.mockResolvedValue(user);
     mockLeaveRepo.find.mockResolvedValue([]);
+    mockPublicHolidayRepo.find.mockResolvedValue([]);
     const mockQB = {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
@@ -144,28 +162,240 @@ describe("LeaveRequestService.createLeaveRequest", () => {
     );
   });
 
-  it("throws BAD_REQUEST when date range includes a public holiday", async () => {
+  it("accepts a date range containing a public holiday and excludes it from the day count", async () => {
     // Arrange
     const token = { id: 4, role: RoleType.Employee };
-    const user = makeUser({ id: 4, annualLeaveAllowance: 25 });
-    mockUserRepo.findOne.mockResolvedValue(user);
-    mockLeaveRepo.find.mockResolvedValue([]);
-    mockLeaveRepo.createQueryBuilder.mockReturnValue(mockQBNoOverlap());
-    const holiday = {
-      id: 1,
-      date: new Date("2026-09-03"),
-      name: "Bank Holiday",
-    } as PublicHoliday;
-    mockPublicHolidayRepo.find.mockResolvedValue([holiday]);
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ date: new Date("2026-09-03"), name: "Bank Holiday" }),
+    ]);
+
+    // Act
+    const result = await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(result.message).toContain("submitted for review");
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 4 }),
+    );
+  });
+
+  it("excludes every public holiday inside the range from the day count", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ id: 1, date: new Date("2026-09-02"), name: "One" }),
+      makePublicHoliday({ id: 2, date: new Date("2026-09-03"), name: "Two" }),
+      makePublicHoliday({ id: 3, date: new Date("2026-09-04"), name: "Three" }),
+    ]);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 2 }),
+    );
+  });
+
+  it("excludes a public holiday falling on the first day of the range", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ date: new Date("2026-09-01"), name: "First Day" }),
+    ]);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 4 }),
+    );
+  });
+
+  it("excludes a public holiday falling on the last day of the range", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ date: new Date("2026-09-05"), name: "Last Day" }),
+    ]);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 4 }),
+    );
+  });
+
+  it("leaves the day count unchanged when the range contains no public holidays", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([]);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 5 }),
+    );
+  });
+
+  it("still charges weekend days inside the range", async () => {
+    // Arrange - 2026-09-04 to 2026-09-07 spans Friday through Monday
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([]);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-04",
+      end_date: "2026-09-07",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 4 }),
+    );
+  });
+
+  it("charges the weekend but not the public holiday when the range holds both", async () => {
+    // Arrange - Saturday and Sunday chargeable, Monday is a bank holiday
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ date: new Date("2026-09-07"), name: "Bank Holiday" }),
+    ]);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-04",
+      end_date: "2026-09-07",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 3 }),
+    );
+  });
+
+  it("reports the excluded public holidays and the charged day count in the response", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ id: 2, date: new Date("2026-09-04"), name: "Two" }),
+      makePublicHoliday({ id: 1, date: new Date("2026-09-03"), name: "One" }),
+    ]);
+
+    // Act
+    const result = await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(result.data).toEqual(
+      expect.objectContaining({
+        days_requested: 3,
+        excluded_public_holidays: [
+          { date: "2026-09-03", name: "One" },
+          { date: "2026-09-04", name: "Two" },
+        ],
+      }),
+    );
+  });
+
+  it("ignores holidays outside the requested range", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ date: new Date("2026-09-06"), name: "After Range" }),
+    ]);
+
+    // Act
+    const result = await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 5 }),
+    );
+    expect(result.data).toEqual(
+      expect.objectContaining({ excluded_public_holidays: [] }),
+    );
+  });
+
+  it("throws BAD_REQUEST when every day in the range is a public holiday", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({
+        date: new Date("2026-12-25"),
+        name: "Christmas Day",
+      }),
+    ]);
 
     // Act & Assert
     await expect(
       service.createLeaveRequest(token, {
-        leave_type: "Vacation",
-        start_date: "2026-09-01",
-        end_date: "2026-09-05",
+        leave_type: LeaveType.Vacation,
+        start_date: "2026-12-25",
+        end_date: "2026-12-25",
       }),
-    ).rejects.toThrow(AppError);
+    ).rejects.toThrow(
+      new AppError(
+        "Date range contains only public holiday(s): Christmas Day (2026-12-25). No leave days would be booked",
+        StatusCodes.BAD_REQUEST,
+      ),
+    );
+    expect(mockLeaveRepo.save).not.toHaveBeenCalled();
+  });
+
+  it("counts only the chargeable days against the remaining balance", async () => {
+    // Arrange - 5 calendar days, 1 holiday, allowance of 4
+    const token = { id: 4, role: RoleType.Employee };
+    arrangeSuccessfulCreate([
+      makePublicHoliday({ date: new Date("2026-09-03"), name: "Bank Holiday" }),
+    ]);
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 4, annualLeaveAllowance: 4 }),
+    );
+
+    // Act
+    const result = await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(result.message).toContain("submitted for review");
   });
 
   it("creates and returns the leave request on success", async () => {

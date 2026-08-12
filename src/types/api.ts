@@ -24,6 +24,16 @@ export interface LeaveRequest {
   manager_note: string | null
 }
 
+export interface ExcludedPublicHoliday {
+  date: string
+  name: string
+}
+
+export interface CreateLeaveRequestResult extends LeaveRequest {
+  days_requested: number
+  excluded_public_holidays: ExcludedPublicHoliday[]
+}
+
 export interface OwnLeaveRequest {
   id: number
   leave_type: LeaveType

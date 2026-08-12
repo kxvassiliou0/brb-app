@@ -131,6 +131,48 @@ npm run dev
 
 Then sign in at `http://localhost:5173/login` with a seeded account.
 
+## Leave day counting
+
+`POST /api/leave-requests` counts **calendar days**, not working days. A request
+from Friday to Monday is charged as four days - weekends are chargeable.
+
+Public holidays are the one exception. A range that contains a public holiday is
+accepted and the holiday is **excluded** from `days_requested`, so it is not
+charged against the employee's allowance. The reduced figure is what gets
+validated against the remaining balance and what the record stores.
+
+> **Behaviour change.** A range containing a public holiday used to be rejected
+> outright with `400`. It is now accepted with a smaller `days_requested`, which
+> changes the meaning of that figure: it is the number of _chargeable_ days, no
+> longer the raw length of the range. Historic rows created before this change
+> still hold the raw length.
+
+The create response reports what was excluded so the UI can explain the number:
+
+```json
+{
+  "message": "Leave request has been submitted for review",
+  "data": {
+    "id": 12,
+    "employee_id": 4,
+    "leave_type": "Vacation",
+    "start_date": "2026-12-23",
+    "end_date": "2026-12-28",
+    "status": "Pending",
+    "days_requested": 5,
+    "excluded_public_holidays": [
+      { "date": "2026-12-25", "name": "Christmas Day" }
+    ]
+  }
+}
+```
+
+A range made up entirely of public holidays is still rejected with `400`, since
+it would book no leave at all.
+
+`GET /api/public-holidays` remains available to any signed-in user so the date
+picker can grey out those dates before the request is submitted.
+
 ## Testing
 
 ### Unit and component tests
