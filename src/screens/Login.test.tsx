@@ -31,7 +31,7 @@ describe('Login', () => {
       </AuthProvider>
     )
 
-    fireEvent.change(screen.getByLabelText('Email'), {
+    fireEvent.change(screen.getByLabelText('Email address'), {
       target: { value: 'alice.thompson@company.com' },
     })
     fireEvent.change(screen.getByLabelText('Password'), {

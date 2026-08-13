@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate, type Location } from 'react-router'
+import BrandHeader from '@/components/BrandHeader'
+import Button from '@/components/Button'
+import Card from '@/components/Card'
+import InputWithLabel from '@/components/InputWithLabel'
 import { useAuth } from '@/lib/auth'
 import { ROLE_HOME } from '@/lib/routeAccess'
+import { seasonalBackground } from '@/lib/seasonalBackground'
 
 export default function Login() {
   const { login } = useAuth()
@@ -12,6 +17,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [background] = useState(seasonalBackground)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -30,36 +36,58 @@ export default function Login() {
   }
 
   return (
-    <div data-testid="screen-login">
-      <h1>Sign in</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <br />
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <br />
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-      {error && <p role="alert">{error}</p>}
+    <div
+      data-testid="screen-login"
+      className="relative flex min-h-svh flex-col items-center justify-center px-6 py-20"
+    >
+      <img
+        src={background}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 h-full w-full object-cover"
+      />
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
+        <BrandHeader />
+      </div>
+      <div className="w-full max-w-md">
+        <Card>
+          <h1 className="text-3xl">Log in to Brb.</h1>
+          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
+            <InputWithLabel
+              id="email"
+              label="Email address"
+              type="email"
+              autoComplete="email"
+              placeholder="example@mail.com"
+              value={email}
+              onChange={setEmail}
+              required
+            />
+            <InputWithLabel
+              id="password"
+              label="Password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={setPassword}
+              required
+            />
+            {error && (
+              <p
+                role="alert"
+                className="rounded-lg bg-error-background px-4 py-3 text-sm text-error-foreground"
+              >
+                {error}
+              </p>
+            )}
+            <div className="mt-1">
+              <Button type="submit" fullWidth disabled={submitting}>
+                {submitting ? 'Signing in…' : 'Sign in'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
     </div>
   )
 }

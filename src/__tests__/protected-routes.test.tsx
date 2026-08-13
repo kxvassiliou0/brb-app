@@ -128,7 +128,7 @@ describe('post-login redirect preservation', () => {
     const router = renderAt('/manager/team-calendar')
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('Email'), {
+    fireEvent.change(screen.getByLabelText('Email address'), {
       target: { value: 'manager@company.com' },
     })
     fireEvent.change(screen.getByLabelText('Password'), {
