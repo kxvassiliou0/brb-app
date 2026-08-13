@@ -1,1 +1,60 @@
 @import 'tailwindcss';
+
+@theme {
+  --color-background-primary: #f6f4ee;
+  --color-background-secondary: #ffffff;
+  --color-background-tertiary: #e4e4e9;
+
+  --color-text-primary: #111115;
+  --color-text-secondary: #6b6557;
+  --color-text-tertiary: #17160f;
+
+  --color-interactive-primary: #111115;
+  --color-interactive-hover: #222227;
+  --color-interactive-text: #ffffff;
+
+  --color-border-primary: #e7e3d8;
+  --color-border-interactive: #6b6557;
+
+  --color-sage-background: #e5ebdd;
+  --color-sage-foreground: #3e5136;
+
+  --color-pending-background: #f5ecd9;
+  --color-pending-foreground: #6c511c;
+
+  --color-error-background: #f2e2dd;
+  --color-error-foreground: #7c2e20;
+
+  --color-focus-ring: #3e5136;
+
+  --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', ui-serif, Georgia, serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+  }
+
+  input,
+  select,
+  textarea {
+    border: 1px solid var(--color-border-interactive);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+}

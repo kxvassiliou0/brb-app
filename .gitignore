@@ -13,6 +13,10 @@ dist-ssr
 coverage
 *.local
 
+# Cypress artifacts
+cypress/screenshots
+cypress/videos
+
 # Secrets
 .env
 .env.*
