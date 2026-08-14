@@ -6,6 +6,7 @@ import DataTable, { type DataTableColumn } from '@/components/DataTable'
 import LinkButton from '@/components/LinkButton'
 import PageHeader from '../../components/PageHeader'
 import StatusPill from '@/components/StatusPill'
+import { countDays, formatDateRange } from '@/lib/dates'
 
 export default function MyRequests() {
   const { user } = useAuth()
@@ -42,7 +43,12 @@ export default function MyRequests() {
       {
         key: 'dates',
         header: 'Dates',
-        cell: (r) => `${r.start_date} – ${r.end_date}`,
+        cell: (r) => formatDateRange(r.start_date, r.end_date),
+      },
+      {
+        key: 'days',
+        header: 'Days',
+        cell: (r) => countDays(r.start_date, r.end_date),
       },
       {
         key: 'status',

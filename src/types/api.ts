@@ -13,6 +13,22 @@ export interface ApiError {
   error: string
 }
 
+export interface UserRelation {
+  id: number
+  name: string
+}
+
+export interface UserProfile {
+  id: number
+  firstName: string
+  lastName: string
+  email: string
+  role: RoleType
+  annualLeaveAllowance: number
+  department: UserRelation
+  jobRole: UserRelation
+}
+
 export interface LeaveRequest {
   id: number
   employee_id: number
