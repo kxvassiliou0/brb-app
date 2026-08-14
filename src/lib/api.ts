@@ -20,6 +20,18 @@ export function setStoredToken(token: string | null): void {
   else localStorage.removeItem(TOKEN_KEY)
 }
 
+export const DEFAULT_API_ERROR_MESSAGE =
+  'Something went wrong. Please try again.'
+
+export function getApiErrorMessage(
+  error: unknown,
+  fallback: string = DEFAULT_API_ERROR_MESSAGE
+): string {
+  if (error instanceof Error && error.message.trim()) return error.message
+  if (typeof error === 'string' && error.trim()) return error
+  return fallback
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}

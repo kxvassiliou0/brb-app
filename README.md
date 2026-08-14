@@ -131,6 +131,14 @@ npm run dev
 
 Then sign in at `http://localhost:5173/login` with a seeded account.
 
+## Design system
+
+Colour and type tokens live in the `@theme` block of `src/index.css`, and the
+shared loading, empty and error components live in `src/components/states`.
+Both are catalogued in [`docs/tokens.md`](docs/tokens.md) - read that before
+building a new screen so states stay consistent rather than being reinvented
+per feature.
+
 ## Leave day counting
 
 `POST /api/leave-requests` counts **calendar days**, not working days. A request
