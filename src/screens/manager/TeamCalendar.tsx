@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { ApiSuccess, CalendarEntry } from '@/types/api'
+import DataTable, { type DataTableColumn } from '@/components/DataTable'
 import PageHeader from '../../components/PageHeader'
 
 function currentMonthRange(): { from: string; to: string } {
@@ -12,8 +13,15 @@ function currentMonthRange(): { from: string; to: string } {
 }
 
 export default function TeamCalendar() {
-  const [rows, setRows] = useState<CalendarEntry[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [rows, setRows] = useState<CalendarEntry[] | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = useCallback(() => {
+    setRows(null)
+    setError(null)
+    setAttempt((value) => value + 1)
+  }, [])
 
   useEffect(() => {
     const { from, to } = currentMonthRange()
@@ -25,15 +33,25 @@ export default function TeamCalendar() {
         if (!cancelled) setRows(res.data)
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(
-            err instanceof Error ? err.message : 'Failed to load team calendar'
-          )
+        if (!cancelled) setError(err)
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [attempt])
+
+  const columns = useMemo<DataTableColumn<CalendarEntry>[]>(
+    () => [
+      { key: 'name', header: 'Name', cell: (r) => r.name },
+      { key: 'type', header: 'Type', cell: (r) => r.leave_type },
+      {
+        key: 'dates',
+        header: 'Dates',
+        cell: (r) => `${r.start_date} – ${r.end_date}`,
+      },
+    ],
+    []
+  )
 
   return (
     <div data-testid="screen-team-calendar">
@@ -41,27 +59,17 @@ export default function TeamCalendar() {
         title="Team calendar"
         description="Approved time off this month."
       />
-      {error && <p role="alert">{error}</p>}
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Dates</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td>{r.name}</td>
-              <td>{r.leave_type}</td>
-              <td>
-                {r.start_date} – {r.end_date}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <DataTable
+        caption="Approved time off this month"
+        columns={columns}
+        rows={rows}
+        rowKey={(r) => `${r.employee_id}-${r.start_date}`}
+        error={error}
+        onRetry={retry}
+        loadingLabel="Loading team calendar"
+        errorFallbackMessage="Failed to load team calendar"
+        emptyMessage="Nobody on your team is off this month."
+      />
     </div>
   )
 }

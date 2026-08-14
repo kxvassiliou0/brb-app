@@ -1,16 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { ApiSuccess, LeaveRequest } from '@/types/api'
+import DataTable, { type DataTableColumn } from '@/components/DataTable'
+import LinkButton from '@/components/LinkButton'
 import PageHeader from '../../components/PageHeader'
-import {
-  TABLE_ROW_HEIGHT,
-  TableEmptyState,
-  TableErrorState,
-  TableLoadingState,
-} from '@/components/states'
-
-const COLUMN_COUNT = 5
+import StatusPill from '@/components/StatusPill'
 
 export default function RequestsList({ basePath }: { basePath: string }) {
   const [requests, setRequests] = useState<LeaveRequest[] | null>(null)
@@ -37,61 +31,62 @@ export default function RequestsList({ basePath }: { basePath: string }) {
     }
   }, [attempt])
 
+  const columns = useMemo<DataTableColumn<LeaveRequest>[]>(
+    () => [
+      { key: 'employee', header: 'Employee ID', cell: (r) => r.employee_id },
+      { key: 'type', header: 'Type', cell: (r) => r.leave_type },
+      {
+        key: 'dates',
+        header: 'Dates',
+        cell: (r) => `${r.start_date} – ${r.end_date}`,
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        cell: (r) => <StatusPill status={r.status} />,
+      },
+      {
+        key: 'review',
+        header: 'Review',
+        hideHeader: true,
+        hideCardLabel: true,
+        cell: (r) => (
+          <LinkButton
+            to={`${basePath}/requests/${r.id}`}
+            state={{ request: r }}
+            variant="secondary"
+          >
+            Review
+          </LinkButton>
+        ),
+      },
+    ],
+    [basePath]
+  )
+
   return (
     <div data-testid="screen-requests">
       <PageHeader
         title="Requests"
         description="Time-off requests awaiting review."
+        action={
+          <LinkButton to={`${basePath}/requests/new`}>New request</LinkButton>
+        }
       />
-      <Link to={`${basePath}/requests/new`}>New request</Link>
-      <table>
-        <thead>
-          <tr>
-            <th>Employee ID</th>
-            <th>Type</th>
-            <th>Dates</th>
-            <th>Status</th>
-            <th />
-          </tr>
-        </thead>
-        {error ? (
-          <TableErrorState
-            columns={COLUMN_COUNT}
-            error={error}
-            onRetry={retry}
-            fallbackMessage="Failed to load requests"
-          />
-        ) : requests === null ? (
-          <TableLoadingState columns={COLUMN_COUNT} label="Loading requests" />
-        ) : requests.length === 0 ? (
-          <TableEmptyState
-            columns={COLUMN_COUNT}
-            message="No requests to review yet."
-            action={<Link to={`${basePath}/requests/new`}>New request</Link>}
-          />
-        ) : (
-          <tbody>
-            {requests.map((r) => (
-              <tr key={r.id} style={{ height: TABLE_ROW_HEIGHT }}>
-                <td>{r.employee_id}</td>
-                <td>{r.leave_type}</td>
-                <td>
-                  {r.start_date} – {r.end_date}
-                </td>
-                <td>{r.status}</td>
-                <td>
-                  <Link
-                    to={`${basePath}/requests/${r.id}`}
-                    state={{ request: r }}
-                  >
-                    Review
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        )}
-      </table>
+      <DataTable
+        caption="Time-off requests"
+        columns={columns}
+        rows={requests}
+        rowKey={(r) => r.id}
+        error={error}
+        onRetry={retry}
+        loadingLabel="Loading requests"
+        errorFallbackMessage="Failed to load requests"
+        emptyMessage="No requests to review yet."
+        emptyAction={
+          <LinkButton to={`${basePath}/requests/new`}>New request</LinkButton>
+        }
+      />
     </div>
   )
 }

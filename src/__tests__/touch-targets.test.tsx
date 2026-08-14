@@ -1,0 +1,125 @@
+import { render, screen } from '@testing-library/react'
+import { createMemoryRouter, RouterProvider } from 'react-router'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AuthProvider } from '@/lib/auth'
+import { setStoredToken } from '@/lib/api'
+import { NAV_BREAKPOINT } from '@/lib/breakpoints'
+import type { Role } from '@/lib/routeAccess'
+import { makeUserJwt } from '@/test/jwt'
+import { css, remToPx, sizeTokens } from '@/test/tokens'
+import { desktopWidth, mobileWidth, setViewportWidth } from '@/test/viewport'
+import { routes } from '@/routes'
+
+const WCAG_258_MINIMUM_PX = 24
+
+const INTERACTIVE = 'a, button, input, select, textarea, [role="button"]'
+
+const TOUCH_TARGET_CLASS = 'touch-target'
+
+const WIDTHS: [string, number][] = [
+  ['mobile', mobileWidth(NAV_BREAKPOINT)],
+  ['desktop', desktopWidth(NAV_BREAKPOINT)],
+]
+
+const SCREENS: { path: string; role: Role; testId: string }[] = [
+  { path: '/admin', role: 'Admin', testId: 'screen-admin-dashboard' },
+  { path: '/admin/requests', role: 'Admin', testId: 'screen-requests' },
+  { path: '/admin/employees', role: 'Admin', testId: 'screen-employees' },
+  { path: '/admin/departments', role: 'Admin', testId: 'screen-departments' },
+  {
+    path: '/admin/requests/new',
+    role: 'Admin',
+    testId: 'screen-create-request',
+  },
+  {
+    path: '/admin/requests/42',
+    role: 'Admin',
+    testId: 'screen-request-review',
+  },
+  { path: '/admin/settings', role: 'Admin', testId: 'screen-settings' },
+  { path: '/manager', role: 'Manager', testId: 'screen-manager-dashboard' },
+  {
+    path: '/manager/team-calendar',
+    role: 'Manager',
+    testId: 'screen-team-calendar',
+  },
+  {
+    path: '/employee',
+    role: 'Employee',
+    testId: 'screen-employee-dashboard',
+  },
+  {
+    path: '/employee/my-requests',
+    role: 'Employee',
+    testId: 'screen-my-requests',
+  },
+  {
+    path: '/employee/book-time-off',
+    role: 'Employee',
+    testId: 'screen-create-request',
+  },
+  { path: '/nowhere', role: 'Employee', testId: 'not-found' },
+]
+
+function renderAt(path: string, role: Role) {
+  setStoredToken(
+    makeUserJwt({ id: 1, email: `${role.toLowerCase()}@company.com`, role })
+  )
+  const router = createMemoryRouter(routes, { initialEntries: [path] })
+  return render(
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  )
+}
+
+function describeTarget(element: Element): string {
+  const text = element.textContent?.trim().slice(0, 30)
+  return `<${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}>${text ? ` "${text}"` : ''}`
+}
+
+let fetchMock: ReturnType<typeof vi.fn>
+
+beforeEach(() => {
+  localStorage.clear()
+  fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ data: [] }),
+  })
+  vi.stubGlobal('fetch', fetchMock)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('WCAG 2.5.8 target size', () => {
+  it('sizes the touch-target token at or above the 24px minimum', () => {
+    const token = sizeTokens['touch-target']
+    expect(token).toBeDefined()
+    expect(remToPx(token!)).toBeGreaterThanOrEqual(WCAG_258_MINIMUM_PX)
+  })
+
+  it('applies the token in both axes so the minimum holds as a square', () => {
+    const rule = css.match(/@utility touch-target\s*\{([^}]*)\}/)?.[1]
+    expect(rule).toContain('min-block-size: var(--size-touch-target)')
+    expect(rule).toContain('min-inline-size: var(--size-touch-target)')
+  })
+
+  describe.each(WIDTHS)('at %s width', (_, width) => {
+    it.each(SCREENS)('meets the minimum on $path', async ({ path, role }) => {
+      setViewportWidth(width)
+      const { container } = renderAt(path, role)
+      await screen.findByTestId('app-layout').catch(() => null)
+
+      const targets = Array.from(container.querySelectorAll(INTERACTIVE))
+      expect(targets.length).toBeGreaterThan(0)
+
+      const undersized = targets
+        .filter((el) => !el.classList.contains(TOUCH_TARGET_CLASS))
+        .map(describeTarget)
+      expect(undersized).toEqual([])
+    })
+  })
+})

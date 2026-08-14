@@ -1,17 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import type { ApiSuccess, OwnLeaveRequest } from '@/types/api'
 import { useAuth } from '../../lib/auth'
+import DataTable, { type DataTableColumn } from '@/components/DataTable'
+import LinkButton from '@/components/LinkButton'
 import PageHeader from '../../components/PageHeader'
-import {
-  TABLE_ROW_HEIGHT,
-  TableEmptyState,
-  TableErrorState,
-  TableLoadingState,
-} from '@/components/states'
-
-const COLUMN_COUNT = 3
+import StatusPill from '@/components/StatusPill'
 
 export default function MyRequests() {
   const { user } = useAuth()
@@ -42,53 +36,46 @@ export default function MyRequests() {
     }
   }, [user, attempt])
 
+  const columns = useMemo<DataTableColumn<OwnLeaveRequest>[]>(
+    () => [
+      { key: 'type', header: 'Type', cell: (r) => r.leave_type },
+      {
+        key: 'dates',
+        header: 'Dates',
+        cell: (r) => `${r.start_date} – ${r.end_date}`,
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        cell: (r) => <StatusPill status={r.status} />,
+      },
+    ],
+    []
+  )
+
   return (
     <div data-testid="screen-my-requests">
       <PageHeader
         title="My requests"
         description="Your time-off request history."
+        action={
+          <LinkButton to="/employee/my-requests/new">New request</LinkButton>
+        }
       />
-      <Link to="/employee/my-requests/new">New request</Link>
-      <table>
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Dates</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        {error ? (
-          <TableErrorState
-            columns={COLUMN_COUNT}
-            error={error}
-            onRetry={retry}
-            fallbackMessage="Failed to load your requests"
-          />
-        ) : requests === null ? (
-          <TableLoadingState
-            columns={COLUMN_COUNT}
-            label="Loading your requests"
-          />
-        ) : requests.length === 0 ? (
-          <TableEmptyState
-            columns={COLUMN_COUNT}
-            message="You have not requested any time off yet."
-            action={<Link to="/employee/my-requests/new">New request</Link>}
-          />
-        ) : (
-          <tbody>
-            {requests.map((r) => (
-              <tr key={r.id} style={{ height: TABLE_ROW_HEIGHT }}>
-                <td>{r.leave_type}</td>
-                <td>
-                  {r.start_date} – {r.end_date}
-                </td>
-                <td>{r.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        )}
-      </table>
+      <DataTable
+        caption="My time-off requests"
+        columns={columns}
+        rows={requests}
+        rowKey={(r) => r.id}
+        error={error}
+        onRetry={retry}
+        loadingLabel="Loading your requests"
+        errorFallbackMessage="Failed to load your requests"
+        emptyMessage="You have not requested any time off yet."
+        emptyAction={
+          <LinkButton to="/employee/my-requests/new">New request</LinkButton>
+        }
+      />
     </div>
   )
 }

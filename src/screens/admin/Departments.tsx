@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
+import { EmptyState, ErrorState, LoadingState } from '@/components/states'
 import PageHeader from '../../components/PageHeader'
 
 interface DepartmentRow {
@@ -8,8 +9,15 @@ interface DepartmentRow {
 }
 
 export default function Departments() {
-  const [departments, setDepartments] = useState<DepartmentRow[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [departments, setDepartments] = useState<DepartmentRow[] | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = useCallback(() => {
+    setDepartments(null)
+    setError(null)
+    setAttempt((value) => value + 1)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -18,15 +26,12 @@ export default function Departments() {
         if (!cancelled) setDepartments(res.data)
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(
-            err instanceof Error ? err.message : 'Failed to load departments'
-          )
+        if (!cancelled) setError(err)
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [attempt])
 
   return (
     <div data-testid="screen-departments">
@@ -34,12 +39,28 @@ export default function Departments() {
         title="Departments"
         description="Departments in your organization."
       />
-      {error && <p role="alert">{error}</p>}
-      <ul>
-        {departments.map((d) => (
-          <li key={d.id}>{d.name}</li>
-        ))}
-      </ul>
+      {error ? (
+        <ErrorState
+          error={error}
+          onRetry={retry}
+          fallbackMessage="Failed to load departments"
+        />
+      ) : departments === null ? (
+        <LoadingState label="Loading departments" />
+      ) : departments.length === 0 ? (
+        <EmptyState message="No departments have been created yet." />
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {departments.map((d) => (
+            <li
+              key={d.id}
+              className="rounded-xl border border-border-primary bg-background-secondary p-4"
+            >
+              {d.name}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

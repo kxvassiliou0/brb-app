@@ -27,6 +27,16 @@ export const colorTokens = collect(/--color-([a-z0-9-]+):\s*(#[0-9a-f]{6});/gi)
 
 export const fontTokens = collect(/--font-([a-z0-9-]+):\s*([^;]+);/gi)
 
+export const breakpointTokens = collect(
+  /--breakpoint-([a-z0-9-]+):\s*([^;]+);/gi
+)
+
+export const sizeTokens = collect(/--size-([a-z0-9-]+):\s*([^;]+);/gi)
+
+export function remToPx(value: string): number {
+  return Number.parseFloat(value) * 16
+}
+
 export function color(name: string): string {
   const value = colorTokens[name]
   if (!value) throw new Error(`Unknown colour token: --color-${name}`)

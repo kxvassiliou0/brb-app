@@ -1,9 +1,31 @@
+import type { ReactNode } from 'react'
+
+export const CONTROL_CLASS =
+  'touch-target w-full rounded-lg border-border-primary bg-background-secondary px-4 py-3 text-base text-text-primary placeholder:text-text-secondary'
+
+interface FieldProps {
+  id: string
+  label: string
+  children: ReactNode
+}
+
+export function Field({ id, label, children }: FieldProps) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <label htmlFor={id} className="text-sm text-text-secondary">
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
 interface InputWithLabelProps {
   id: string
   label: string
   value: string
   onChange: (value: string) => void
-  type?: 'text' | 'email' | 'password'
+  type?: 'text' | 'email' | 'password' | 'date'
   placeholder?: string
   autoComplete?: string
   required?: boolean
@@ -20,10 +42,7 @@ export default function InputWithLabel({
   required = false,
 }: InputWithLabelProps) {
   return (
-    <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-sm text-text-secondary">
-        {label}
-      </label>
+    <Field id={id} label={label}>
       <input
         id={id}
         type={type}
@@ -32,8 +51,8 @@ export default function InputWithLabel({
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
-        className="w-full rounded-lg border-border-primary bg-background-secondary px-4 py-3 text-base text-text-primary placeholder:text-text-secondary"
+        className={CONTROL_CLASS}
       />
-    </div>
+    </Field>
   )
 }

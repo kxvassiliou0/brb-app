@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 
 @theme {
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  --size-touch-target: 2.75rem;
+
+  --container-sidebar: 20.6875rem;
+
   --color-background-primary: #f6f4ee;
   --color-background-secondary: #ffffff;
   --color-background-tertiary: #e4e4e9;
@@ -31,11 +40,23 @@
   --font-serif: 'Source Serif 4', ui-serif, Georgia, serif;
 }
 
+@utility touch-target {
+  min-block-size: var(--size-touch-target);
+  min-inline-size: var(--size-touch-target);
+}
+
 @layer base {
   body {
     background-color: var(--color-background-primary);
     color: var(--color-text-primary);
     font-family: var(--font-sans);
+    overflow-wrap: break-word;
+    overflow-x: clip;
+  }
+
+  img,
+  svg {
+    max-inline-size: 100%;
   }
 
   h1,
