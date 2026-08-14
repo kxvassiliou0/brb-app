@@ -1,13 +1,25 @@
+import type { ReactNode } from 'react'
+
 interface PageHeaderProps {
   title: string
   description?: string
+  action?: ReactNode
 }
 
-export default function PageHeader({ title, description }: PageHeaderProps) {
+export default function PageHeader({
+  title,
+  description,
+  action,
+}: PageHeaderProps) {
   return (
-    <div>
-      <h2>{title}</h2>
-      {description && <p>{description}</p>}
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-2xl md:text-3xl">{title}</h1>
+        {description && (
+          <p className="mt-1 text-text-secondary">{description}</p>
+        )}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   )
 }

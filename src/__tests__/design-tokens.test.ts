@@ -2,13 +2,16 @@ import { readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  breakpointTokens,
   color,
   colorTokens,
   contrastRatio,
   css,
   fontTokens,
   readFile,
+  remToPx,
 } from '@/test/tokens'
+import { BREAKPOINTS } from '@/lib/breakpoints'
 
 const BACKGROUND_TOKENS = {
   'background-primary': '#f6f4ee',
@@ -97,6 +100,35 @@ describe('design tokens', () => {
     expect(Object.keys(colorTokens).sort()).toEqual(
       Object.keys(DESIGN_TOKENS).sort()
     )
+  })
+})
+
+describe('breakpoints', () => {
+  it('declares exactly the four named breakpoints', () => {
+    expect(Object.keys(breakpointTokens).sort()).toEqual([
+      'lg',
+      'md',
+      'sm',
+      'xl',
+    ])
+  })
+
+  it.each(Object.entries(BREAKPOINTS))(
+    'resolves --breakpoint-%s to %s',
+    (name, expected) => {
+      expect(breakpointTokens[name]).toBe(expected)
+    }
+  )
+
+  it('states every breakpoint in rem so they track the root font size', () => {
+    for (const value of Object.values(breakpointTokens)) {
+      expect(value).toMatch(/rem$/)
+    }
+  })
+
+  it('orders the breakpoints from narrowest to widest', () => {
+    const widths = Object.values(BREAKPOINTS).map(remToPx)
+    expect(widths).toEqual([...widths].sort((a, b) => a - b))
   })
 })
 

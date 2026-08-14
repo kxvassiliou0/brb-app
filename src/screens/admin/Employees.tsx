@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../../lib/api'
+import DataTable, { type DataTableColumn } from '@/components/DataTable'
 import PageHeader from '../../components/PageHeader'
 
 interface EmployeeRow {
@@ -11,8 +12,15 @@ interface EmployeeRow {
 }
 
 export default function Employees() {
-  const [employees, setEmployees] = useState<EmployeeRow[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [employees, setEmployees] = useState<EmployeeRow[] | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = useCallback(() => {
+    setEmployees(null)
+    setError(null)
+    setAttempt((value) => value + 1)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -21,15 +29,25 @@ export default function Employees() {
         if (!cancelled) setEmployees(res.data)
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(
-            err instanceof Error ? err.message : 'Failed to load employees'
-          )
+        if (!cancelled) setError(err)
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [attempt])
+
+  const columns = useMemo<DataTableColumn<EmployeeRow>[]>(
+    () => [
+      {
+        key: 'name',
+        header: 'Name',
+        cell: (e) => `${e.firstName} ${e.lastName}`,
+      },
+      { key: 'email', header: 'Email', cell: (e) => e.email },
+      { key: 'role', header: 'Role', cell: (e) => e.role },
+    ],
+    []
+  )
 
   return (
     <div data-testid="screen-employees">
@@ -37,27 +55,17 @@ export default function Employees() {
         title="Employees"
         description="Everyone in your organization."
       />
-      {error && <p role="alert">{error}</p>}
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {employees.map((e) => (
-            <tr key={e.id}>
-              <td>
-                {e.firstName} {e.lastName}
-              </td>
-              <td>{e.email}</td>
-              <td>{e.role}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <DataTable
+        caption="Employees"
+        columns={columns}
+        rows={employees}
+        rowKey={(e) => e.id}
+        error={error}
+        onRetry={retry}
+        loadingLabel="Loading employees"
+        errorFallbackMessage="Failed to load employees"
+        emptyMessage="No employees have been added yet."
+      />
     </div>
   )
 }

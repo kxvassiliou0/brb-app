@@ -31,6 +31,91 @@ fails the build if a raw hex colour appears anywhere under `src/`.
 Every text pair above clears WCAG 1.4.3 at 4.5:1; borders and the focus ring
 clear WCAG 1.4.11 at 3:1.
 
+## Breakpoints
+
+Declared once in `@theme` and mirrored in `src/lib/breakpoints.ts` so CSS and JS
+switch at the same point. `src/__tests__/design-tokens.test.ts` fails if the two
+drift apart.
+
+| Token             | Value   | Equivalent |
+| ----------------- | ------- | ---------- |
+| `--breakpoint-sm` | `40rem` | 640px      |
+| `--breakpoint-md` | `48rem` | 768px      |
+| `--breakpoint-lg` | `64rem` | 1024px     |
+| `--breakpoint-xl` | `80rem` | 1280px     |
+
+Every breakpoint is stated in `rem`, never `px`. `NAV_BREAKPOINT` and
+`TABLE_BREAKPOINT` in `src/lib/breakpoints.ts` name the two that carry layout
+decisions — both currently `md`. Change the constant, not the call sites.
+
+Components that must render **different markup** either side of a breakpoint use
+`useBreakpoint` from `src/lib/useMediaQuery.ts` rather than CSS visibility
+toggles, so only one form is ever in the DOM. Everything else uses Tailwind's
+`md:` variants.
+
+In unit tests, `src/test/viewport.ts` stubs `matchMedia`;
+`setViewportWidth(mobileWidth())` / `setViewportWidth(desktopWidth())` put a
+render either side of a breakpoint, and the global setup resets to desktop
+before each test.
+
+## Target size
+
+| Token                 | Value        | Meaning                          |
+| --------------------- | ------------ | -------------------------------- |
+| `--size-touch-target` | `2.75rem`    | Minimum hit area for any control |
+| `--container-sidebar` | `20.6875rem` | Desktop side panel width         |
+
+The `touch-target` utility applies the token to both axes. **Every interactive
+element - link, button, input, select, textarea — must carry it.**
+`src/__tests__/touch-targets.test.tsx` renders every screen at both widths and
+fails if one does not; `cypress/e2e/reflow-320.cy.ts` measures the real boxes at
+320px. 44px clears the 24px WCAG 2.5.8 minimum with room to spare.
+
+## Navigation
+
+`src/components/Navigation.tsx` renders one of two forms, never both:
+
+| Width   | Form                          | Test id      |
+| ------- | ----------------------------- | ------------ |
+| `>= md` | Side panel with the user card | `sidebar`    |
+| `< md`  | Sticky bottom bar with icons  | `bottom-nav` |
+
+Both expose a single `Main` navigation landmark. The bottom bar uses each item's
+`shortLabel` so five destinations fit at 320px. Adding a destination means
+adding one entry to `navByRole` with both labels and an icon.
+
+## Tables
+
+Import `DataTable` from `src/components/DataTable.tsx` rather than writing a
+`<table>` per screen. It renders a table at `md` and above and a stacked card
+per record below, so nothing scrolls sideways on a phone (WCAG 1.4.10), and it
+wires the loading, empty and error states above to whichever form is showing.
+
+```tsx
+const columns: DataTableColumn<Row>[] = [
+  { key: 'type', header: 'Type', cell: (r) => r.leave_type },
+  { key: 'review', header: 'Review', hideHeader: true, hideCardLabel: true,
+    cell: (r) => <LinkButton to={`/requests/${r.id}`}>Review</LinkButton> },
+]
+
+<DataTable
+  caption="Time-off requests"
+  columns={columns}
+  rows={rows}
+  rowKey={(r) => r.id}
+  error={error}
+  onRetry={retry}
+  emptyMessage="No requests to review yet."
+/>
+```
+
+Each column's `header` doubles as the card's label, so a value is never
+unlabelled on a phone. Use `hideHeader` for an action column whose header would
+be noise in the table, and `hideCardLabel` where the cell speaks for itself.
+Hold `rows` as `T[] | null` exactly as described above.
+
+`src/screens/shared/RequestsList.tsx` is the reference implementation.
+
 ## Typography
 
 | Token          | Value               | Applied to                     |

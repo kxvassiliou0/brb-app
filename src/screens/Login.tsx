@@ -38,7 +38,7 @@ export default function Login() {
   return (
     <div
       data-testid="screen-login"
-      className="relative flex min-h-svh flex-col items-center justify-center px-6 py-20"
+      className="relative flex min-h-svh flex-col items-center justify-center px-4 py-24 sm:px-6"
     >
       <img
         src={background}
@@ -46,12 +46,12 @@ export default function Login() {
         aria-hidden="true"
         className="absolute inset-0 -z-10 h-full w-full object-cover"
       />
-      <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
+      <div className="absolute top-6 left-4 sm:top-8 sm:left-8">
         <BrandHeader />
       </div>
       <div className="w-full max-w-md">
         <Card>
-          <h1 className="text-3xl">Log in to Brb.</h1>
+          <h1 className="text-2xl sm:text-3xl">Log in to Brb.</h1>
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
             <InputWithLabel
               id="email"

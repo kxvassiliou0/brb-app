@@ -28,7 +28,7 @@ export default function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-sm bg-interactive-primary px-4 py-2 text-interactive-text hover:bg-interactive-hover"
+          className="touch-target inline-flex items-center justify-center rounded-full bg-interactive-primary px-4 text-interactive-text hover:bg-interactive-hover"
         >
           {retryLabel}
         </button>
