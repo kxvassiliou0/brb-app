@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { getStoredToken, loginRequest, setStoredToken } from '@/lib/api'
+import { clearApiCache } from '@/lib/apiCache'
 
 const MS_PER_SECOND = 1000
 
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string): Promise<AuthUser> {
     const jwt = await loginRequest(email, password)
+    clearApiCache()
     const decoded = decodeUser(jwt)
     if (!decoded) throw new Error('Received an invalid token from the server')
     setToken(jwt)
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout(): void {
+    clearApiCache()
     setToken(null)
     setUser(null)
   }

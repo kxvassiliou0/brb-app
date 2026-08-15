@@ -82,13 +82,17 @@ describe('200% text resize (WCAG 1.4.4)', () => {
 
   it('keeps form controls reachable and usable', () => {
     login(USERS.employee, '/employee')
-    cy.visit('/employee/book-time-off')
     resizeTextTo200Percent()
+    cy.contains('button', 'Book time off').first().click()
     cy.get('#leave-type').should('be.visible').select('Sick')
-    cy.get('#start-date').should('be.visible').type('2026-09-01')
-    cy.get('#end-date').should('be.visible').type('2026-09-04')
+    cy.get('#start-date').should('be.visible').click()
+    cy.get(
+      '[data-testid="start-date-calendar"] [data-testid="calendar-day"]:not([disabled])'
+    )
+      .first()
+      .click()
     cy.get('#reason').should('be.visible').type('Recovering')
-    cy.contains('button', 'Submit request').should('be.visible')
+    cy.contains('button', 'Send request').should('be.visible')
     assertNoHorizontalScroll()
     assertNothingClipped()
   })

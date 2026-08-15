@@ -44,7 +44,6 @@ const allowedPaths: Record<Role, { path: string; testId: string }[]> = {
   ],
   Employee: [
     { path: '/employee', testId: 'screen-employee-dashboard' },
-    { path: '/employee/book-time-off', testId: 'screen-create-request' },
     { path: '/employee/my-requests', testId: 'screen-my-requests' },
   ],
 }

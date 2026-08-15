@@ -38,15 +38,16 @@ cp .env.example .env
 
 Fill in `backend/.env`:
 
-| Variable          | Purpose                                    |
-| ----------------- | ------------------------------------------ |
-| `DB_HOST`         | MySQL host, e.g. `127.0.0.1`               |
-| `DB_PORT`         | MySQL port, e.g. `3306`                    |
-| `DB_USERNAME`     | MySQL user                                 |
-| `DB_PASSWORD`     | MySQL password                             |
-| `DB_NAME`         | Database name, e.g. `leave_booking`        |
-| `PASSWORD_PEPPER` | Secret mixed into password hashing         |
-| `JWT_SECRET_KEY`  | Secret used to sign and verify auth tokens |
+| Variable          | Purpose                                      |
+| ----------------- | -------------------------------------------- |
+| `DB_HOST`         | MySQL host, e.g. `127.0.0.1`                 |
+| `DB_PORT`         | MySQL port, e.g. `3306`                      |
+| `DB_USERNAME`     | MySQL user                                   |
+| `DB_PASSWORD`     | MySQL password                               |
+| `DB_NAME`         | Database name, e.g. `leave_booking`          |
+| `PASSWORD_PEPPER` | Secret mixed into password hashing           |
+| `JWT_SECRET_KEY`  | Secret used to sign and verify auth tokens   |
+| `RATE_LIMIT_MAX`  | Requests allowed per 15 minutes, default 500 |
 
 Create the database, then seed it and start the API:
 

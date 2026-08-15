@@ -1,11 +1,11 @@
+import { setStoredToken } from '@/lib/api'
+import { AuthProvider } from '@/lib/auth'
+import type { Role } from '@/lib/routeAccess'
+import { routes } from '@/routes'
+import { makeUserJwt } from '@/test/jwt'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { AuthProvider } from '@/lib/auth'
-import { setStoredToken } from '@/lib/api'
-import type { Role } from '@/lib/routeAccess'
-import { makeUserJwt } from '@/test/jwt'
-import { routes } from '@/routes'
 
 function renderAt(path: string, role?: Role) {
   if (role) {
@@ -31,11 +31,6 @@ const cases: { path: string; testId: string; role: Role }[] = [
   { path: '/admin/departments', testId: 'screen-departments', role: 'Admin' },
   { path: '/admin/requests', testId: 'screen-requests', role: 'Admin' },
   {
-    path: '/admin/requests/new',
-    testId: 'screen-create-request',
-    role: 'Admin',
-  },
-  {
     path: '/admin/requests/42',
     testId: 'screen-request-review',
     role: 'Admin',
@@ -43,28 +38,13 @@ const cases: { path: string; testId: string; role: Role }[] = [
   { path: '/admin/settings', testId: 'screen-settings', role: 'Admin' },
   { path: '/employee', testId: 'screen-employee-dashboard', role: 'Employee' },
   {
-    path: '/employee/book-time-off',
-    testId: 'screen-create-request',
-    role: 'Employee',
-  },
-  {
     path: '/employee/my-requests',
     testId: 'screen-my-requests',
-    role: 'Employee',
-  },
-  {
-    path: '/employee/my-requests/new',
-    testId: 'screen-create-request',
     role: 'Employee',
   },
   { path: '/employee/settings', testId: 'screen-settings', role: 'Employee' },
   { path: '/manager', testId: 'screen-manager-dashboard', role: 'Manager' },
   { path: '/manager/requests', testId: 'screen-requests', role: 'Manager' },
-  {
-    path: '/manager/requests/new',
-    testId: 'screen-create-request',
-    role: 'Manager',
-  },
   {
     path: '/manager/requests/7',
     testId: 'screen-request-review',

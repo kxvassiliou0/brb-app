@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { apiFetch } from '../../lib/api'
+import { cachedGet } from '@/lib/apiCache'
 import type { ApiSuccess, LeaveRequest } from '@/types/api'
+import BookTimeOffButton from '@/components/BookTimeOffButton'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
 import LinkButton from '@/components/LinkButton'
 import PageHeader from '../../components/PageHeader'
@@ -19,7 +20,7 @@ export default function RequestsList({ basePath }: { basePath: string }) {
 
   useEffect(() => {
     let cancelled = false
-    apiFetch<ApiSuccess<LeaveRequest[]>>('/api/leave-requests')
+    cachedGet<ApiSuccess<LeaveRequest[]>>('/api/leave-requests', attempt > 0)
       .then((res) => {
         if (!cancelled) setRequests(res.data)
       })
@@ -69,9 +70,7 @@ export default function RequestsList({ basePath }: { basePath: string }) {
       <PageHeader
         title="Requests"
         description="Time-off requests awaiting review."
-        action={
-          <LinkButton to={`${basePath}/requests/new`}>New request</LinkButton>
-        }
+        action={<BookTimeOffButton onBooked={retry} />}
       />
       <DataTable
         caption="Time-off requests"
@@ -83,9 +82,7 @@ export default function RequestsList({ basePath }: { basePath: string }) {
         loadingLabel="Loading requests"
         errorFallbackMessage="Failed to load requests"
         emptyMessage="No requests to review yet."
-        emptyAction={
-          <LinkButton to={`${basePath}/requests/new`}>New request</LinkButton>
-        }
+        emptyAction={<BookTimeOffButton onBooked={retry} />}
       />
     </div>
   )
