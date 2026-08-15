@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { apiFetch } from '../../lib/api'
+import { cachedGet } from '@/lib/apiCache'
 import type { ApiSuccess, OwnLeaveRequest } from '@/types/api'
 import { useAuth } from '../../lib/auth'
+import BookTimeOffButton from '@/components/BookTimeOffButton'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
-import LinkButton from '@/components/LinkButton'
 import PageHeader from '../../components/PageHeader'
 import StatusPill from '@/components/StatusPill'
 import { countDays, formatDateRange } from '@/lib/dates'
@@ -23,8 +23,9 @@ export default function MyRequests() {
   useEffect(() => {
     if (!user) return
     let cancelled = false
-    apiFetch<ApiSuccess<OwnLeaveRequest[]>>(
-      `/api/leave-requests/status/${user.id}`
+    cachedGet<ApiSuccess<OwnLeaveRequest[]>>(
+      `/api/leave-requests/status/${user.id}`,
+      attempt > 0
     )
       .then((res) => {
         if (!cancelled) setRequests(res.data)
@@ -64,9 +65,7 @@ export default function MyRequests() {
       <PageHeader
         title="My requests"
         description="Your time-off request history."
-        action={
-          <LinkButton to="/employee/my-requests/new">New request</LinkButton>
-        }
+        action={<BookTimeOffButton onBooked={retry} />}
       />
       <DataTable
         caption="My time-off requests"
@@ -78,9 +77,7 @@ export default function MyRequests() {
         loadingLabel="Loading your requests"
         errorFallbackMessage="Failed to load your requests"
         emptyMessage="You have not requested any time off yet."
-        emptyAction={
-          <LinkButton to="/employee/my-requests/new">New request</LinkButton>
-        }
+        emptyAction={<BookTimeOffButton onBooked={retry} />}
       />
     </div>
   )

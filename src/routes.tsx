@@ -11,7 +11,6 @@ import EmployeeDashboard from '@/screens/employee/EmployeeDashboard'
 import MyRequests from '@/screens/employee/MyRequests'
 import ManagerDashboard from '@/screens/manager/ManagerDashboard'
 import TeamCalendar from '@/screens/manager/TeamCalendar'
-import CreateRequest from '@/screens/shared/CreateRequest'
 import RequestReview from '@/screens/shared/RequestReview'
 import RequestsList from '@/screens/shared/RequestsList'
 import Settings from '@/screens/shared/Settings'
@@ -34,7 +33,6 @@ export const routes: RouteObject[] = [
               { path: 'employees', element: <Employees /> },
               { path: 'departments', element: <Departments /> },
               { path: 'requests', element: <RequestsList basePath="/admin" /> },
-              { path: 'requests/new', element: <CreateRequest /> },
               { path: 'requests/:requestId', element: <RequestReview /> },
               { path: 'settings', element: <Settings /> },
             ],
@@ -44,9 +42,7 @@ export const routes: RouteObject[] = [
             element: <ProtectedRoute allowedRoles={SUBTREE_ROLES.employee} />,
             children: [
               { index: true, element: <EmployeeDashboard /> },
-              { path: 'book-time-off', element: <CreateRequest /> },
               { path: 'my-requests', element: <MyRequests /> },
-              { path: 'my-requests/new', element: <CreateRequest /> },
               { path: 'settings', element: <Settings /> },
             ],
           },
@@ -59,7 +55,6 @@ export const routes: RouteObject[] = [
                 path: 'requests',
                 element: <RequestsList basePath="/manager" />,
               },
-              { path: 'requests/new', element: <CreateRequest /> },
               { path: 'requests/:requestId', element: <RequestReview /> },
               { path: 'team-calendar', element: <TeamCalendar /> },
               { path: 'settings', element: <Settings /> },

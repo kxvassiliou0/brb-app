@@ -7,21 +7,32 @@ import { AUTH_ERRORS } from "./AuthErrors.ts";
 import { Logger } from "./Logger.ts";
 import { ResponseHandler } from "./ResponseHandler.ts";
 
+const DEFAULT_RATE_LIMIT_MAX = 500;
+
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
+function rateLimitMax(): number {
+  const configured = Number(process.env.RATE_LIMIT_MAX);
+  return Number.isFinite(configured) && configured > 0
+    ? configured
+    : DEFAULT_RATE_LIMIT_MAX;
+}
+
 export class MiddlewareFactory {
   public static readonly TOO_MANY_REQUESTS_MESSAGE =
     "Too many requests - try again later";
 
   static readonly loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    max: rateLimitMax(),
     message: MiddlewareFactory.TOO_MANY_REQUESTS_MESSAGE,
     standardHeaders: true,
     legacyHeaders: false,
   });
 
   static readonly jwtRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    max: rateLimitMax(),
     message: MiddlewareFactory.TOO_MANY_REQUESTS_MESSAGE,
     standardHeaders: true,
     legacyHeaders: false,

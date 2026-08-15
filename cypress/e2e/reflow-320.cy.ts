@@ -72,15 +72,26 @@ describe('reflow at 320px (WCAG 1.4.10)', () => {
     login(USERS.employee, '/employee')
     assertScreenReflows('/employee', 'screen-employee-dashboard')
     assertScreenReflows('/employee/my-requests', 'screen-my-requests')
-    assertScreenReflows('/employee/book-time-off', 'screen-create-request')
     assertScreenReflows('/employee/settings', 'screen-settings')
+  })
+
+  it('reflows the book time off dialog and its date picker', () => {
+    login(USERS.employee, '/employee')
+    cy.contains('button', 'Book time off').first().click()
+    cy.get('[data-testid="modal"]').should('be.visible')
+    assertNoHorizontalScroll()
+    assertTargetsMeetMinimum()
+
+    cy.get('#start-date').click()
+    cy.get('[data-testid="start-date-calendar"]').should('be.visible')
+    assertNoHorizontalScroll()
+    assertTargetsMeetMinimum()
   })
 
   it('reflows every Manager screen', () => {
     login(USERS.manager, '/manager')
     assertScreenReflows('/manager', 'screen-manager-dashboard')
     assertScreenReflows('/manager/requests', 'screen-requests')
-    assertScreenReflows('/manager/requests/new', 'screen-create-request')
     assertScreenReflows('/manager/requests/1', 'screen-request-review')
     assertScreenReflows('/manager/team-calendar', 'screen-team-calendar')
     assertScreenReflows('/manager/settings', 'screen-settings')

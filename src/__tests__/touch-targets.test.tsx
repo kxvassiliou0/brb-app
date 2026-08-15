@@ -27,11 +27,6 @@ const SCREENS: { path: string; role: Role; testId: string }[] = [
   { path: '/admin/employees', role: 'Admin', testId: 'screen-employees' },
   { path: '/admin/departments', role: 'Admin', testId: 'screen-departments' },
   {
-    path: '/admin/requests/new',
-    role: 'Admin',
-    testId: 'screen-create-request',
-  },
-  {
     path: '/admin/requests/42',
     role: 'Admin',
     testId: 'screen-request-review',
@@ -52,11 +47,6 @@ const SCREENS: { path: string; role: Role; testId: string }[] = [
     path: '/employee/my-requests',
     role: 'Employee',
     testId: 'screen-my-requests',
-  },
-  {
-    path: '/employee/book-time-off',
-    role: 'Employee',
-    testId: 'screen-create-request',
   },
   { path: '/nowhere', role: 'Employee', testId: 'not-found' },
 ]
