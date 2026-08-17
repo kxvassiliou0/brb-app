@@ -16,6 +16,22 @@ const LONG_DATE: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+export function toIsoDate(value: Date | string): string {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (ISO_DATE.test(trimmed)) return trimmed
+    if (ISO_DATE.test(trimmed.slice(0, 10))) return trimmed.slice(0, 10)
+    return toIsoDate(new Date(trimmed))
+  }
+  if (Number.isNaN(value.getTime())) return ''
+  const year = String(value.getFullYear()).padStart(4, '0')
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function formatDate(date: string): string {
   const parsed = new Date(date)
   if (Number.isNaN(parsed.getTime())) return date

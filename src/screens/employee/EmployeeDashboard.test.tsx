@@ -9,6 +9,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setStoredToken } from '@/lib/api'
 import { AuthProvider } from '@/lib/auth'
+import { countDays } from '@/lib/dates'
 import { RECENT_REQUEST_LIMIT } from '@/lib/leaveSummary'
 import { makeUserJwt } from '@/test/jwt'
 import { routes } from '@/routes'
@@ -61,6 +62,8 @@ function request({
     leave_type,
     start_date,
     end_date,
+    days_requested: countDays(start_date, end_date),
+    date_requested: start_date,
     status,
     reason: null,
     manager_note: null,
@@ -111,7 +114,7 @@ function renderDashboard(): void {
       role: 'Employee',
     })
   )
-  const router = createMemoryRouter(routes, { initialEntries: ['/employee'] })
+  const router = createMemoryRouter(routes, { initialEntries: ['/'] })
   render(
     <AuthProvider>
       <RouterProvider router={router} />
@@ -269,7 +272,7 @@ describe('employee dashboard recent requests', () => {
     renderDashboard()
 
     const link = await screen.findByRole('link', { name: 'View all' })
-    expect(link).toHaveAttribute('href', '/employee/my-requests')
+    expect(link).toHaveAttribute('href', '/requests')
   })
 })
 

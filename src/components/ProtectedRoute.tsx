@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { isTokenExpired, useAuth } from '@/lib/auth'
-import { ROLE_HOME, type Role } from '@/lib/routeAccess'
+import { HOME_PATH, type Role } from '@/lib/routeAccess'
 
 interface ProtectedRouteProps {
   allowedRoles?: Role[]
@@ -16,7 +16,7 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={ROLE_HOME[user.role]} replace />
+    return <Navigate to={HOME_PATH} replace />
   }
 
   return <Outlet />

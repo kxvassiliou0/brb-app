@@ -1,101 +1,80 @@
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import BrandHeader from '@/components/BrandHeader'
-import NavIcon, { type NavIconName } from '@/components/NavIcon'
+import Icon, { type IconName } from '@/components/Icon'
 import UserSummary from '@/components/UserSummary'
 import { NAV_BREAKPOINT } from '@/lib/breakpoints'
 import { useBreakpoint } from '@/lib/useMediaQuery'
 import { useAuth } from '@/lib/auth'
+import {
+  HOME_PATH,
+  REQUESTS_PATH,
+  SETTINGS_PATH,
+  type Role,
+} from '@/lib/routeAccess'
 
 type NavItem = {
   to: string
   label: string
   shortLabel: string
-  icon: NavIconName
+  icon: IconName
   end?: boolean
 }
 
-const navByRole: Record<'admin' | 'employee' | 'manager', NavItem[]> = {
-  admin: [
+const extrasByRole: Record<Role, NavItem[]> = {
+  Admin: [
     {
-      to: '/admin',
-      label: 'Dashboard',
-      shortLabel: 'Home',
-      icon: 'dashboard',
-      end: true,
-    },
-    {
-      to: '/admin/requests',
-      label: 'Requests',
-      shortLabel: 'Requests',
-      icon: 'requests',
-    },
-    {
-      to: '/admin/employees',
+      to: '/employees',
       label: 'Employees',
       shortLabel: 'People',
       icon: 'people',
     },
     {
-      to: '/admin/departments',
+      to: '/departments',
       label: 'Departments',
       shortLabel: 'Teams',
       icon: 'departments',
     },
     {
-      to: '/admin/settings',
-      label: 'Settings',
-      shortLabel: 'Settings',
-      icon: 'settings',
-    },
-  ],
-  employee: [
-    {
-      to: '/employee',
-      label: 'Dashboard',
-      shortLabel: 'Home',
-      icon: 'dashboard',
-      end: true,
-    },
-    {
-      to: '/employee/my-requests',
-      label: 'My requests',
-      shortLabel: 'Requests',
-      icon: 'requests',
-    },
-    {
-      to: '/employee/settings',
-      label: 'Settings',
-      shortLabel: 'Settings',
-      icon: 'settings',
-    },
-  ],
-  manager: [
-    {
-      to: '/manager',
-      label: 'Dashboard',
-      shortLabel: 'Home',
-      icon: 'dashboard',
-      end: true,
-    },
-    {
-      to: '/manager/requests',
-      label: 'Requests',
-      shortLabel: 'Requests',
-      icon: 'requests',
-    },
-    {
-      to: '/manager/team-calendar',
+      to: '/team-calendar',
       label: 'Team calendar',
       shortLabel: 'Calendar',
       icon: 'calendar',
     },
+  ],
+  Manager: [
     {
-      to: '/manager/settings',
+      to: '/team-calendar',
+      label: 'Team calendar',
+      shortLabel: 'Calendar',
+      icon: 'calendar',
+    },
+  ],
+  Employee: [],
+}
+
+function navFor(role: Role): NavItem[] {
+  return [
+    {
+      to: HOME_PATH,
+      label: 'Dashboard',
+      shortLabel: 'Home',
+      icon: 'dashboard',
+      end: true,
+    },
+    {
+      to: REQUESTS_PATH,
+      label: 'Requests',
+      shortLabel: 'Requests',
+      icon: 'clock',
+    },
+    ...extrasByRole[role],
+    {
+      to: SETTINGS_PATH,
       label: 'Settings',
       shortLabel: 'Settings',
       icon: 'settings',
     },
-  ],
+  ]
 }
 
 const SIDEBAR_LINK =
@@ -104,15 +83,16 @@ const SIDEBAR_LINK =
 const BOTTOM_LINK =
   'touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
 
-export default function Navigation() {
+export default function Navigation({
+  collapsed = false,
+}: {
+  collapsed?: boolean
+}) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const isDesktop = useBreakpoint(NAV_BREAKPOINT)
-  const role = user
-    ? (user.role.toLowerCase() as 'admin' | 'employee' | 'manager')
-    : null
-  const links = role ? navByRole[role] : []
+  const links = user ? navFor(user.role) : []
 
   function handleSignOut() {
     logout()
@@ -130,7 +110,7 @@ export default function Navigation() {
           {links.map((l) => (
             <li key={l.to} className="flex min-w-0 flex-1">
               <NavLink to={l.to} end={l.end} className={BOTTOM_LINK}>
-                <NavIcon name={l.icon} />
+                <Icon name={l.icon} />
                 <span className="w-full truncate text-center">
                   {l.shortLabel}
                 </span>
@@ -143,14 +123,21 @@ export default function Navigation() {
   }
 
   return (
-    <div className="sticky top-5 m-5 flex h-[calc(100svh-2.5rem)] w-sidebar shrink-0 flex-col gap-8 rounded-[2rem] border border-border-primary bg-background-secondary p-8 shadow-[0_14px_34px_rgba(23,22,15,0.04)]">
+    <div
+      inert={collapsed}
+      className={`sticky top-5 m-5 flex h-[calc(100svh-2.5rem)] w-sidebar shrink-0 flex-col gap-8 rounded-[2rem] border border-border-primary bg-background-secondary p-8 shadow-[0_14px_34px_rgba(23,22,15,0.04)] transition-[margin-left,opacity,transform] duration-300 ease-out motion-reduce:transition-none ${
+        collapsed
+          ? 'pointer-events-none -ml-[calc(var(--container-sidebar)+1.25rem)] -translate-x-4 opacity-0'
+          : 'opacity-100'
+      }`}
+    >
       <BrandHeader />
       <nav data-testid="sidebar" aria-label="Main">
         <ul key={location.pathname} className="flex flex-col gap-1">
           {links.map((l) => (
             <li key={l.to}>
               <NavLink to={l.to} end={l.end} className={SIDEBAR_LINK}>
-                <NavIcon name={l.icon} />
+                <Icon name={l.icon} />
                 <span className="truncate">{l.label}</span>
               </NavLink>
             </li>

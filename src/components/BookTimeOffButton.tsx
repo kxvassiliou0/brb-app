@@ -1,24 +1,20 @@
 import { useState } from 'react'
 import BookTimeOffModal from '@/components/BookTimeOffModal'
-import Button, { type ButtonVariant } from '@/components/Button'
-
-interface BookTimeOffButtonProps {
-  label?: string
-  variant?: ButtonVariant
-  onBooked?: () => void
-}
+import Button from '@/components/Button'
+import Icon from '@/components/Icon'
 
 export default function BookTimeOffButton({
-  label = 'Book time off',
-  variant = 'primary',
   onBooked,
-}: BookTimeOffButtonProps) {
+}: {
+  onBooked: () => void
+}) {
   const [open, setOpen] = useState(false)
 
   return (
     <>
-      <Button variant={variant} onClick={() => setOpen(true)}>
-        {label}
+      <Button variant="primary" onClick={() => setOpen(true)}>
+        <Icon name="plus" />
+        Book time off
       </Button>
       {open && (
         <BookTimeOffModal onClose={() => setOpen(false)} onBooked={onBooked} />
