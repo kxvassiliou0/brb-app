@@ -8,21 +8,21 @@ describe('role-based route authorization', () => {
   })
 
   it('refuses direct URL entry into a Manager route', () => {
-    cy.visit('/manager/team-calendar')
+    cy.visit('/team-calendar')
     cy.url().should('include', '/employee')
     cy.url().should('not.include', '/manager')
     cy.get('[data-testid="screen-team-calendar"]').should('not.exist')
   })
 
   it('refuses direct URL entry into an Admin route', () => {
-    cy.visit('/admin/employees')
+    cy.visit('/employees')
     cy.url().should('include', '/employee')
     cy.url().should('not.include', '/admin')
     cy.get('[data-testid="screen-employees"]').should('not.exist')
   })
 
   it('only shows Employee nav items regardless of the URL typed', () => {
-    cy.visit('/manager/team-calendar')
+    cy.visit('/team-calendar')
     cy.get('[data-testid="sidebar"]')
       .contains('a', 'My requests')
       .should('be.visible')

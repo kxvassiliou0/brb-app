@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { apiFetch } from '../../lib/api'
+import { useMemo } from 'react'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
-import PageHeader from '../../components/PageHeader'
+import PageHeader from '@/components/PageHeader'
+import { useApiResource } from '@/lib/useApiResource'
+import type { ApiSuccess } from '@/types/api'
 
 interface EmployeeRow {
   id: number
@@ -12,29 +13,8 @@ interface EmployeeRow {
 }
 
 export default function Employees() {
-  const [employees, setEmployees] = useState<EmployeeRow[] | null>(null)
-  const [error, setError] = useState<unknown>(null)
-  const [attempt, setAttempt] = useState(0)
-
-  const retry = useCallback(() => {
-    setEmployees(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    apiFetch<{ data: EmployeeRow[] }>('/api/users')
-      .then((res) => {
-        if (!cancelled) setEmployees(res.data)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [attempt])
+  const { data, error, retry } =
+    useApiResource<ApiSuccess<EmployeeRow[]>>('/api/users')
 
   const columns = useMemo<DataTableColumn<EmployeeRow>[]>(
     () => [
@@ -58,7 +38,7 @@ export default function Employees() {
       <DataTable
         caption="Employees"
         columns={columns}
-        rows={employees}
+        rows={data?.data ?? null}
         rowKey={(e) => e.id}
         error={error}
         onRetry={retry}

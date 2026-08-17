@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router'
+import type { BookingConfirmationState } from '@/components/BookingConfirmation'
 import Button from '@/components/Button'
 import DatePicker from '@/components/DatePicker'
 import { CONTROL_CLASS } from '@/components/InputWithLabel'
@@ -7,6 +9,7 @@ import { apiFetch } from '@/lib/api'
 import { cachedGet, clearApiCache } from '@/lib/apiCache'
 import { useAuth } from '@/lib/auth'
 import {
+  BOOKING_CONFIRMATION_FALLBACK,
   bookingErrorMessage,
   buildCreateBody,
   EMPTY_DRAFT,
@@ -20,7 +23,13 @@ import {
 } from '@/lib/booking'
 import { countLabel } from '@/lib/dates'
 import { fetchPublicHolidays, holidaysByDate } from '@/lib/publicHolidays'
-import type { ApiSuccess, LeaveType, RemainingLeave } from '@/types/api'
+import { REQUESTS_PATH } from '@/lib/routeAccess'
+import type {
+  ApiSuccess,
+  CreateLeaveRequestResult,
+  LeaveType,
+  RemainingLeave,
+} from '@/types/api'
 
 interface BookTimeOffModalProps {
   onClose: () => void
@@ -32,6 +41,7 @@ export default function BookTimeOffModal({
   onBooked,
 }: BookTimeOffModalProps) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [draft, setDraft] = useState<BookingDraft>(EMPTY_DRAFT)
   const [errors, setErrors] = useState<BookingErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -81,15 +91,25 @@ export default function BookTimeOffModal({
     setSubmitError(null)
     setSubmitting(true)
     try {
-      await apiFetch('/api/leave-requests', {
-        method: 'POST',
-        body: JSON.stringify(
-          buildCreateBody(draft, user?.role === 'Admin' ? user.id : undefined)
-        ),
-      })
+      const created = await apiFetch<ApiSuccess<CreateLeaveRequestResult>>(
+        '/api/leave-requests',
+        {
+          method: 'POST',
+          body: JSON.stringify(
+            buildCreateBody(draft, user?.role === 'Admin' ? user.id : undefined)
+          ),
+        }
+      )
       clearApiCache()
       onBooked?.()
       onClose()
+      navigate(REQUESTS_PATH, {
+        state: {
+          bookingConfirmation:
+            created?.message ?? BOOKING_CONFIRMATION_FALLBACK,
+          bookingRequestId: created?.data?.id,
+        } satisfies BookingConfirmationState,
+      })
     } catch (err) {
       setSubmitError(bookingErrorMessage(err, draft, daysRemaining))
     } finally {

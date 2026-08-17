@@ -18,6 +18,11 @@ export interface UserRelation {
   name: string
 }
 
+export interface DepartmentRow {
+  id: number
+  name: string
+}
+
 export interface UserProfile {
   id: number
   firstName: string
@@ -32,9 +37,13 @@ export interface UserProfile {
 export interface LeaveRequest {
   id: number
   employee_id: number
+  employee_name: string | null
+  department_id: number | null
   leave_type: LeaveType
   start_date: string
   end_date: string
+  days_requested: number
+  date_requested: string | null
   status: LeaveStatus
   reason: string | null
   manager_note: string | null
@@ -55,6 +64,8 @@ export interface OwnLeaveRequest {
   leave_type: LeaveType
   start_date: string
   end_date: string
+  days_requested: number
+  date_requested: string | null
   status: LeaveStatus
   reason: string | null
   manager_note: string | null

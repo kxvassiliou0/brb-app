@@ -1,10 +1,15 @@
-import type { LeaveRequest, ReviewLeaveRequestBody } from '@/types/api'
+import type { LeaveRequest } from '@/types/api'
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import Button from '@/components/Button'
 import PageHeader from '../../components/PageHeader'
 import StatusPill from '@/components/StatusPill'
-import { apiFetch } from '../../lib/api'
+import { REQUESTS_PATH } from '@/lib/routeAccess'
+import {
+  decideRequest,
+  REVIEW_LABEL,
+  type ReviewAction,
+} from '@/lib/reviewRequest'
 
 export default function RequestReview() {
   const { requestId } = useParams()
@@ -14,18 +19,12 @@ export default function RequestReview() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  async function decide(action: 'approve' | 'reject') {
+  async function decide(action: ReviewAction) {
     setError(null)
     setSubmitting(true)
     try {
-      const payload: ReviewLeaveRequestBody = {
-        leave_request_id: Number(requestId),
-      }
-      await apiFetch(`/api/leave-requests/${action}`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      })
-      navigate(-1)
+      await decideRequest(action, Number(requestId))
+      navigate(REQUESTS_PATH)
     } catch (err) {
       setError(
         err instanceof Error ? err.message : `Failed to ${action} request`
@@ -85,14 +84,14 @@ export default function RequestReview() {
         )}
         <div className="flex flex-col gap-3 sm:flex-row-reverse">
           <Button onClick={() => decide('approve')} disabled={submitting}>
-            Approve
+            {REVIEW_LABEL.approve}
           </Button>
           <Button
             variant="secondary"
             onClick={() => decide('reject')}
             disabled={submitting}
           >
-            Decline
+            {REVIEW_LABEL.reject}
           </Button>
         </div>
       </div>

@@ -5,7 +5,7 @@ import Button from '@/components/Button'
 import Card from '@/components/Card'
 import InputWithLabel from '@/components/InputWithLabel'
 import { useAuth } from '@/lib/auth'
-import { ROLE_HOME } from '@/lib/routeAccess'
+import { HOME_PATH } from '@/lib/routeAccess'
 import { seasonalBackground } from '@/lib/seasonalBackground'
 
 export default function Login() {
@@ -24,8 +24,8 @@ export default function Login() {
     setError(null)
     setSubmitting(true)
     try {
-      const user = await login(email, password)
-      navigate(from ? `${from.pathname}${from.search}` : ROLE_HOME[user.role], {
+      await login(email, password)
+      navigate(from ? `${from.pathname}${from.search}` : HOME_PATH, {
         replace: true,
       })
     } catch (err) {

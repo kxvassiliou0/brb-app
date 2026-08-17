@@ -1,37 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { apiFetch } from '../../lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/states'
-import PageHeader from '../../components/PageHeader'
-
-interface DepartmentRow {
-  id: number
-  name: string
-}
+import PageHeader from '@/components/PageHeader'
+import { useApiResource } from '@/lib/useApiResource'
+import type { ApiSuccess, DepartmentRow } from '@/types/api'
 
 export default function Departments() {
-  const [departments, setDepartments] = useState<DepartmentRow[] | null>(null)
-  const [error, setError] = useState<unknown>(null)
-  const [attempt, setAttempt] = useState(0)
+  const { data, error, retry } =
+    useApiResource<ApiSuccess<DepartmentRow[]>>('/api/departments')
 
-  const retry = useCallback(() => {
-    setDepartments(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    apiFetch<{ data: DepartmentRow[] }>('/api/departments')
-      .then((res) => {
-        if (!cancelled) setDepartments(res.data)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [attempt])
+  const departments = data?.data ?? null
 
   return (
     <div data-testid="screen-departments">
@@ -51,12 +27,12 @@ export default function Departments() {
         <EmptyState message="No departments have been created yet." />
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {departments.map((d) => (
+          {departments.map((department) => (
             <li
-              key={d.id}
+              key={department.id}
               className="rounded-xl border border-border-primary bg-background-secondary p-4"
             >
-              {d.name}
+              {department.name}
             </li>
           ))}
         </ul>

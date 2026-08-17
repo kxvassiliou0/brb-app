@@ -9,14 +9,10 @@ import StatusPill from '@/components/StatusPill'
 import { ErrorState, LoadingState } from '@/components/states'
 import { cachedGet } from '@/lib/apiCache'
 import { useAuth } from '@/lib/auth'
-import {
-  countDays,
-  countLabel,
-  formatDateRange,
-  formatToday,
-} from '@/lib/dates'
+import { countLabel, formatDateRange, formatToday } from '@/lib/dates'
 import { greetByName } from '@/lib/greeting'
 import { recentRequests, summariseRequests } from '@/lib/leaveSummary'
+import { REQUESTS_PATH } from '@/lib/routeAccess'
 import { LEAVE_YEAR_LABEL, LEAVE_YEAR_RESET_LABEL } from '@/lib/leaveYear'
 import type {
   ApiSuccess,
@@ -87,11 +83,7 @@ export default function EmployeeDashboard() {
         header: 'Dates',
         cell: (r) => formatDateRange(r.start_date, r.end_date),
       },
-      {
-        key: 'days',
-        header: 'Days',
-        cell: (r) => countDays(r.start_date, r.end_date),
-      },
+      { key: 'days', header: 'Days', cell: (r) => r.days_requested },
       {
         key: 'status',
         header: 'Status',
@@ -157,7 +149,7 @@ export default function EmployeeDashboard() {
               <h2 id="recent-requests-heading" className="text-xl md:text-2xl">
                 My requests
               </h2>
-              <Link to="/employee/my-requests" className={VIEW_ALL_LINK}>
+              <Link to={REQUESTS_PATH} className={VIEW_ALL_LINK}>
                 View all
               </Link>
             </div>

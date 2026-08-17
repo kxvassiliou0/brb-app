@@ -31,7 +31,7 @@ beforeEach(() => {
 describe('navigation at the nav breakpoint and above', () => {
   it('renders a sidebar and no bottom bar', () => {
     setViewportWidth(DESKTOP)
-    renderAt('/employee', 'Employee')
+    renderAt('/', 'Employee')
 
     expect(screen.getByTestId('sidebar')).toBeInTheDocument()
     expect(screen.queryByTestId('bottom-nav')).not.toBeInTheDocument()
@@ -39,7 +39,7 @@ describe('navigation at the nav breakpoint and above', () => {
 
   it('labels sidebar links with their full names', () => {
     setViewportWidth(DESKTOP)
-    renderAt('/manager', 'Manager')
+    renderAt('/', 'Manager')
 
     const links = within(screen.getByTestId('sidebar')).getAllByRole('link')
     expect(links.map((l) => l.textContent)).toEqual([
@@ -54,7 +54,7 @@ describe('navigation at the nav breakpoint and above', () => {
 describe('navigation below the nav breakpoint', () => {
   it('renders a bottom bar and no sidebar', () => {
     setViewportWidth(MOBILE)
-    renderAt('/employee', 'Employee')
+    renderAt('/', 'Employee')
 
     expect(screen.getByTestId('bottom-nav')).toBeInTheDocument()
     expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument()
@@ -62,32 +62,32 @@ describe('navigation below the nav breakpoint', () => {
 
   it('keeps every destination reachable from the bottom bar', () => {
     setViewportWidth(MOBILE)
-    renderAt('/manager', 'Manager')
+    renderAt('/', 'Manager')
 
     const links = within(screen.getByTestId('bottom-nav')).getAllByRole('link')
     expect(links.map((l) => l.getAttribute('href'))).toEqual([
-      '/manager',
-      '/manager/requests',
-      '/manager/team-calendar',
-      '/manager/settings',
+      '/',
+      '/requests',
+      '/team-calendar',
+      '/settings',
     ])
   })
 
   it('marks the current destination on both forms', () => {
     setViewportWidth(MOBILE)
-    renderAt('/admin/departments', 'Admin')
+    renderAt('/departments', 'Admin')
 
     const current = within(screen.getByTestId('bottom-nav')).getByRole('link', {
       current: 'page',
     })
-    expect(current).toHaveAttribute('href', '/admin/departments')
+    expect(current).toHaveAttribute('href', '/departments')
   })
 })
 
 describe('navigation when the viewport crosses the nav breakpoint', () => {
   it('swaps between a sidebar and a bottom bar', () => {
     setViewportWidth(DESKTOP)
-    renderAt('/admin', 'Admin')
+    renderAt('/', 'Admin')
     expect(screen.getByTestId('sidebar')).toBeInTheDocument()
 
     act(() => setViewportWidth(MOBILE))
@@ -101,7 +101,7 @@ describe('navigation when the viewport crosses the nav breakpoint', () => {
 
   it('exposes exactly one main navigation landmark at either width', () => {
     setViewportWidth(DESKTOP)
-    renderAt('/admin', 'Admin')
+    renderAt('/', 'Admin')
     expect(screen.getAllByRole('navigation', { name: 'Main' })).toHaveLength(1)
 
     act(() => setViewportWidth(MOBILE))

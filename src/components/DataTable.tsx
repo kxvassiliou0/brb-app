@@ -17,6 +17,7 @@ export interface DataTableColumn<T> {
   cell: (row: T) => ReactNode
   hideHeader?: boolean
   hideCardLabel?: boolean
+  align?: 'left' | 'right'
 }
 
 interface DataTableProps<T> {
@@ -30,6 +31,7 @@ interface DataTableProps<T> {
   emptyAction?: ReactNode
   loadingLabel?: string
   errorFallbackMessage?: string
+  highlightRowKey?: string | number
 }
 
 export default function DataTable<T>({
@@ -43,8 +45,12 @@ export default function DataTable<T>({
   emptyAction,
   loadingLabel = 'Loading',
   errorFallbackMessage,
+  highlightRowKey,
 }: DataTableProps<T>) {
   const asTable = useBreakpoint(TABLE_BREAKPOINT)
+
+  const isHighlighted = (row: T): boolean =>
+    highlightRowKey !== undefined && rowKey(row) === highlightRowKey
 
   if (!asTable) {
     return (
@@ -65,7 +71,12 @@ export default function DataTable<T>({
               <li
                 key={rowKey(row)}
                 data-testid="data-card"
-                className="rounded-xl border border-border-primary bg-background-secondary p-4"
+                data-highlighted={isHighlighted(row) ? 'true' : undefined}
+                className={`rounded-xl border p-4 ${
+                  isHighlighted(row)
+                    ? 'border-sage-foreground bg-sage-background'
+                    : 'border-border-primary bg-background-secondary'
+                }`}
               >
                 <dl className="flex flex-col gap-2">
                   {columns.map((column) => (
@@ -113,7 +124,9 @@ export default function DataTable<T>({
               <th
                 key={column.key}
                 scope="col"
-                className="px-3 py-2 text-sm font-medium text-text-secondary"
+                className={`px-3 py-2 text-sm font-medium text-text-secondary ${
+                  column.align === 'right' ? 'text-right' : ''
+                }`}
               >
                 <span className={column.hideHeader ? 'sr-only' : undefined}>
                   {column.header}
@@ -143,10 +156,18 @@ export default function DataTable<T>({
               <tr
                 key={rowKey(row)}
                 style={{ height: TABLE_ROW_HEIGHT }}
-                className="border-b border-border-primary"
+                data-highlighted={isHighlighted(row) ? 'true' : undefined}
+                className={`border-b border-border-primary ${
+                  isHighlighted(row) ? 'bg-sage-background' : ''
+                }`}
               >
                 {columns.map((column) => (
-                  <td key={column.key} className="px-3 py-2 align-middle">
+                  <td
+                    key={column.key}
+                    className={`px-3 py-2 align-middle ${
+                      column.align === 'right' ? 'text-right' : ''
+                    }`}
+                  >
                     {column.cell(row)}
                   </td>
                 ))}

@@ -1,44 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { apiFetch } from '../../lib/api'
-import type { ApiSuccess, CalendarEntry } from '@/types/api'
+import { useMemo } from 'react'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
-import PageHeader from '../../components/PageHeader'
+import PageHeader from '@/components/PageHeader'
+import { formatDateRange, toIsoDate } from '@/lib/dates'
+import { useApiResource } from '@/lib/useApiResource'
+import type { ApiSuccess, CalendarEntry } from '@/types/api'
 
 function currentMonthRange(): { from: string; to: string } {
   const now = new Date()
-  const from = new Date(now.getFullYear(), now.getMonth(), 1)
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
-  return { from: fmt(from), to: fmt(to) }
+  return {
+    from: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+    to: toIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  }
 }
 
 export default function TeamCalendar() {
-  const [rows, setRows] = useState<CalendarEntry[] | null>(null)
-  const [error, setError] = useState<unknown>(null)
-  const [attempt, setAttempt] = useState(0)
+  const { from, to } = useMemo(() => currentMonthRange(), [])
 
-  const retry = useCallback(() => {
-    setRows(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
-
-  useEffect(() => {
-    const { from, to } = currentMonthRange()
-    let cancelled = false
-    apiFetch<ApiSuccess<CalendarEntry[]>>(
-      `/api/leave-requests/calendar?from=${from}&to=${to}`
-    )
-      .then((res) => {
-        if (!cancelled) setRows(res.data)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [attempt])
+  const { data, error, retry } = useApiResource<ApiSuccess<CalendarEntry[]>>(
+    `/api/leave-requests/calendar?from=${from}&to=${to}`
+  )
 
   const columns = useMemo<DataTableColumn<CalendarEntry>[]>(
     () => [
@@ -47,7 +27,7 @@ export default function TeamCalendar() {
       {
         key: 'dates',
         header: 'Dates',
-        cell: (r) => `${r.start_date} – ${r.end_date}`,
+        cell: (r) => formatDateRange(r.start_date, r.end_date),
       },
     ],
     []
@@ -62,7 +42,7 @@ export default function TeamCalendar() {
       <DataTable
         caption="Approved time off this month"
         columns={columns}
-        rows={rows}
+        rows={data?.data ?? null}
         rowKey={(r) => `${r.employee_id}-${r.start_date}`}
         error={error}
         onRetry={retry}

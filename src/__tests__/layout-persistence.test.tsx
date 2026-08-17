@@ -15,7 +15,7 @@ describe('layout persistence', () => {
     setStoredToken(
       makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' })
     )
-    const router = createMemoryRouter(routes, { initialEntries: ['/admin'] })
+    const router = createMemoryRouter(routes, { initialEntries: ['/'] })
     render(
       <AuthProvider>
         <RouterProvider router={router} />
@@ -25,7 +25,7 @@ describe('layout persistence', () => {
     const layoutBefore = await screen.findByTestId('app-layout')
 
     await act(async () => {
-      await router.navigate('/admin/employees')
+      await router.navigate('/employees')
     })
 
     const layoutAfter = screen.getByTestId('app-layout')
