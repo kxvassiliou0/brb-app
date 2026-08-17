@@ -1,5 +1,5 @@
 import { ApiRequestError } from '@/lib/api'
-import { countDays, countLabel } from '@/lib/dates'
+import { countDays, countLabel, toIsoDate } from '@/lib/dates'
 import type { CreateLeaveRequestBody, LeaveType } from '@/types/api'
 
 export const LEAVE_TYPES = ['Vacation', 'Sick', 'Personal'] as const
@@ -8,12 +8,18 @@ export const HTTP_BAD_REQUEST = 400
 
 export const HTTP_CONFLICT = 409
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
-
 const BALANCE_ERROR = /exceed[s]? remaining balance/i
+
+const INVALID_DATE_ERROR = /YYYY-MM-DD|invalid date|before the start date/i
 
 export const OVERLAP_MESSAGE =
   'Those dates clash with a request you have already made. Choose a range that does not overlap an existing request.'
+
+export const INVALID_DATES_MESSAGE =
+  'Those dates were not accepted. Choose a start date, then an end date on or after it, and try again.'
+
+export const BOOKING_CONFIRMATION_FALLBACK =
+  'Your leave request has been submitted for review.'
 
 export interface BookingDraft {
   leaveType: LeaveType | ''
@@ -33,20 +39,6 @@ export const EMPTY_DRAFT: BookingDraft = {
   startDate: '',
   endDate: '',
   reason: '',
-}
-
-export function toIsoDate(value: Date | string): string {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    if (ISO_DATE.test(trimmed)) return trimmed
-    if (ISO_DATE.test(trimmed.slice(0, 10))) return trimmed.slice(0, 10)
-    return toIsoDate(new Date(trimmed))
-  }
-  if (Number.isNaN(value.getTime())) return ''
-  const year = String(value.getFullYear()).padStart(4, '0')
-  const month = String(value.getMonth() + 1).padStart(2, '0')
-  const day = String(value.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 export function validateBooking(draft: BookingDraft): BookingErrors {
@@ -107,12 +99,16 @@ export function bookingErrorMessage(
       : 'Your request could not be sent. Please try again.'
   }
   if (error.status === HTTP_CONFLICT) return OVERLAP_MESSAGE
+  if (error.status === HTTP_BAD_REQUEST && BALANCE_ERROR.test(error.message)) {
+    return daysRemaining === null
+      ? `This request is longer than your remaining balance. ${error.message}.`
+      : `This request needs ${countLabel(requestedDays(draft), 'day')} but you have only ${countLabel(daysRemaining, 'day')} remaining.`
+  }
   if (
     error.status === HTTP_BAD_REQUEST &&
-    BALANCE_ERROR.test(error.message) &&
-    daysRemaining !== null
+    INVALID_DATE_ERROR.test(error.message)
   ) {
-    return `This request needs ${countLabel(requestedDays(draft), 'day')} but you have only ${countLabel(daysRemaining, 'day')} remaining.`
+    return INVALID_DATES_MESSAGE
   }
   return error.message
 }

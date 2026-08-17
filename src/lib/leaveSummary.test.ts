@@ -17,6 +17,8 @@ function request(
     leave_type,
     start_date,
     end_date,
+    days_requested: countDays(start_date, end_date),
+    date_requested: start_date,
     status,
     reason: null,
     manager_note: null,

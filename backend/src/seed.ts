@@ -137,6 +137,9 @@ async function seed() {
     }),
   ]);
 
+  engManager.managerId = finManager.id;
+  await userRepo.save(engManager);
+
   const [emp1, emp2, emp3, emp4] = await userRepo.save([
     createUser({
       firstname: "David",
@@ -257,6 +260,148 @@ async function seed() {
       status: LeaveStatus.Pending,
       reviewedById: null,
     }),
+
+    createLeave({
+      userId: emp1.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-08-19"),
+      endDate: new Date("2026-08-28"),
+      daysRequested: 10,
+      reason: "Marcus is covering my active projects while I am away",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: emp2.id,
+      leaveType: LeaveType.Personal,
+      startDate: new Date("2026-08-24"),
+      endDate: new Date("2026-08-26"),
+      daysRequested: 3,
+      reason: "House move",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: emp1.id,
+      leaveType: LeaveType.Sick,
+      startDate: new Date("2026-09-03"),
+      endDate: new Date("2026-09-04"),
+      daysRequested: 2,
+      reason: "Minor surgery recovery",
+      status: LeaveStatus.Approved,
+      reviewedById: engManager.id,
+    }),
+    createLeave({
+      userId: emp2.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-09-14"),
+      endDate: new Date("2026-09-25"),
+      daysRequested: 10,
+      reason: "Autumn trip",
+      status: LeaveStatus.Approved,
+      reviewedById: engManager.id,
+    }),
+    createLeave({
+      userId: emp3.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-09-07"),
+      endDate: new Date("2026-09-11"),
+      daysRequested: 5,
+      reason: "Walking holiday",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: emp4.id,
+      leaveType: LeaveType.Personal,
+      startDate: new Date("2026-10-05"),
+      endDate: new Date("2026-10-06"),
+      daysRequested: 2,
+      reason: "Family commitment",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: emp1.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-10-19"),
+      endDate: new Date("2026-10-23"),
+      daysRequested: 5,
+      reason: "Half term",
+      status: LeaveStatus.Rejected,
+      reviewedById: engManager.id,
+    }),
+    createLeave({
+      userId: emp3.id,
+      leaveType: LeaveType.Sick,
+      startDate: new Date("2026-11-02"),
+      endDate: new Date("2026-11-03"),
+      daysRequested: 2,
+      reason: "Flu",
+      status: LeaveStatus.Approved,
+      reviewedById: finManager.id,
+    }),
+    createLeave({
+      userId: emp2.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-11-23"),
+      endDate: new Date("2026-11-27"),
+      daysRequested: 5,
+      reason: "City break",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: emp4.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-12-21"),
+      endDate: new Date("2026-12-31"),
+      daysRequested: 8,
+      reason: "Christmas with family",
+      status: LeaveStatus.Approved,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: emp3.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2027-01-04"),
+      endDate: new Date("2027-01-08"),
+      daysRequested: 5,
+      reason: "New year break",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+
+    createLeave({
+      userId: engManager.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-08-31"),
+      endDate: new Date("2026-09-04"),
+      daysRequested: 5,
+      reason: "Late summer break",
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+    }),
+    createLeave({
+      userId: engManager.id,
+      leaveType: LeaveType.Personal,
+      startDate: new Date("2026-10-12"),
+      endDate: new Date("2026-10-12"),
+      daysRequested: 1,
+      reason: "Appointment",
+      status: LeaveStatus.Approved,
+      reviewedById: finManager.id,
+    }),
+    createLeave({
+      userId: finManager.id,
+      leaveType: LeaveType.Vacation,
+      startDate: new Date("2026-09-21"),
+      endDate: new Date("2026-09-25"),
+      daysRequested: 5,
+      reason: "Annual leave",
+      status: LeaveStatus.Approved,
+      reviewedById: null,
+    }),
   ]);
 
   console.log("Seed complete.");
@@ -269,7 +414,7 @@ async function seed() {
   console.log("\nAccounts (password: Password123!)");
   console.log("Admin:     alice.thompson@company.com  (HR Specialist)");
   console.log(
-    "Managers:  bob.mitchell@company.com (Senior Contractor), carol.reyes@company.com (Finance Analyst)",
+    "Managers:  bob.mitchell@company.com (Senior Contractor, reports to Carol), carol.reeves@company.com (Finance Analyst)",
   );
   console.log(
     "Employees: david.jones (Contractor), eve.knowles (Contractor), frank.harrison (Finance Analyst), grace.williams (Marketing Executive) @company.com",

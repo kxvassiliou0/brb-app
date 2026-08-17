@@ -1,4 +1,3 @@
-import { countDays } from '@/lib/dates'
 import { getLeaveYear, isWithinLeaveYear } from '@/lib/leaveYear'
 import type { OwnLeaveRequest } from '@/types/api'
 
@@ -30,11 +29,7 @@ export function summariseRequests(
         (request) =>
           request.leave_type === 'Sick' && request.status === 'Approved'
       )
-      .reduce(
-        (total, request) =>
-          total + countDays(request.start_date, request.end_date),
-        0
-      ),
+      .reduce((total, request) => total + request.days_requested, 0),
   }
 }
 

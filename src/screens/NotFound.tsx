@@ -1,10 +1,10 @@
 import LinkButton from '@/components/LinkButton'
 import { useAuth } from '@/lib/auth'
-import { ROLE_HOME } from '@/lib/routeAccess'
+import { HOME_PATH } from '@/lib/routeAccess'
 
 export default function NotFound() {
   const { user } = useAuth()
-  const home = user ? ROLE_HOME[user.role] : '/login'
+  const home = user ? HOME_PATH : '/login'
 
   return (
     <div

@@ -2,8 +2,12 @@ import type { ReactNode } from 'react'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import RequestsList from '@/screens/shared/RequestsList'
+import RequestsTable from '@/components/RequestsTable'
+import { setStoredToken } from '@/lib/api'
+import { AuthProvider } from '@/lib/auth'
+import { makeUserJwt } from '@/test/jwt'
 import { readFile } from '@/test/tokens'
+import Requests from '@/screens/shared/Requests'
 import type { LeaveRequest } from '@/types/api'
 import EmptyState from './EmptyState'
 import ErrorState from './ErrorState'
@@ -23,9 +27,14 @@ function request(id: number): LeaveRequest {
   return {
     id,
     employee_id: id,
+    employee_name: `Employee ${id}`,
+    department_id: 1,
+    department_name: 'Engineering',
     leave_type: 'Vacation',
     start_date: '2026-09-01',
     end_date: '2026-09-04',
+    days_requested: 4,
+    date_requested: '2026-08-01',
     status: 'Pending',
     reason: null,
     manager_note: null,
@@ -63,17 +72,29 @@ afterEach(() => {
 })
 
 describe('skeleton dimensions', () => {
-  it('reserves the same rows, columns and row height as the loaded content', async () => {
+  it('reserves the same rows, columns and row height as the loaded content', () => {
     const rows = Array.from({ length: DEFAULT_SKELETON_ROWS }, (_, i) =>
       request(i + 1)
     )
-    fetchMock.mockResolvedValue(jsonOk(rows))
 
-    const { container } = render(
+    const table = (value: LeaveRequest[] | null) => (
       <MemoryRouter>
-        <RequestsList basePath="/admin" />
+        <RequestsTable
+          rows={value}
+          error={null}
+          onRetry={() => {}}
+          showEmployee={false}
+          onDecide={null}
+          onOpen={() => {}}
+          decidingId={null}
+          highlightRequestId={null}
+          emptyMessage="Nothing here"
+          emptyAction={null}
+        />
       </MemoryRouter>
     )
+
+    const { container, rerender } = render(table(null))
 
     const skeletonMetrics = rowMetrics(container)
     expect(skeletonMetrics).toHaveLength(DEFAULT_SKELETON_ROWS)
@@ -82,7 +103,7 @@ describe('skeleton dimensions', () => {
       true
     )
 
-    await screen.findAllByRole('link', { name: 'Review' })
+    rerender(table(rows))
 
     expect(rowMetrics(container)).toEqual(skeletonMetrics)
   })
@@ -151,23 +172,41 @@ describe('ErrorState', () => {
   })
 
   it('refires the request when retried from a screen', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('Failed to fetch'))
-    fetchMock.mockResolvedValueOnce(jsonOk([request(1)]))
+    let historyCalls = 0
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/remaining/')) {
+        return jsonOk({
+          annual_allowance: 25,
+          days_used: 0,
+          days_remaining: 25,
+        })
+      }
+      historyCalls += 1
+      if (historyCalls === 1) throw new Error('Failed to fetch')
+      return jsonOk([request(1)])
+    })
+
+    setStoredToken(
+      makeUserJwt({ id: 1, email: 'priya@company.com', role: 'Employee' })
+    )
 
     render(
       <MemoryRouter>
-        <RequestsList basePath="/admin" />
+        <AuthProvider>
+          <Requests />
+        </AuthProvider>
       </MemoryRouter>
     )
 
     const alert = await screen.findByRole('alert')
     expect(within(alert).getByText('Failed to fetch')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(historyCalls).toBe(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(await screen.findByText('Vacation')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(historyCalls).toBe(2)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

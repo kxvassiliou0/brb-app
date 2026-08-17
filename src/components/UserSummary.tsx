@@ -1,5 +1,16 @@
 import type { AuthUser } from '@/lib/auth'
-import NavIcon from '@/components/NavIcon'
+import Icon from '@/components/Icon'
+
+export function initialsFromName(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/).slice(0, 2)
+  return (
+    parts
+      .map((part) => part[0] ?? '')
+      .join('')
+      .toUpperCase() || '?'
+  )
+}
 
 export function initialsFromEmail(email: string): string {
   const local = email.split('@')[0] ?? email
@@ -38,7 +49,7 @@ export default function UserSummary({ user, onSignOut }: UserSummaryProps) {
         onClick={onSignOut}
         className="touch-target inline-flex shrink-0 items-center justify-center rounded-full text-text-secondary hover:bg-background-tertiary"
       >
-        <NavIcon name="signOut" className="h-[1.125rem] w-[1.125rem]" />
+        <Icon name="signOut" />
         <span className="sr-only">Sign out</span>
       </button>
     </div>

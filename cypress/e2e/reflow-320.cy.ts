@@ -53,15 +53,15 @@ describe('reflow at 320px (WCAG 1.4.10)', () => {
   })
 
   it('collapses navigation to a bottom bar rather than a sidebar', () => {
-    login(USERS.employee, '/employee')
+    login(USERS.employee, '/')
     cy.get('[data-testid="bottom-nav"]').should('be.visible')
     cy.get('[data-testid="sidebar"]').should('not.exist')
     assertNoHorizontalScroll()
   })
 
   it('stacks data tables into cards instead of scrolling sideways', () => {
-    login(USERS.manager, '/manager')
-    cy.visit('/manager/requests')
+    login(USERS.manager, '/')
+    cy.visit('/requests')
     cy.get('[data-testid="screen-requests"]').should('be.visible')
     cy.get('[data-testid="data-table"]').should('not.exist')
     cy.get('[data-testid="data-cards"]').should('exist')
@@ -69,14 +69,14 @@ describe('reflow at 320px (WCAG 1.4.10)', () => {
   })
 
   it('reflows every Employee screen', () => {
-    login(USERS.employee, '/employee')
-    assertScreenReflows('/employee', 'screen-employee-dashboard')
-    assertScreenReflows('/employee/my-requests', 'screen-my-requests')
-    assertScreenReflows('/employee/settings', 'screen-settings')
+    login(USERS.employee, '/')
+    assertScreenReflows('/', 'screen-employee-dashboard')
+    assertScreenReflows('/requests', 'screen-requests')
+    assertScreenReflows('/settings', 'screen-settings')
   })
 
   it('reflows the book time off dialog and its date picker', () => {
-    login(USERS.employee, '/employee')
+    login(USERS.employee, '/')
     cy.contains('button', 'Book time off').first().click()
     cy.get('[data-testid="modal"]').should('be.visible')
     assertNoHorizontalScroll()
@@ -89,25 +89,24 @@ describe('reflow at 320px (WCAG 1.4.10)', () => {
   })
 
   it('reflows every Manager screen', () => {
-    login(USERS.manager, '/manager')
-    assertScreenReflows('/manager', 'screen-manager-dashboard')
-    assertScreenReflows('/manager/requests', 'screen-requests')
-    assertScreenReflows('/manager/requests/1', 'screen-request-review')
-    assertScreenReflows('/manager/team-calendar', 'screen-team-calendar')
-    assertScreenReflows('/manager/settings', 'screen-settings')
+    login(USERS.manager, '/')
+    assertScreenReflows('/', 'screen-manager-dashboard')
+    assertScreenReflows('/requests', 'screen-requests')
+    assertScreenReflows('/team-calendar', 'screen-team-calendar')
+    assertScreenReflows('/settings', 'screen-settings')
   })
 
   it('reflows every Admin screen', () => {
-    login(USERS.admin, '/admin')
-    assertScreenReflows('/admin', 'screen-admin-dashboard')
-    assertScreenReflows('/admin/requests', 'screen-requests')
-    assertScreenReflows('/admin/employees', 'screen-employees')
-    assertScreenReflows('/admin/departments', 'screen-departments')
-    assertScreenReflows('/admin/settings', 'screen-settings')
+    login(USERS.admin, '/')
+    assertScreenReflows('/', 'screen-admin-dashboard')
+    assertScreenReflows('/requests', 'screen-requests')
+    assertScreenReflows('/employees', 'screen-employees')
+    assertScreenReflows('/departments', 'screen-departments')
+    assertScreenReflows('/settings', 'screen-settings')
   })
 
   it('reflows the not-found screen', () => {
-    login(USERS.employee, '/employee')
+    login(USERS.employee, '/')
     cy.visit('/nowhere', { failOnStatusCode: false })
     cy.get('[data-testid="not-found"]').should('be.visible')
     assertNoHorizontalScroll()

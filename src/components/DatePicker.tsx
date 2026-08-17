@@ -6,8 +6,7 @@ import {
   monthOf,
   WEEKDAY_LABELS,
 } from '@/lib/calendar'
-import { formatDate } from '@/lib/dates'
-import { toIsoDate } from '@/lib/booking'
+import { formatDate, toIsoDate } from '@/lib/dates'
 
 interface DatePickerProps {
   id: string

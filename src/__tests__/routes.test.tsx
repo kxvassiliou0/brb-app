@@ -26,41 +26,23 @@ beforeEach(() => {
 })
 
 const cases: { path: string; testId: string; role: Role }[] = [
-  { path: '/admin', testId: 'screen-admin-dashboard', role: 'Admin' },
-  { path: '/admin/employees', testId: 'screen-employees', role: 'Admin' },
-  { path: '/admin/departments', testId: 'screen-departments', role: 'Admin' },
-  { path: '/admin/requests', testId: 'screen-requests', role: 'Admin' },
-  {
-    path: '/admin/requests/42',
-    testId: 'screen-request-review',
-    role: 'Admin',
-  },
-  { path: '/admin/settings', testId: 'screen-settings', role: 'Admin' },
-  { path: '/employee', testId: 'screen-employee-dashboard', role: 'Employee' },
-  {
-    path: '/employee/my-requests',
-    testId: 'screen-my-requests',
-    role: 'Employee',
-  },
-  { path: '/employee/settings', testId: 'screen-settings', role: 'Employee' },
-  { path: '/manager', testId: 'screen-manager-dashboard', role: 'Manager' },
-  { path: '/manager/requests', testId: 'screen-requests', role: 'Manager' },
-  {
-    path: '/manager/requests/7',
-    testId: 'screen-request-review',
-    role: 'Manager',
-  },
-  {
-    path: '/manager/team-calendar',
-    testId: 'screen-team-calendar',
-    role: 'Manager',
-  },
-  { path: '/manager/settings', testId: 'screen-settings', role: 'Manager' },
+  { path: '/', testId: 'screen-admin-dashboard', role: 'Admin' },
+  { path: '/', testId: 'screen-manager-dashboard', role: 'Manager' },
+  { path: '/', testId: 'screen-employee-dashboard', role: 'Employee' },
+  { path: '/requests', testId: 'screen-requests', role: 'Admin' },
+  { path: '/requests', testId: 'screen-requests', role: 'Manager' },
+  { path: '/requests', testId: 'screen-requests', role: 'Employee' },
+  { path: '/settings', testId: 'screen-settings', role: 'Admin' },
+  { path: '/settings', testId: 'screen-settings', role: 'Manager' },
+  { path: '/settings', testId: 'screen-settings', role: 'Employee' },
+  { path: '/employees', testId: 'screen-employees', role: 'Admin' },
+  { path: '/departments', testId: 'screen-departments', role: 'Admin' },
+  { path: '/team-calendar', testId: 'screen-team-calendar', role: 'Manager' },
 ]
 
 describe('routes', () => {
   it.each(cases)(
-    'mounts the correct screen for $path',
+    'mounts the correct screen for $path as $role',
     async ({ path, testId, role }) => {
       renderAt(path, role)
 
@@ -74,14 +56,14 @@ describe('routes', () => {
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
   })
 
-  it('redirects the bare root to /login', async () => {
+  it('sends an unauthenticated visitor from the root to /login', async () => {
     renderAt('/')
 
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
   })
 
   it('renders the persistent sidebar alongside every dashboard screen', async () => {
-    renderAt('/manager/team-calendar', 'Manager')
+    renderAt('/team-calendar', 'Manager')
 
     expect(await screen.findByTestId('sidebar')).toBeInTheDocument()
     expect(screen.getByTestId('screen-team-calendar')).toBeInTheDocument()

@@ -101,11 +101,11 @@ describe('booking time off', () => {
   beforeEach(() => {
     cy.viewport(DESKTOP.width, DESKTOP.height)
     cancelSpecRequests()
-    login(USERS.employee, '/employee')
+    login(USERS.employee, '/')
     cy.get('[data-testid="screen-employee-dashboard"]').should('be.visible')
   })
 
-  it('books a request from the dashboard and lists it as Pending', () => {
+  it('books a request and arrives on My requests with the new row highlighted', () => {
     const monthsAhead = 2
     const start = isoDate(monthsAhead, 12)
     const end = isoDate(monthsAhead, 13)
@@ -126,16 +126,48 @@ describe('booking time off', () => {
 
     cy.get('[data-testid="modal"]').should('not.exist')
 
-    cy.contains('a', 'View all').click()
-    cy.get('[data-testid="screen-my-requests"]').should('be.visible')
-    cy.contains(
-      '[data-testid="data-table"] tbody tr',
-      displayDate(start)
-    ).within(() => {
-      cy.contains('Vacation').should('exist')
-      cy.contains('Pending').should('exist')
-      cy.contains('2').should('exist')
-    })
+    cy.url().should('include', '/requests')
+    cy.get('[data-testid="screen-requests"]').should('be.visible')
+
+    cy.get('[data-testid="booking-confirmation-region"]')
+      .should('have.attr', 'role', 'status')
+      .and('have.attr', 'aria-live', 'polite')
+    cy.get('[data-testid="booking-confirmation"]').should(
+      'contain.text',
+      'submitted for review'
+    )
+
+    cy.get('[data-testid="data-table"] tbody tr[data-highlighted="true"]')
+      .should('have.length', 1)
+      .within(() => {
+        cy.contains(displayDate(start)).should('exist')
+        cy.contains('Vacation').should('exist')
+        cy.contains('Pending').should('exist')
+        cy.contains('2').should('exist')
+      })
+  })
+
+  it('keeps the entered dates and reason when the server refuses', () => {
+    const monthsAhead = 3
+    const start = isoDate(monthsAhead, 1)
+    const end = isoDate(monthsAhead, 26)
+
+    openBookingModal()
+    cy.get('#leave-type').select('Personal')
+    pickDate('start-date', start, monthsAhead)
+    pickDate('end-date', end, monthsAhead)
+    cy.get('#reason').type(MARKER)
+    cy.contains('button', 'Send request').click()
+
+    cy.get('[role="alert"]').should('be.visible')
+    cy.get('[data-testid="modal"]').should('be.visible')
+
+    cy.get('#leave-type').should('have.value', 'Personal')
+    cy.get('#start-date').should('contain.text', displayDate(start))
+    cy.get('#end-date').should('contain.text', displayDate(end))
+    cy.get('#reason').should('have.value', MARKER)
+
+    cy.url().should('not.include', '/requests')
   })
 
   it('refuses a range longer than the balance and shows the balance figure', () => {

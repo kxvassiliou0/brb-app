@@ -1,5 +1,5 @@
 import { cachedGet } from '@/lib/apiCache'
-import { toIsoDate } from '@/lib/booking'
+import { toIsoDate } from '@/lib/dates'
 
 export interface PublicHoliday {
   id?: number

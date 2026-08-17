@@ -3,7 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth'
 import { getStoredToken, setStoredToken } from '@/lib/api'
-import { ROLE_HOME, type Role } from '@/lib/routeAccess'
+import { HOME_PATH, type Role } from '@/lib/routeAccess'
 import { makeExpiredUserJwt, makeUserJwt } from '@/test/jwt'
 import { routes } from '@/routes'
 
@@ -33,30 +33,27 @@ afterEach(() => {
 
 const allowedPaths: Record<Role, { path: string; testId: string }[]> = {
   Admin: [
-    { path: '/admin', testId: 'screen-admin-dashboard' },
-    { path: '/admin/employees', testId: 'screen-employees' },
-    { path: '/admin/departments', testId: 'screen-departments' },
+    { path: '/', testId: 'screen-admin-dashboard' },
+    { path: '/requests', testId: 'screen-requests' },
+    { path: '/employees', testId: 'screen-employees' },
+    { path: '/departments', testId: 'screen-departments' },
   ],
   Manager: [
-    { path: '/manager', testId: 'screen-manager-dashboard' },
-    { path: '/manager/requests', testId: 'screen-requests' },
-    { path: '/manager/team-calendar', testId: 'screen-team-calendar' },
+    { path: '/', testId: 'screen-manager-dashboard' },
+    { path: '/requests', testId: 'screen-requests' },
+    { path: '/team-calendar', testId: 'screen-team-calendar' },
   ],
   Employee: [
-    { path: '/employee', testId: 'screen-employee-dashboard' },
-    { path: '/employee/my-requests', testId: 'screen-my-requests' },
+    { path: '/', testId: 'screen-employee-dashboard' },
+    { path: '/requests', testId: 'screen-requests' },
+    { path: '/settings', testId: 'screen-settings' },
   ],
 }
 
 const disallowedPaths: Record<Role, string[]> = {
-  Admin: ['/employee', '/employee/my-requests'],
-  Manager: ['/admin', '/admin/employees', '/employee', '/employee/my-requests'],
-  Employee: [
-    '/admin',
-    '/admin/employees',
-    '/manager',
-    '/manager/team-calendar',
-  ],
+  Admin: [],
+  Manager: ['/employees', '/departments'],
+  Employee: ['/employees', '/departments', '/team-calendar'],
 }
 
 describe('role-scoped route access', () => {
@@ -76,16 +73,16 @@ describe('role-scoped route access', () => {
         const router = renderAt(path)
 
         await screen.findByTestId('app-layout')
-        expect(router.state.location.pathname).toBe(ROLE_HOME[role])
+        expect(router.state.location.pathname).toBe(HOME_PATH)
       })
     }
   }
 })
 
 describe('cross-role allowances that mirror the backend', () => {
-  it('lets an Admin reach Manager-or-Admin routes', async () => {
+  it('lets an Admin reach the team calendar', async () => {
     seedUser('Admin')
-    renderAt('/manager/team-calendar')
+    renderAt('/team-calendar')
 
     expect(
       await screen.findByTestId('screen-team-calendar')
@@ -95,7 +92,7 @@ describe('cross-role allowances that mirror the backend', () => {
 
 describe('unauthenticated access', () => {
   it('redirects to /login', async () => {
-    renderAt('/manager/team-calendar')
+    renderAt('/team-calendar')
 
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
   })
@@ -106,7 +103,7 @@ describe('expired token', () => {
     setStoredToken(
       makeExpiredUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' })
     )
-    renderAt('/admin')
+    renderAt('/')
 
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
     expect(getStoredToken()).toBeNull()
@@ -124,7 +121,7 @@ describe('post-login redirect preservation', () => {
       }))
     )
 
-    const router = renderAt('/manager/team-calendar')
+    const router = renderAt('/team-calendar')
     expect(await screen.findByTestId('screen-login')).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Email address'), {
@@ -140,6 +137,6 @@ describe('post-login redirect preservation', () => {
     expect(
       await screen.findByTestId('screen-team-calendar')
     ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/manager/team-calendar')
+    expect(router.state.location.pathname).toBe('/team-calendar')
   })
 })

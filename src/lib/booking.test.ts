@@ -6,14 +6,14 @@ import {
   HTTP_BAD_REQUEST,
   HTTP_CONFLICT,
   hasBookingErrors,
+  INVALID_DATES_MESSAGE,
   LEAVE_TYPES,
   remainingAfterRequest,
   requestedDays,
-  toIsoDate,
   validateBooking,
   type BookingDraft,
 } from '@/lib/booking'
-import { countDays } from '@/lib/dates'
+import { countDays, toIsoDate } from '@/lib/dates'
 
 function draft(overrides: Partial<BookingDraft> = {}): BookingDraft {
   return {
@@ -177,5 +177,60 @@ describe('server error messages', () => {
       18
     )
     expect(message).toBe('Invalid employee ID')
+  })
+
+  it.each([
+    'Dates must be in YYYY-MM-DD format',
+    'Invalid date format',
+    'End date of 2026-08-01 is before the start date of 2026-08-10',
+  ])('explains a 400 about the dates in plain language: %s', (serverError) => {
+    const message = bookingErrorMessage(
+      new ApiRequestError(serverError, HTTP_BAD_REQUEST),
+      draft(),
+      18
+    )
+    expect(message).toBe(INVALID_DATES_MESSAGE)
+    expect(message).not.toContain('YYYY-MM-DD')
+  })
+
+  it('gives the three backend refusals three different messages', () => {
+    const balance = bookingErrorMessage(
+      new ApiRequestError(
+        'Days requested exceed remaining balance',
+        HTTP_BAD_REQUEST
+      ),
+      draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
+      3
+    )
+    const overlap = bookingErrorMessage(
+      new ApiRequestError(
+        'Date range of request overlaps with existing request',
+        HTTP_CONFLICT
+      ),
+      draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
+      3
+    )
+    const dates = bookingErrorMessage(
+      new ApiRequestError('Invalid date format', HTTP_BAD_REQUEST),
+      draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
+      3
+    )
+
+    expect(new Set([balance, overlap, dates]).size).toBe(3)
+    expect(balance).toMatch(/remaining/)
+    expect(overlap).toMatch(/clash/)
+    expect(dates).toBe(INVALID_DATES_MESSAGE)
+  })
+
+  it('still names the balance when the balance lookup failed', () => {
+    const message = bookingErrorMessage(
+      new ApiRequestError(
+        'Days requested exceed remaining balance',
+        HTTP_BAD_REQUEST
+      ),
+      draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
+      null
+    )
+    expect(message).toMatch(/balance/i)
   })
 })
