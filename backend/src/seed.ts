@@ -137,6 +137,9 @@ async function seed() {
     }),
   ]);
 
+  engManager.managerId = finManager.id;
+  await userRepo.save(engManager);
+
   const [emp1, emp2, emp3, emp4] = await userRepo.save([
     createUser({
       firstname: "David",
@@ -269,7 +272,7 @@ async function seed() {
   console.log("\nAccounts (password: Password123!)");
   console.log("Admin:     alice.thompson@company.com  (HR Specialist)");
   console.log(
-    "Managers:  bob.mitchell@company.com (Senior Contractor), carol.reyes@company.com (Finance Analyst)",
+    "Managers:  bob.mitchell@company.com (Senior Contractor, reports to Carol), carol.reeves@company.com (Finance Analyst)",
   );
   console.log(
     "Employees: david.jones (Contractor), eve.knowles (Contractor), frank.harrison (Finance Analyst), grace.williams (Marketing Executive) @company.com",

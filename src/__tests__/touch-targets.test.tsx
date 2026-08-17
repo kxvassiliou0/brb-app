@@ -22,42 +22,17 @@ const WIDTHS: [string, number][] = [
 ]
 
 const SCREENS: { path: string; role: Role; testId: string }[] = [
-  { path: '/admin', role: 'Admin', testId: 'screen-admin-dashboard' },
-  { path: '/admin/requests', role: 'Admin', testId: 'screen-requests' },
-  { path: '/admin/employees', role: 'Admin', testId: 'screen-employees' },
-  { path: '/admin/departments', role: 'Admin', testId: 'screen-departments' },
-  {
-    path: '/admin/requests/new',
-    role: 'Admin',
-    testId: 'screen-create-request',
-  },
-  {
-    path: '/admin/requests/42',
-    role: 'Admin',
-    testId: 'screen-request-review',
-  },
-  { path: '/admin/settings', role: 'Admin', testId: 'screen-settings' },
-  { path: '/manager', role: 'Manager', testId: 'screen-manager-dashboard' },
-  {
-    path: '/manager/team-calendar',
-    role: 'Manager',
-    testId: 'screen-team-calendar',
-  },
-  {
-    path: '/employee',
-    role: 'Employee',
-    testId: 'screen-employee-dashboard',
-  },
-  {
-    path: '/employee/my-requests',
-    role: 'Employee',
-    testId: 'screen-my-requests',
-  },
-  {
-    path: '/employee/book-time-off',
-    role: 'Employee',
-    testId: 'screen-create-request',
-  },
+  { path: '/', role: 'Admin', testId: 'screen-admin-dashboard' },
+  { path: '/requests', role: 'Admin', testId: 'screen-requests' },
+  { path: '/employees', role: 'Admin', testId: 'screen-employees' },
+  { path: '/departments', role: 'Admin', testId: 'screen-departments' },
+  { path: '/requests/42', role: 'Admin', testId: 'screen-request-review' },
+  { path: '/settings', role: 'Admin', testId: 'screen-settings' },
+  { path: '/', role: 'Manager', testId: 'screen-manager-dashboard' },
+  { path: '/requests', role: 'Manager', testId: 'screen-requests' },
+  { path: '/team-calendar', role: 'Manager', testId: 'screen-team-calendar' },
+  { path: '/', role: 'Employee', testId: 'screen-employee-dashboard' },
+  { path: '/requests', role: 'Employee', testId: 'screen-requests' },
   { path: '/nowhere', role: 'Employee', testId: 'not-found' },
 ]
 

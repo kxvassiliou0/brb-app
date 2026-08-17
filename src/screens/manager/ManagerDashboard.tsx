@@ -1,39 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
-import { apiFetch } from '../../lib/api'
-import { useAuth } from '../../lib/auth'
+import { useAuth } from '@/lib/auth'
+import BookTimeOffButton from '@/components/BookTimeOffButton'
 import { ErrorState, LoadingState } from '@/components/states'
 import LinkButton from '@/components/LinkButton'
-import PageHeader from '../../components/PageHeader'
+import PageHeader from '@/components/PageHeader'
 import StatCard from '@/components/StatCard'
+import { REQUESTS_PATH } from '@/lib/routeAccess'
+import { useApiResource } from '@/lib/useApiResource'
+import type { ApiSuccess } from '@/types/api'
 
 export default function ManagerDashboard() {
   const { user } = useAuth()
-  const [pendingCount, setPendingCount] = useState<number | null>(null)
-  const [error, setError] = useState<unknown>(null)
-  const [attempt, setAttempt] = useState(0)
+  const { data, error, retry } = useApiResource<ApiSuccess<unknown[]>>(
+    user ? `/api/leave-requests/pending/manager/${user.id}` : null
+  )
 
-  const retry = useCallback(() => {
-    setPendingCount(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
-
-  useEffect(() => {
-    if (!user) return
-    let cancelled = false
-    apiFetch<{ data: unknown[] }>(
-      `/api/leave-requests/pending/manager/${user.id}`
-    )
-      .then((res) => {
-        if (!cancelled) setPendingCount(res.data.length)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [user, attempt])
+  const pendingCount = data === null ? null : data.data.length
 
   return (
     <div data-testid="screen-manager-dashboard">
@@ -41,9 +22,12 @@ export default function ManagerDashboard() {
         title="Manager dashboard"
         description="Overview of your team's activity."
         action={
-          <LinkButton to="/manager/requests" variant="secondary">
-            Review requests
-          </LinkButton>
+          <div className="flex flex-wrap gap-3">
+            <LinkButton to={REQUESTS_PATH} variant="secondary">
+              Review requests
+            </LinkButton>
+            <BookTimeOffButton onBooked={retry} />
+          </div>
         }
       />
       {error ? (

@@ -20,6 +20,16 @@ export function setStoredToken(token: string | null): void {
   else localStorage.removeItem(TOKEN_KEY)
 }
 
+export class ApiRequestError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = status
+  }
+}
+
 export const DEFAULT_API_ERROR_MESSAGE =
   'Something went wrong. Please try again.'
 
@@ -43,11 +53,14 @@ export async function apiFetch<T>(
 
   const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
   if (res.status === HTTP_TOO_MANY_REQUESTS) {
-    throw new Error(RATE_LIMIT_MESSAGE)
+    throw new ApiRequestError(RATE_LIMIT_MESSAGE, res.status)
   }
   const body = await res.json().catch(() => null)
   if (!res.ok) {
-    throw new Error(body?.error ?? `Request failed with status ${res.status}`)
+    throw new ApiRequestError(
+      body?.error ?? `Request failed with status ${res.status}`,
+      res.status
+    )
   }
   return body as T
 }

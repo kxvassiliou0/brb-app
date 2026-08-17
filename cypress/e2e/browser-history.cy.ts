@@ -7,18 +7,18 @@ describe('browser history and deep links', () => {
     cy.url().should('include', '/manager')
 
     cy.get('[data-testid="sidebar"]').contains('a', 'Requests').click()
-    cy.url().should('include', '/manager/requests')
+    cy.url().should('include', '/requests')
     cy.get('[data-testid="sidebar"]').contains('a', 'Team calendar').click()
-    cy.url().should('include', '/manager/team-calendar')
+    cy.url().should('include', '/team-calendar')
 
     cy.go('back')
-    cy.url().should('include', '/manager/requests')
+    cy.url().should('include', '/requests')
     cy.go('back')
     cy.url().should('match', /\/manager$/)
     cy.go('forward')
-    cy.url().should('include', '/manager/requests')
+    cy.url().should('include', '/requests')
 
-    cy.visit('/manager/team-calendar')
+    cy.visit('/team-calendar')
     cy.get('[data-testid="screen-team-calendar"]').should('be.visible')
     cy.reload()
     cy.get('[data-testid="screen-team-calendar"]').should('be.visible')

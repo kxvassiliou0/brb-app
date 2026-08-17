@@ -72,55 +72,53 @@ describe('200% text resize (WCAG 1.4.4)', () => {
   })
 
   it('leaves navigation clickable rather than covered by other content', () => {
-    login(USERS.manager, '/manager')
+    login(USERS.manager, '/')
     resizeTextTo200Percent()
     cy.get('[data-testid="sidebar"]').contains('a', 'Requests').click()
-    cy.url().should('include', '/manager/requests')
+    cy.url().should('include', '/requests')
     cy.get('[data-testid="screen-requests"]').should('be.visible')
     assertNoHorizontalScroll()
   })
 
   it('keeps form controls reachable and usable', () => {
-    login(USERS.employee, '/employee')
-    cy.visit('/employee/book-time-off')
+    login(USERS.employee, '/')
     resizeTextTo200Percent()
+    cy.contains('button', 'Book time off').first().click()
     cy.get('#leave-type').should('be.visible').select('Sick')
-    cy.get('#start-date').should('be.visible').type('2026-09-01')
-    cy.get('#end-date').should('be.visible').type('2026-09-04')
+    cy.get('#start-date').should('be.visible').click()
+    cy.get(
+      '[data-testid="start-date-calendar"] [data-testid="calendar-day"]:not([disabled])'
+    )
+      .first()
+      .click()
     cy.get('#reason').should('be.visible').type('Recovering')
-    cy.contains('button', 'Submit request').should('be.visible')
+    cy.contains('button', 'Send request').should('be.visible')
     assertNoHorizontalScroll()
     assertNothingClipped()
   })
 
   it('holds every Employee screen', () => {
-    login(USERS.employee, '/employee')
-    assertScreenHoldsAtDoubledText('/employee', 'screen-employee-dashboard')
-    assertScreenHoldsAtDoubledText(
-      '/employee/my-requests',
-      'screen-my-requests'
-    )
-    assertScreenHoldsAtDoubledText('/employee/settings', 'screen-settings')
+    login(USERS.employee, '/')
+    assertScreenHoldsAtDoubledText('/', 'screen-employee-dashboard')
+    assertScreenHoldsAtDoubledText('/requests', 'screen-requests')
+    assertScreenHoldsAtDoubledText('/settings', 'screen-settings')
   })
 
   it('holds every Manager screen', () => {
-    login(USERS.manager, '/manager')
-    assertScreenHoldsAtDoubledText('/manager', 'screen-manager-dashboard')
-    assertScreenHoldsAtDoubledText('/manager/requests', 'screen-requests')
-    assertScreenHoldsAtDoubledText(
-      '/manager/team-calendar',
-      'screen-team-calendar'
-    )
-    assertScreenHoldsAtDoubledText('/manager/settings', 'screen-settings')
+    login(USERS.manager, '/')
+    assertScreenHoldsAtDoubledText('/', 'screen-manager-dashboard')
+    assertScreenHoldsAtDoubledText('/requests', 'screen-requests')
+    assertScreenHoldsAtDoubledText('/team-calendar', 'screen-team-calendar')
+    assertScreenHoldsAtDoubledText('/settings', 'screen-settings')
   })
 
   it('holds every Admin screen', () => {
-    login(USERS.admin, '/admin')
-    assertScreenHoldsAtDoubledText('/admin', 'screen-admin-dashboard')
-    assertScreenHoldsAtDoubledText('/admin/requests', 'screen-requests')
-    assertScreenHoldsAtDoubledText('/admin/employees', 'screen-employees')
-    assertScreenHoldsAtDoubledText('/admin/departments', 'screen-departments')
-    assertScreenHoldsAtDoubledText('/admin/settings', 'screen-settings')
+    login(USERS.admin, '/')
+    assertScreenHoldsAtDoubledText('/', 'screen-admin-dashboard')
+    assertScreenHoldsAtDoubledText('/requests', 'screen-requests')
+    assertScreenHoldsAtDoubledText('/employees', 'screen-employees')
+    assertScreenHoldsAtDoubledText('/departments', 'screen-departments')
+    assertScreenHoldsAtDoubledText('/settings', 'screen-settings')
   })
 })
 
@@ -130,19 +128,19 @@ describe('200% page zoom (WCAG 1.4.10)', () => {
   })
 
   it('collapses the sidebar to a bottom bar as the viewport halves', () => {
-    login(USERS.employee, '/employee')
+    login(USERS.employee, '/')
     cy.get('[data-testid="bottom-nav"]').should('be.visible')
     cy.get('[data-testid="sidebar"]').should('not.exist')
     assertNoHorizontalScroll()
   })
 
   it('stacks tables into cards and keeps navigation reachable', () => {
-    login(USERS.manager, '/manager')
-    cy.visit('/manager/requests')
+    login(USERS.manager, '/')
+    cy.visit('/requests')
     cy.get('[data-testid="data-table"]').should('not.exist')
     cy.get('[data-testid="data-cards"]').should('exist')
     cy.get('[data-testid="bottom-nav"]').contains('a', 'Calendar').click()
-    cy.url().should('include', '/manager/team-calendar')
+    cy.url().should('include', '/team-calendar')
     assertNoHorizontalScroll()
     assertNothingClipped()
   })

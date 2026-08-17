@@ -422,6 +422,149 @@ describe("LeaveRequestService.createLeaveRequest", () => {
     expect(mockLeaveRepo.save).toHaveBeenCalledTimes(1);
   });
 
+  it("creates a manager's own request against the token id, ignoring any employee_id in the body", async () => {
+    // Arrange - the manager tries to pass someone else's id
+    const token = { id: 2, role: RoleType.Manager };
+    const manager = makeUser({
+      id: 2,
+      role: RoleType.Manager,
+      annualLeaveAllowance: 25,
+      managerId: 3,
+    });
+    const saved = makeLeaveRequest({ userId: 2 });
+    mockUserRepo.findOne.mockResolvedValue(manager);
+    mockLeaveRepo.find.mockResolvedValue([]);
+    mockLeaveRepo.createQueryBuilder.mockReturnValue(mockQBNoOverlap());
+    mockPublicHolidayRepo.find.mockResolvedValue([]);
+    mockLeaveRepo.create.mockReturnValue(saved);
+    mockLeaveRepo.save.mockResolvedValue(saved);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      employee_id: 99,
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockUserRepo.findOne).toHaveBeenCalledWith({ where: { id: 2 } });
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 2 }),
+    );
+  });
+
+  it("applies the balance rule to a manager's own request", async () => {
+    // Arrange
+    const token = { id: 2, role: RoleType.Manager };
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 2, role: RoleType.Manager, annualLeaveAllowance: 2 }),
+    );
+    mockLeaveRepo.find.mockResolvedValue([]);
+    mockPublicHolidayRepo.find.mockResolvedValue([]);
+
+    // Act & Assert
+    await expect(
+      service.createLeaveRequest(token, {
+        leave_type: LeaveType.Vacation,
+        start_date: "2026-09-01",
+        end_date: "2026-09-05",
+      }),
+    ).rejects.toThrow(
+      new AppError(
+        "Days requested exceed remaining balance",
+        StatusCodes.BAD_REQUEST,
+      ),
+    );
+  });
+
+  it("applies the overlap rule to a manager's own request", async () => {
+    // Arrange
+    const token = { id: 2, role: RoleType.Manager };
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 2, role: RoleType.Manager, annualLeaveAllowance: 25 }),
+    );
+    mockLeaveRepo.find.mockResolvedValue([]);
+    mockPublicHolidayRepo.find.mockResolvedValue([]);
+    mockLeaveRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(makeLeaveRequest({ userId: 2 })),
+    } as unknown as SelectQueryBuilder<LeaveRequest>);
+
+    // Act & Assert
+    await expect(
+      service.createLeaveRequest(token, {
+        leave_type: LeaveType.Vacation,
+        start_date: "2026-09-01",
+        end_date: "2026-09-05",
+      }),
+    ).rejects.toThrow(
+      new AppError(
+        "Date range of request overlaps with existing request",
+        StatusCodes.CONFLICT,
+      ),
+    );
+  });
+
+  it("excludes public holidays from a manager's own request", async () => {
+    // Arrange - 5 calendar days containing 1 public holiday
+    const token = { id: 2, role: RoleType.Manager };
+    const saved = makeLeaveRequest({ userId: 2 });
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 2, role: RoleType.Manager, annualLeaveAllowance: 25 }),
+    );
+    mockLeaveRepo.find.mockResolvedValue([]);
+    mockLeaveRepo.createQueryBuilder.mockReturnValue(mockQBNoOverlap());
+    mockPublicHolidayRepo.find.mockResolvedValue([
+      makePublicHoliday({ date: new Date("2026-09-03"), name: "Bank Holiday" }),
+    ]);
+    mockLeaveRepo.create.mockReturnValue(saved);
+    mockLeaveRepo.save.mockResolvedValue(saved);
+
+    // Act
+    await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(mockLeaveRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ daysRequested: 4 }),
+    );
+  });
+
+  it("creates a request for a manager who has no line manager assigned", async () => {
+    // Arrange - managerId is nullable
+    const token = { id: 2, role: RoleType.Manager };
+    const saved = makeLeaveRequest({ userId: 2 });
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({
+        id: 2,
+        role: RoleType.Manager,
+        annualLeaveAllowance: 25,
+        managerId: null,
+      }),
+    );
+    mockLeaveRepo.find.mockResolvedValue([]);
+    mockLeaveRepo.createQueryBuilder.mockReturnValue(mockQBNoOverlap());
+    mockPublicHolidayRepo.find.mockResolvedValue([]);
+    mockLeaveRepo.create.mockReturnValue(saved);
+    mockLeaveRepo.save.mockResolvedValue(saved);
+
+    // Act
+    const result = await service.createLeaveRequest(token, {
+      leave_type: LeaveType.Vacation,
+      start_date: "2026-09-01",
+      end_date: "2026-09-05",
+    });
+
+    // Assert
+    expect(result.message).toContain("submitted for review");
+    expect(mockLeaveRepo.save).toHaveBeenCalledTimes(1);
+  });
+
   it("creates leave request as admin on behalf of an employee", async () => {
     // Arrange
     const token = { id: 1, role: RoleType.Admin };
@@ -856,6 +999,69 @@ describe("LeaveRequestService.getPendingRequestsByManager", () => {
     ).rejects.toThrow(
       new AppError("Invalid from date format", StatusCodes.BAD_REQUEST),
     );
+  });
+
+  it("keeps a manager's own pending request out of their own queue", async () => {
+    // Arrange - the queue is scoped to direct reports, and a manager is not their own report
+    const token = { id: 2, role: RoleType.Manager };
+    const ownRequest = makeLeaveRequest({ id: 99, userId: 2 });
+    const reportRequest = makeLeaveRequest({ id: 100, userId: 4 });
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 2, role: RoleType.Manager, managerId: 3 }),
+    );
+    mockUserRepo.find.mockResolvedValue([makeUser({ id: 4, managerId: 2 })]);
+    mockLeaveRepo.find.mockResolvedValue([reportRequest]);
+
+    // Act
+    const result = await service.getPendingRequestsByManager(token, 2, {});
+
+    // Assert
+    const ids = (result.data as Array<{ id: number }>).map((lr) => lr.id);
+    expect(ids).toEqual([reportRequest.id]);
+    expect(ids).not.toContain(ownRequest.id);
+    expect(mockUserRepo.find).toHaveBeenCalledWith({
+      where: { managerId: 2 },
+    });
+  });
+
+  it("routes a manager's own request to their line manager's queue", async () => {
+    // Arrange - manager 2 reports to manager 3
+    const token = { id: 3, role: RoleType.Manager };
+    const managersOwnRequest = makeLeaveRequest({ id: 99, userId: 2 });
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 3, role: RoleType.Manager }),
+    );
+    mockUserRepo.find.mockResolvedValue([
+      makeUser({ id: 2, role: RoleType.Manager, managerId: 3 }),
+    ]);
+    mockLeaveRepo.find.mockResolvedValue([managersOwnRequest]);
+
+    // Act
+    const result = await service.getPendingRequestsByManager(token, 3, {});
+
+    // Assert
+    expect(mockUserRepo.find).toHaveBeenCalledWith({
+      where: { managerId: 3 },
+    });
+    expect((result.data as Array<{ id: number }>).map((lr) => lr.id)).toEqual([
+      99,
+    ]);
+  });
+
+  it("returns an empty queue for a manager with no line manager and no reports", async () => {
+    // Arrange - managerId is nullable, so a top-level manager has nobody above or below
+    const token = { id: 2, role: RoleType.Manager };
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 2, role: RoleType.Manager, managerId: null }),
+    );
+    mockUserRepo.find.mockResolvedValue([]);
+
+    // Act
+    const result = await service.getPendingRequestsByManager(token, 2, {});
+
+    // Assert
+    expect(result.data).toEqual([]);
+    expect(result.message).toContain("No team members");
   });
 });
 

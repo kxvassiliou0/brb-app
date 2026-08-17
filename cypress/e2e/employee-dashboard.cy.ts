@@ -51,7 +51,7 @@ function sumDays(rows: RequestRow[]): number {
 
 describe('employee dashboard', () => {
   beforeEach(() => {
-    login(USERS.employee, '/employee')
+    login(USERS.employee, '/')
     cy.get('[data-testid="screen-employee-dashboard"]').should('be.visible')
   })
 
@@ -83,8 +83,8 @@ describe('employee dashboard', () => {
       })
 
     cy.contains('a', 'View all').click()
-    cy.url().should('include', '/employee/my-requests')
-    cy.get('[data-testid="screen-my-requests"]').should('be.visible')
+    cy.url().should('include', '/requests')
+    cy.get('[data-testid="screen-requests"]').should('be.visible')
 
     requestRows().then((rows) => {
       const leaveYear = getLeaveYear()
@@ -115,7 +115,7 @@ describe('employee dashboard', () => {
       expect(dashboardRows.length).to.be.at.most(5)
 
       cy.contains('a', 'View all').click()
-      cy.get('[data-testid="screen-my-requests"]').should('be.visible')
+      cy.get('[data-testid="screen-requests"]').should('be.visible')
 
       requestRows().then((allRows) => {
         const mostRecent = [...allRows]
