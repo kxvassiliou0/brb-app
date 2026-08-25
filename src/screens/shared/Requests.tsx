@@ -49,7 +49,7 @@ export default function Requests() {
   const { user } = useAuth()
   const { bookingConfirmation, bookingRequestId } = useBookingConfirmation()
   const canReview = canReviewRequests(user?.role)
-  const canFilterByDepartment = isAdmin(user?.role)
+  const isAdminUser = isAdmin(user?.role)
 
   const [scope, setScope] = useState<ScopeFilter>(canReview ? 'all' : 'mine')
   const [filters, setFilters] = useState<RequestFilters>(EMPTY_FILTERS)
@@ -101,11 +101,15 @@ export default function Requests() {
   }, [user, attempt])
 
   useEffect(() => {
-    if (!canReview) return
+    if (!user || !canReview) return
     let cancelled = false
     const force = attempt > 0
 
-    cachedGet<ApiSuccess<LeaveRequest[]>>('/api/leave-requests', force)
+    const path = isAdminUser
+      ? '/api/leave-requests'
+      : `/api/leave-requests/pending/manager/${user.id}`
+
+    cachedGet<ApiSuccess<LeaveRequest[]>>(path, force)
       .then((res) => {
         if (!cancelled) setTeam(res.data)
       })
@@ -113,7 +117,7 @@ export default function Requests() {
         if (!cancelled) setError(err)
       })
 
-    if (canFilterByDepartment) {
+    if (isAdminUser) {
       cachedGet<ApiSuccess<DepartmentRow[]>>('/api/departments', force)
         .then((res) => {
           if (!cancelled) setDepartments(res.data)
@@ -126,9 +130,11 @@ export default function Requests() {
     return () => {
       cancelled = true
     }
-  }, [canReview, canFilterByDepartment, attempt])
+  }, [user, canReview, isAdminUser, attempt])
 
   const showingTeam = canReview && scope === 'all'
+
+  const showingApprovalQueue = showingTeam && !isAdminUser
 
   const source: RequestRow[] | null = showingTeam ? team : own
 
@@ -176,6 +182,11 @@ export default function Requests() {
 
   const clearFilters = useCallback(() => setFilters(EMPTY_FILTERS), [])
 
+  const changeScope = useCallback((next: ScopeFilter) => {
+    setScope(next)
+    setFilters(EMPTY_FILTERS)
+  }, [])
+
   const handleDecide = useCallback(
     (action: ReviewAction, requestId: number) => {
       setDeciding(requestId)
@@ -188,13 +199,20 @@ export default function Requests() {
     [refresh]
   )
 
-  const description = showingTeam
-    ? `${countLabel(countInLeaveYear(team ?? []), 'team request')} this year • ${countPending(team ?? [])} pending review`
-    : `${countLabel(countInLeaveYear(own ?? []), 'request')} this year • ${
-        balance
-          ? `${balance.days_remaining} days remaining of ${balance.annual_allowance}`
-          : 'balance unavailable'
-      }`
+  function describe(): string {
+    if (showingApprovalQueue) {
+      return (
+        countLabel((team ?? []).length, 'request') + ' awaiting your approval'
+      )
+    }
+    if (showingTeam) {
+      return `${countLabel(countInLeaveYear(team ?? []), 'team request')} this year • ${countPending(team ?? [])} pending review`
+    }
+    const remaining = balance
+      ? `${balance.days_remaining} days remaining of ${balance.annual_allowance}`
+      : 'balance unavailable'
+    return `${countLabel(countInLeaveYear(own ?? []), 'request')} this year • ${remaining}`
+  }
 
   const title = showingTeam ? 'Team requests' : 'My requests'
 
@@ -202,7 +220,7 @@ export default function Requests() {
     <div data-testid="screen-requests">
       <PageHeader
         title={title}
-        description={description}
+        description={describe()}
         action={<BookTimeOffButton onBooked={refresh} />}
       />
 
@@ -214,7 +232,7 @@ export default function Requests() {
           onChange={patchFilters}
           onClear={clearFilters}
           showSearch={showingTeam}
-          showDepartments={showingTeam && canFilterByDepartment}
+          showDepartments={showingTeam && isAdminUser}
           departments={departments}
           canClear={hasActiveFilters(filters)}
         />
@@ -225,20 +243,22 @@ export default function Requests() {
             variant="slider"
             options={SCOPE_OPTIONS}
             value={scope}
-            onChange={setScope}
+            onChange={changeScope}
           />
         )}
       </div>
 
       <div className="flex flex-col gap-4 rounded-2xl bg-background-secondary p-4 sm:p-6">
-        <SegmentedControl
-          label="Filter by status"
-          testId="status-filter"
-          variant="tabs"
-          options={STATUS_OPTIONS}
-          value={filters.status}
-          onChange={(status: StatusFilter) => patchFilters({ status })}
-        />
+        {!showingApprovalQueue && (
+          <SegmentedControl
+            label="Filter by status"
+            testId="status-filter"
+            variant="tabs"
+            options={STATUS_OPTIONS}
+            value={filters.status}
+            onChange={(status: StatusFilter) => patchFilters({ status })}
+          />
+        )}
 
         {showingTeam && <RequestDateStrip highlighted={highlightedDates} />}
 
@@ -252,11 +272,13 @@ export default function Requests() {
           decidingId={deciding}
           highlightRequestId={bookingRequestId ?? null}
           emptyMessage={
-            showingTeam
-              ? 'No requests to review yet.'
-              : hasActiveFilters(filters)
-                ? 'No requests match these filters.'
-                : "You haven't submitted any time-off requests. Book your first trip to get started!"
+            showingApprovalQueue
+              ? 'Nothing is waiting for your approval.'
+              : showingTeam
+                ? 'No requests to review yet.'
+                : hasActiveFilters(filters)
+                  ? 'No requests match these filters.'
+                  : "You haven't submitted any time-off requests. Book your first trip to get started!"
           }
           emptyAction={
             showingTeam ? null : <BookTimeOffButton onBooked={refresh} />
