@@ -4,18 +4,22 @@ import type { LeaveStatus, LeaveRequest, OwnLeaveRequest } from '@/types/api'
 export type RequestRow = OwnLeaveRequest &
   Partial<Pick<LeaveRequest, 'employee_id' | 'employee_name' | 'department_id'>>
 
-export type StatusFilter =
-  'All' | Extract<LeaveStatus, 'Pending' | 'Approved' | 'Rejected'>
+export type StatusFilter = 'All' | LeaveStatus
 
 export type ScopeFilter = 'all' | 'mine'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
+const EVERY_LEAVE_STATUS = {
+  Pending: 'Pending',
+  Approved: 'Approved',
+  Rejected: 'Rejected',
+  Cancelled: 'Cancelled',
+} satisfies Record<LeaveStatus, LeaveStatus>
+
 export const STATUS_FILTERS: StatusFilter[] = [
   'All',
-  'Pending',
-  'Approved',
-  'Rejected',
+  ...Object.values(EVERY_LEAVE_STATUS),
 ]
 
 export interface RequestFilters {

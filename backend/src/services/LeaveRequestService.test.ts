@@ -911,6 +911,48 @@ describe("LeaveRequestService.getLeaveRequestsByEmployee", () => {
     expect(result.message).toContain("4");
     expect(Array.isArray(result.data)).toBe(true);
   });
+
+  it("asks for that employee's requests most recent first", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    mockUserRepo.findOne.mockResolvedValue(makeUser({ id: 4 }));
+    mockLeaveRepo.find.mockResolvedValue([]);
+
+    // Act
+    await service.getLeaveRequestsByEmployee(token, 4);
+
+    // Assert
+    expect(mockLeaveRepo.find).toHaveBeenCalledWith({
+      where: { userId: 4 },
+      order: { createdAt: "DESC" },
+    });
+  });
+
+  it("reports the status and the manager note on every request", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    mockUserRepo.findOne.mockResolvedValue(makeUser({ id: 4 }));
+    mockLeaveRepo.find.mockResolvedValue([
+      makeLeaveRequest({
+        id: 9,
+        userId: 4,
+        status: LeaveStatus.Rejected,
+        managerNote: "Two others are already away that week",
+      }),
+    ]);
+
+    // Act
+    const result = await service.getLeaveRequestsByEmployee(token, 4);
+
+    // Assert
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: 9,
+        status: LeaveStatus.Rejected,
+        manager_note: "Two others are already away that week",
+      }),
+    ]);
+  });
 });
 
 describe("LeaveRequestService.getRemainingLeave", () => {

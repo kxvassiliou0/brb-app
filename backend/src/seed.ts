@@ -30,6 +30,7 @@ type SeedLeaveInput = {
   endDate: string;
   reason: string;
   reviewedById: number | null;
+  managerNote?: string;
 };
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -204,6 +205,7 @@ async function seed() {
       reason: data.reason,
       status: data.status,
       reviewedById: data.reviewedById,
+      managerNote: data.managerNote ?? null,
     });
   };
 
@@ -226,6 +228,8 @@ async function seed() {
         endDate: "2026-06-16",
         reason: "Migraine",
         reviewedById: engManager.id,
+        managerNote:
+          "Please use the sick-leave line instead of booking this in advance.",
       },
       {
         userId: emp1.id,
@@ -235,6 +239,8 @@ async function seed() {
         endDate: "2026-07-21",
         reason: "Training course I would like to attend",
         reviewedById: engManager.id,
+        managerNote:
+          "Budget for training closes this quarter - resubmit in April.",
       },
       {
         userId: emp1.id,
@@ -271,6 +277,7 @@ async function seed() {
         endDate: "2026-06-09",
         reason: "Feeling unwell",
         reviewedById: engManager.id,
+        managerNote: "No sick note on file for these dates.",
       },
       {
         userId: emp2.id,
@@ -334,6 +341,8 @@ async function seed() {
         endDate: "2026-07-07",
         reason: "Back pain",
         reviewedById: finManager.id,
+        managerNote:
+          "Occupational health referral needed before more sick leave is approved.",
       },
       {
         userId: emp3.id,
@@ -343,6 +352,7 @@ async function seed() {
         endDate: "2026-08-07",
         reason: "Family trip",
         reviewedById: finManager.id,
+        managerNote: "Two others in Finance are already away that week.",
       },
       {
         userId: emp3.id,
@@ -388,6 +398,7 @@ async function seed() {
         endDate: "2026-06-26",
         reason: "Trip abroad",
         reviewedById: admin.id,
+        managerNote: "This would take you past your remaining allowance.",
       },
       {
         userId: emp4.id,
@@ -442,6 +453,7 @@ async function seed() {
         endDate: "2026-09-04",
         reason: "Late summer break",
         reviewedById: finManager.id,
+        managerNote: "Month-end reporting falls in this week.",
       },
       {
         userId: engManager.id,
@@ -478,6 +490,8 @@ async function seed() {
         endDate: "2027-03-02",
         reason: "Personal matter",
         reviewedById: finManager.id,
+        managerNote:
+          "Year-end close - no leave can be approved in the first week of March.",
       },
       {
         userId: finManager.id,
@@ -496,6 +510,7 @@ async function seed() {
         endDate: "2026-08-25",
         reason: "Personal appointment",
         reviewedById: admin.id,
+        managerNote: "Please rebook outside the audit window.",
       },
       {
         userId: finManager.id,
