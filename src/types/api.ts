@@ -54,6 +54,8 @@ export interface UserRecord {
 
 export type UpdateUserBody = Omit<UserRecord, 'id'> & { password?: string }
 
+export type CreateUserBody = Omit<UserRecord, 'id'> & { password: string }
+
 export interface LeaveRequest {
   id: number
   employee_id: number

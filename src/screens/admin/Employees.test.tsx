@@ -324,6 +324,100 @@ describe('editing an employee from the list', () => {
   })
 })
 
+describe('adding an employee from the list', () => {
+  const NINA: UserListItem = {
+    id: 8,
+    firstName: 'Nina',
+    lastName: 'Newstarter',
+    email: 'nina.newstarter@company.com',
+    role: 'Employee',
+    annualLeaveAllowance: 25,
+    department: { id: 1, name: 'Engineering' },
+    jobRole: { id: 5, name: 'Contractor' },
+    manager: null,
+  }
+
+  function respond(body: unknown, status = 200): Response {
+    return {
+      ok: status < 400,
+      status,
+      json: async () => body,
+    } as unknown as Response
+  }
+
+  function stubAddFlow(): void {
+    let listCalls = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (init?.method === 'POST') return respond({ data: { id: NINA.id } })
+        if (url.includes('/api/departments'))
+          return respond({ data: [ALICE.department, DAVID.department] })
+        if (url.includes('/api/job-roles'))
+          return respond({ data: [ALICE.jobRole, DAVID.jobRole] })
+        listCalls += 1
+        return respond({
+          data: listCalls === 1 ? EMPLOYEES : [...EMPLOYEES, NINA],
+        })
+      })
+    )
+  }
+
+  async function openAddForm() {
+    setViewportWidth(desktopWidth())
+    stubAddFlow()
+    signIn(OTHER_ADMIN_ID)
+    render(
+      <AuthProvider>
+        <Employees />
+      </AuthProvider>
+    )
+    await screen.findByText(DAVID.email)
+    fireEvent.click(screen.getByRole('button', { name: /Add an employee/ }))
+    return screen.findByTestId('add-employee-form')
+  }
+
+  it('opens an empty form from the Add an employee control', async () => {
+    await openAddForm()
+
+    expect(screen.getByLabelText('First name')).toHaveValue('')
+    expect(screen.getByLabelText('Email')).toHaveValue('')
+    expect(screen.getByLabelText('Annual leave allowance (days)')).toHaveValue(
+      25
+    )
+  })
+
+  it('shows the created employee in the list without tearing the page down', async () => {
+    const form = await openAddForm()
+    const screenNode = screen.getByTestId('screen-employees')
+
+    fireEvent.change(screen.getByLabelText('First name'), {
+      target: { value: NINA.firstName },
+    })
+    fireEvent.change(screen.getByLabelText('Last name'), {
+      target: { value: NINA.lastName },
+    })
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: NINA.email },
+    })
+    fireEvent.change(screen.getByLabelText('Department'), {
+      target: { value: String(NINA.department.id) },
+    })
+    fireEvent.change(screen.getByLabelText('Job role'), {
+      target: { value: String(NINA.jobRole.id) },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'first-password' },
+    })
+    fireEvent.submit(form)
+
+    expect(await screen.findByText(NINA.email)).toBeInTheDocument()
+    expect(screen.queryByTestId('add-employee-form')).not.toBeInTheDocument()
+    expect(screen.getByTestId('screen-employees')).toBe(screenNode)
+  })
+})
+
 describe('access to the employee list', () => {
   function renderAt(role: Role) {
     setStoredToken(

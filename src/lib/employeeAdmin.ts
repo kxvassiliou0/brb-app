@@ -1,6 +1,7 @@
-import { apiFetch } from '@/lib/api'
+import { ApiRequestError, apiFetch, getApiErrorMessage } from '@/lib/api'
 import { clearApiCache } from '@/lib/apiCache'
 import type {
+  CreateUserBody,
   RoleType,
   UpdateUserBody,
   UserListItem,
@@ -10,6 +11,13 @@ import type {
 export const PASSWORD_MIN_LENGTH = 10
 
 export const ROLES: RoleType[] = ['Employee', 'Manager', 'Admin']
+
+export const DEFAULT_ANNUAL_LEAVE_ALLOWANCE = 25
+
+export const HTTP_CONFLICT = 409
+
+export const DUPLICATE_EMAIL_MESSAGE =
+  'That email address already belongs to someone else. Please use a different one.'
 
 export const KEEP_PASSWORD_HINT =
   'Leave this blank to keep their current password.'
@@ -43,8 +51,24 @@ export interface EmployeeErrors {
   password?: string
 }
 
+export const USERS_PATH = '/api/users'
+
 export function userPath(id: number): string {
-  return `/api/users/${id}`
+  return `${USERS_PATH}/${id}`
+}
+
+export function emptyEmployeeDraft(): EmployeeDraft {
+  return {
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'Employee',
+    annualLeaveAllowance: String(DEFAULT_ANNUAL_LEAVE_ALLOWANCE),
+    departmentId: '',
+    jobRoleId: '',
+    managerId: '',
+    password: '',
+  }
 }
 
 export function draftFromRecord(record: UserRecord): EmployeeDraft {
@@ -98,8 +122,28 @@ export function validateEmployee(
   return errors
 }
 
+export function validateNewEmployee(draft: EmployeeDraft): EmployeeErrors {
+  const errors = validateEmployee(draft)
+  if (!draft.password) errors.password = 'Please enter a password'
+  return errors
+}
+
 export function hasEmployeeErrors(errors: EmployeeErrors): boolean {
   return Object.keys(errors).length > 0
+}
+
+export function isDuplicateEmailError(error: unknown): boolean {
+  if (error instanceof ApiRequestError && error.status === HTTP_CONFLICT)
+    return true
+
+  const message = getApiErrorMessage(error, '').toLowerCase()
+  if (message.includes('duplicate entry')) return true
+  return (
+    message.includes('email') &&
+    (message.includes('already') ||
+      message.includes('unique') ||
+      message.includes('taken'))
+  )
 }
 
 export function buildUpdateBody(draft: EmployeeDraft): UpdateUserBody {
@@ -114,6 +158,18 @@ export function buildUpdateBody(draft: EmployeeDraft): UpdateUserBody {
     managerId: draft.managerId ? Number(draft.managerId) : null,
     ...(draft.password ? { password: draft.password } : {}),
   }
+}
+
+export function buildCreateBody(draft: EmployeeDraft): CreateUserBody {
+  return { ...buildUpdateBody(draft), password: draft.password }
+}
+
+export async function createEmployee(draft: EmployeeDraft): Promise<void> {
+  await apiFetch(USERS_PATH, {
+    method: 'POST',
+    body: JSON.stringify(buildCreateBody(draft)),
+  })
+  clearApiCache()
 }
 
 export async function updateEmployee(
