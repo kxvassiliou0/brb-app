@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setStoredToken } from '@/lib/api'
@@ -87,6 +93,13 @@ function stubApi({
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
+}
+
+function reviewRow(label: string): string {
+  const modal = screen.queryByTestId('modal')
+  if (!modal) return ''
+  const term = within(modal).queryByText(label)
+  return term?.nextElementSibling?.textContent ?? ''
 }
 
 function renderRequests(role: Role, state?: unknown) {
@@ -273,6 +286,63 @@ describe("the manager's approval queue", () => {
     expect(
       await screen.findByText('Nothing is waiting for your approval.')
     ).toBeInTheDocument()
+  })
+
+  it('reflects the approved days in the balance the next review shows', async () => {
+    const before: RemainingLeave = {
+      annual_allowance: 25,
+      days_used: 7,
+      days_remaining: 18,
+    }
+    const after: RemainingLeave = {
+      annual_allowance: 25,
+      days_used: 12,
+      days_remaining: 13,
+    }
+    const queue = [
+      teamRequest({ id: 50, days_requested: 5 }),
+      teamRequest({
+        id: 51,
+        start_date: '2026-09-10',
+        end_date: '2026-09-12',
+        days_requested: 3,
+      }),
+    ]
+    let approved = false
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (init?.method === 'PATCH') {
+          approved = true
+          return jsonOk({})
+        }
+        if (url.includes('/remaining/'))
+          return jsonOk(approved ? after : before)
+        if (url.includes('/pending/manager/'))
+          return jsonOk(approved ? queue.slice(1) : queue)
+        return jsonOk([])
+      })
+    )
+    renderRequests('Manager')
+
+    const names = await screen.findAllByRole('button', { name: 'David Jones' })
+    fireEvent.click(names[0]!)
+    await waitFor(() => expect(reviewRow('Days remaining')).toBe('18 days'))
+
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Approve',
+      })
+    )
+    await waitFor(() =>
+      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'David Jones' }))
+    await waitFor(() => expect(reviewRow('Days remaining')).toBe('13 days'))
+    expect(reviewRow('Days used')).toBe('12 days')
+    expect(reviewRow('Entitlement')).toBe('25 days')
   })
 })
 

@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { mock, MockProxy } from "jest-mock-extended";
-import type { Repository, SelectQueryBuilder } from "typeorm";
+import type { FindManyOptions, Repository, SelectQueryBuilder } from "typeorm";
 import { LeaveRequest } from "../entities/LeaveRequest.entity";
 import { PublicHoliday } from "../entities/PublicHoliday.entity";
 import { User } from "../entities/User.entity";
@@ -942,6 +942,121 @@ describe("LeaveRequestService.getRemainingLeave", () => {
     expect(result.data).toMatchObject({
       annual_allowance: 25,
       days_remaining: 25,
+    });
+  });
+
+  it("reports days used and days remaining that add up to the allowance", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 4, annualLeaveAllowance: 25 }),
+    );
+    mockLeaveRepo.find.mockResolvedValue([
+      makeLeaveRequest({
+        id: 1,
+        userId: 4,
+        daysRequested: 5,
+        status: LeaveStatus.Approved,
+      }),
+      makeLeaveRequest({
+        id: 2,
+        userId: 4,
+        daysRequested: 2,
+        status: LeaveStatus.Approved,
+      }),
+    ]);
+
+    // Act
+    const result = await service.getRemainingLeave(token, 4);
+    const balance = result.data as {
+      annual_allowance: number;
+      days_used: number;
+      days_remaining: number;
+    };
+
+    // Assert
+    expect(balance).toEqual({
+      annual_allowance: 25,
+      days_used: 7,
+      days_remaining: 18,
+    });
+    expect(balance.days_used + balance.days_remaining).toBe(
+      balance.annual_allowance,
+    );
+  });
+
+  it("leaves Rejected and Cancelled requests out of the days used", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    const leaveRequests = [
+      makeLeaveRequest({
+        id: 1,
+        userId: 4,
+        daysRequested: 5,
+        status: LeaveStatus.Approved,
+      }),
+      makeLeaveRequest({
+        id: 2,
+        userId: 4,
+        daysRequested: 4,
+        status: LeaveStatus.Rejected,
+      }),
+      makeLeaveRequest({
+        id: 3,
+        userId: 4,
+        daysRequested: 3,
+        status: LeaveStatus.Cancelled,
+      }),
+      makeLeaveRequest({
+        id: 4,
+        userId: 4,
+        daysRequested: 2,
+        status: LeaveStatus.Pending,
+      }),
+    ];
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 4, annualLeaveAllowance: 25 }),
+    );
+    mockLeaveRepo.find.mockImplementation(
+      async (options?: FindManyOptions<LeaveRequest>) => {
+        const where = options?.where as { status?: LeaveStatus } | undefined;
+        return leaveRequests.filter((lr) => lr.status === where?.status);
+      },
+    );
+
+    // Act
+    const result = await service.getRemainingLeave(token, 4);
+
+    // Assert
+    expect(result.data).toMatchObject({
+      days_used: 5,
+      days_remaining: 20,
+    });
+  });
+
+  it("reports a fully spent allowance as zero rather than a negative", async () => {
+    // Arrange
+    const token = { id: 4, role: RoleType.Employee };
+    mockUserRepo.findOne.mockResolvedValue(
+      makeUser({ id: 4, annualLeaveAllowance: 25 }),
+    );
+    mockLeaveRepo.find.mockResolvedValue([
+      makeLeaveRequest({
+        id: 1,
+        userId: 4,
+        daysRequested: 25,
+        status: LeaveStatus.Approved,
+      }),
+    ]);
+
+    // Act
+    const result = await service.getRemainingLeave(token, 4);
+
+    // Assert
+    expect(result.data).toMatchObject({
+      annual_allowance: 25,
+      days_used: 25,
+      days_remaining: 0,
     });
   });
 });
