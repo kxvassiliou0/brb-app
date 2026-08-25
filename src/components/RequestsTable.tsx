@@ -3,6 +3,7 @@ import Button from '@/components/Button'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
 import Icon from '@/components/Icon'
 import StatusPill from '@/components/StatusPill'
+import { CANCEL_LABEL, isCancellable } from '@/lib/cancelRequest'
 import { formatDate, formatDateRange } from '@/lib/dates'
 import type { RequestRow } from '@/lib/requestFilters'
 import { REVIEW_LABEL, type ReviewAction } from '@/lib/reviewRequest'
@@ -17,8 +18,10 @@ interface RequestsTableProps {
   showEmployee: boolean
   showReviewer: boolean
   onDecide: ((action: ReviewAction, requestId: number) => void) | null
+  onCancel: ((requestId: number) => void) | null
   onOpen: (requestId: number) => void
   decidingId: number | null
+  cancellingId: number | null
   highlightRequestId: number | null
   emptyMessage: string
   emptyAction: ReactNode
@@ -31,8 +34,10 @@ export default function RequestsTable({
   showEmployee,
   showReviewer,
   onDecide,
+  onCancel,
   onOpen,
   decidingId,
+  cancellingId,
   highlightRequestId,
   emptyMessage,
   emptyAction,
@@ -132,10 +137,41 @@ export default function RequestsTable({
             </div>
           ) : null,
       })
+    } else if (onCancel) {
+      base.push({
+        key: 'actions',
+        header: 'Actions',
+        hideHeader: true,
+        hideCardLabel: true,
+        align: 'right',
+        cell: (r) =>
+          isCancellable(r.status) ? (
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                title={CANCEL_LABEL}
+                disabled={cancellingId === r.id}
+                onClick={() => onCancel(r.id)}
+                className="touch-target inline-flex shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-error-background hover:text-error-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Icon name="trash" />
+                <span className="sr-only">{CANCEL_LABEL}</span>
+              </button>
+            </div>
+          ) : null,
+      })
     }
 
     return base
-  }, [showEmployee, showReviewer, onDecide, onOpen, decidingId])
+  }, [
+    showEmployee,
+    showReviewer,
+    onDecide,
+    onCancel,
+    onOpen,
+    decidingId,
+    cancellingId,
+  ])
 
   return (
     <DataTable

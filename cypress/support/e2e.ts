@@ -1,6 +1,7 @@
 export const USERS = {
   admin: 'alice.thompson@company.com',
   manager: 'bob.mitchell@company.com',
+  managersManager: 'carol.reeves@company.com',
   employee: 'david.jones@company.com',
 } as const
 
@@ -10,9 +11,9 @@ export const NARROW = { width: 320, height: 568 } as const
 
 export const WCAG_258_MINIMUM_PX = 24
 
-const PASSWORD = 'Password123!'
+export const API_URL = Cypress.env('apiUrl') ?? 'http://localhost:3000'
 
-export const API_URL = 'http://localhost:3000'
+export const PASSWORD = 'Password123!'
 
 export function login(email: string, landsOn: string): void {
   cy.visit('/login')
@@ -20,6 +21,20 @@ export function login(email: string, landsOn: string): void {
   cy.get('#password').type(PASSWORD)
   cy.contains('button', 'Sign in').click()
   cy.url().should('include', landsOn)
+}
+
+export function tokenFor(email: string): Cypress.Chainable<string> {
+  return cy
+    .request('POST', `${API_URL}/api/login`, { email, password: PASSWORD })
+    .then((res) => String(res.body))
+}
+
+export function authHeaders(
+  email: string
+): Cypress.Chainable<{ Authorization: string }> {
+  return tokenFor(email).then((token) => ({
+    Authorization: `Bearer ${token}`,
+  }))
 }
 
 export interface ApiUser {
@@ -39,12 +54,7 @@ export interface NewUser {
 }
 
 function adminToken(): Cypress.Chainable<string> {
-  return cy
-    .request('POST', `${API_URL}/api/login`, {
-      email: USERS.admin,
-      password: PASSWORD,
-    })
-    .then((response) => String(response.body))
+  return tokenFor(USERS.admin)
 }
 
 function asAdmin<T>(

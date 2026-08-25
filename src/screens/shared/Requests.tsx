@@ -3,6 +3,7 @@ import BookingConfirmation, {
   useBookingConfirmation,
 } from '@/components/BookingConfirmation'
 import BookTimeOffButton from '@/components/BookTimeOffButton'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import DeclineRequestModal from '@/components/DeclineRequestModal'
 import PageHeader from '@/components/PageHeader'
 import RequestDateStrip from '@/components/RequestDateStrip'
@@ -13,7 +14,13 @@ import ReviewRequestModal from '@/components/ReviewRequestModal'
 import SegmentedControl from '@/components/SegmentedControl'
 import { cachedGet } from '@/lib/apiCache'
 import { useAuth } from '@/lib/auth'
-import { countLabel } from '@/lib/dates'
+import {
+  cancelErrorMessage,
+  cancelRequest,
+  CONFIRM_CANCEL_LABEL,
+  KEEP_REQUEST_LABEL,
+} from '@/lib/cancelRequest'
+import { countLabel, formatDateRange } from '@/lib/dates'
 import {
   countInLeaveYear,
   countPending,
@@ -70,6 +77,9 @@ export default function Requests() {
   const [reviewBalance, setReviewBalance] = useState<RemainingLeave | null>(
     null
   )
+  const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const [pendingCancelId, setPendingCancelId] = useState<number | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
 
   const refresh = useCallback(() => {
     setOwn(null)
@@ -209,6 +219,55 @@ export default function Requests() {
     [refresh]
   )
 
+  const askToCancel = useCallback((requestId: number) => {
+    setCancelError(null)
+    setPendingCancelId(requestId)
+  }, [])
+
+  const closeCancelDialog = useCallback(() => {
+    setPendingCancelId(null)
+    setCancelError(null)
+  }, [])
+
+  const confirmCancel = useCallback(() => {
+    if (pendingCancelId === null) return
+    const requestId = pendingCancelId
+    setCancellingId(requestId)
+    setCancelError(null)
+
+    cancelRequest(requestId)
+      .then((result) => {
+        const markCancelled = <T extends RequestRow>(list: T[] | null) =>
+          list === null
+            ? null
+            : list.map((row) =>
+                row.id === requestId ? { ...row, status: result.status } : row
+              )
+
+        setOwn(markCancelled)
+        setTeam(markCancelled)
+
+        if (result.new_days_remaining !== undefined) {
+          const daysRemaining = result.new_days_remaining
+          setBalance((current) =>
+            current === null
+              ? current
+              : {
+                  ...current,
+                  days_remaining: daysRemaining,
+                  days_used: current.annual_allowance - daysRemaining,
+                }
+          )
+        }
+
+        setPendingCancelId(null)
+      })
+      .catch((err: unknown) => setCancelError(cancelErrorMessage(err)))
+      .finally(() => setCancellingId(null))
+  }, [pendingCancelId])
+
+  const cancelTarget = (own ?? []).find((row) => row.id === pendingCancelId)
+
   function describe(): string {
     if (showingApprovalQueue) {
       return (
@@ -286,8 +345,10 @@ export default function Requests() {
           showEmployee={showingTeam}
           showReviewer={showingTeam && isAdminUser}
           onDecide={showingTeam ? handleDecide : null}
+          onCancel={showingTeam ? null : askToCancel}
           onOpen={showingTeam ? openReview : setDetailsId}
           decidingId={deciding}
+          cancellingId={cancellingId}
           highlightRequestId={bookingRequestId ?? null}
           emptyMessage={
             showingApprovalQueue
@@ -317,6 +378,45 @@ export default function Requests() {
           noteLabel={isAdminUser ? 'Admin note' : 'Manager note'}
           onClose={() => setDecliningId(null)}
           onDeclined={refresh}
+        />
+      )}
+
+      {cancelTarget && (
+        <ConfirmDialog
+          title="Cancel this request?"
+          description="This request will be withdrawn and can not be reinstated."
+          details={
+            <dl className="flex flex-col gap-2">
+              <div className="flex items-baseline justify-between gap-6">
+                <dt className="text-sm text-text-secondary">Dates</dt>
+                <dd className="text-right font-medium text-text-primary">
+                  {formatDateRange(
+                    cancelTarget.start_date,
+                    cancelTarget.end_date
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-6">
+                <dt className="text-sm text-text-secondary">Duration</dt>
+                <dd className="text-right font-medium text-text-primary">
+                  {countLabel(cancelTarget.days_requested, 'day')}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-6">
+                <dt className="text-sm text-text-secondary">Leave type</dt>
+                <dd className="text-right font-medium text-text-primary">
+                  {cancelTarget.leave_type}
+                </dd>
+              </div>
+            </dl>
+          }
+          consequence="The days return to your allowance and your manager will no longer be asked to review it."
+          confirmLabel={CONFIRM_CANCEL_LABEL}
+          cancelLabel={KEEP_REQUEST_LABEL}
+          error={cancelError}
+          busy={cancellingId === cancelTarget.id}
+          onConfirm={confirmCancel}
+          onClose={closeCancelDialog}
         />
       )}
 
