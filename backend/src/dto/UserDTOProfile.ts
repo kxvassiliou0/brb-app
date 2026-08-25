@@ -19,3 +19,17 @@ export class UserDTOProfile {
     public readonly jobRole: UserDTORelation,
   ) {}
 }
+
+export class UserDTOListItem {
+  constructor(
+    public readonly id: number,
+    public readonly firstName: string,
+    public readonly lastName: string,
+    public readonly email: string,
+    public readonly role: RoleType,
+    public readonly annualLeaveAllowance: number,
+    public readonly department: UserDTORelation,
+    public readonly jobRole: UserDTORelation,
+    public readonly manager: UserDTORelation | null,
+  ) {}
+}

@@ -9,6 +9,7 @@ import type { IUserService } from "../types/IUserService";
 import {
   makeAuthRequest,
   makeUser,
+  makeUserListItem,
   makeUserProfile,
   mockRequest,
   mockResponse,
@@ -26,7 +27,7 @@ beforeEach(() => {
 describe("UserController.getAll", () => {
   it("returns 200 with users when service returns results", async () => {
     // Arrange
-    mockService.getAll.mockResolvedValue([makeUser()]);
+    mockService.getAll.mockResolvedValue([makeUserListItem()]);
     const req = mockRequest();
     const res = mockResponse();
 
