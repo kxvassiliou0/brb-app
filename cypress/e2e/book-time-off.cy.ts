@@ -1,8 +1,4 @@
-import { DESKTOP, login, USERS } from '../support/e2e'
-
-const API_URL = Cypress.env('apiUrl') ?? 'http://localhost:3000'
-
-const PASSWORD = 'Password123!'
+import { API_URL, authHeaders, DESKTOP, login, USERS } from '../support/e2e'
 
 const MARKER = 'Booked by the book-time-off spec'
 
@@ -31,27 +27,8 @@ function displayDate(iso: string): string {
   })
 }
 
-function apiToken(): Cypress.Chainable<string> {
-  return cy
-    .request('POST', `${API_URL}/api/login`, {
-      email: USERS.employee,
-      password: PASSWORD,
-    })
-    .then((res) => String(res.body))
-}
-
-function adminToken(): Cypress.Chainable<string> {
-  return cy
-    .request('POST', `${API_URL}/api/login`, {
-      email: USERS.admin,
-      password: PASSWORD,
-    })
-    .then((res) => String(res.body))
-}
-
 function cancelSpecRequests(): void {
-  apiToken().then((token) => {
-    const headers = { Authorization: `Bearer ${token}` }
+  authHeaders(USERS.employee).then((headers) => {
     cy.request({ url: `${API_URL}/api/users/me`, headers }).then((me) => {
       const employeeId = me.body.data.id
       cy.request({
@@ -197,8 +174,7 @@ describe('booking time off', () => {
     const monthsAhead = 4
     const holidayDate = isoDate(monthsAhead, 20)
 
-    adminToken().then((token) => {
-      const headers = { Authorization: `Bearer ${token}` }
+    authHeaders(USERS.admin).then((headers) => {
       cy.request({
         method: 'POST',
         url: `${API_URL}/api/public-holidays`,

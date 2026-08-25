@@ -120,9 +120,7 @@ function columnValues(header: string): string[] {
 }
 
 function statusColumn(): string[] {
-  return bodyRows().map(
-    (row) => within(row).getAllByRole('cell').at(-1)!.textContent ?? ''
-  )
+  return columnValues('Status')
 }
 
 function clickStatusTab(name: string): void {
@@ -277,6 +275,7 @@ describe('the list of my requests', () => {
       '5',
       '2 Jul 2026',
       'Approved',
+      '',
     ])
   })
 
@@ -315,6 +314,7 @@ describe('the list of my requests', () => {
       'Days',
       'Date requested',
       'Status',
+      'Actions',
     ])
     for (const header of headers) {
       expect(header).toHaveAttribute('scope', 'col')

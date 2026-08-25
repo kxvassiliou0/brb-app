@@ -1,12 +1,6 @@
-import { DESKTOP, login, USERS } from '../support/e2e'
-
-const API_URL = Cypress.env('apiUrl') ?? 'http://localhost:3000'
-
-const PASSWORD = 'Password123!'
+import { API_URL, authHeaders, DESKTOP, login, USERS } from '../support/e2e'
 
 const MARKER = 'Booked by the manager-books-leave spec'
-
-const LINE_MANAGER = 'carol.reeves@company.com'
 
 interface OwnRequest {
   id: number
@@ -33,15 +27,8 @@ function displayDate(iso: string): string {
   })
 }
 
-function tokenFor(email: string): Cypress.Chainable<string> {
-  return cy
-    .request('POST', `${API_URL}/api/login`, { email, password: PASSWORD })
-    .then((res) => String(res.body))
-}
-
 function cancelSpecRequests(): void {
-  tokenFor(USERS.manager).then((token) => {
-    const headers = { Authorization: `Bearer ${token}` }
+  authHeaders(USERS.manager).then((headers) => {
     cy.request({ url: `${API_URL}/api/users/me`, headers }).then((me) => {
       cy.request({
         url: `${API_URL}/api/leave-requests/status/${me.body.data.id}`,
@@ -136,7 +123,7 @@ describe('a manager booking their own leave', () => {
     )
 
     cy.contains('button', 'Sign out').click()
-    login(LINE_MANAGER, '/')
+    login(USERS.managersManager, '/')
     cy.visit('/requests')
 
     cy.contains(

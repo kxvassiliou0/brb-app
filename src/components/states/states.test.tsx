@@ -87,8 +87,10 @@ describe('skeleton dimensions', () => {
           showEmployee={false}
           showReviewer={false}
           onDecide={null}
+          onCancel={null}
           onOpen={() => {}}
           decidingId={null}
+          cancellingId={null}
           highlightRequestId={null}
           emptyMessage="Nothing here"
           emptyAction={null}

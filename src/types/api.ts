@@ -143,10 +143,8 @@ export interface ReviewLeaveRequestBody {
   reason?: string
 }
 
-export interface DeleteLeaveRequestResult {
-  leave_request_id: number
-  employee_id: number
-  status: LeaveStatus
+export interface DeleteLeaveRequestResult extends LeaveRequest {
+  days_restored?: number
   new_days_remaining?: number
 }
 
