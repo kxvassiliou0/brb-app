@@ -13,6 +13,7 @@ import {
   bookingErrorMessage,
   buildCreateBody,
   EMPTY_DRAFT,
+  employeeOptions,
   hasBookingErrors,
   LEAVE_TYPES,
   remainingAfterRequest,
@@ -20,15 +21,18 @@ import {
   validateBooking,
   type BookingDraft,
   type BookingErrors,
+  type EmployeeOption,
 } from '@/lib/booking'
 import { countLabel } from '@/lib/dates'
 import { fetchPublicHolidays, holidaysByDate } from '@/lib/publicHolidays'
-import { REQUESTS_PATH } from '@/lib/routeAccess'
+import { isAdmin, REQUESTS_PATH } from '@/lib/routeAccess'
+import { remainingLeavePath } from '@/lib/teamBalances'
 import type {
   ApiSuccess,
   CreateLeaveRequestResult,
   LeaveType,
   RemainingLeave,
+  UserProfile,
 } from '@/types/api'
 
 interface BookTimeOffModalProps {
@@ -42,26 +46,24 @@ export default function BookTimeOffModal({
 }: BookTimeOffModalProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const canBookForOthers = isAdmin(user?.role)
   const [draft, setDraft] = useState<BookingDraft>(EMPTY_DRAFT)
   const [errors, setErrors] = useState<BookingErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null)
   const [holidays, setHolidays] = useState<Map<string, string>>(new Map())
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
+  const [employeeId, setEmployeeId] = useState<number | null>(null)
+
+  const bookingFor = employeeId ?? user?.id ?? null
+
+  const bookingForSomeoneElse =
+    canBookForOthers && bookingFor !== null && bookingFor !== user?.id
 
   useEffect(() => {
     if (!user) return
     let cancelled = false
-
-    cachedGet<ApiSuccess<RemainingLeave>>(
-      `/api/leave-requests/remaining/${user.id}`
-    )
-      .then((res) => {
-        if (!cancelled) setDaysRemaining(res.data.days_remaining)
-      })
-      .catch(() => {
-        if (!cancelled) setDaysRemaining(null)
-      })
 
     fetchPublicHolidays()
       .then((res) => {
@@ -75,6 +77,40 @@ export default function BookTimeOffModal({
       cancelled = true
     }
   }, [user])
+
+  useEffect(() => {
+    if (bookingFor === null) return
+    let cancelled = false
+
+    cachedGet<ApiSuccess<RemainingLeave>>(remainingLeavePath(bookingFor))
+      .then((res) => {
+        if (!cancelled) setDaysRemaining(res.data.days_remaining)
+      })
+      .catch(() => {
+        if (!cancelled) setDaysRemaining(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [bookingFor])
+
+  useEffect(() => {
+    if (!canBookForOthers) return
+    let cancelled = false
+
+    cachedGet<ApiSuccess<UserProfile[]>>('/api/users')
+      .then((res) => {
+        if (!cancelled) setEmployees(employeeOptions(res.data))
+      })
+      .catch(() => {
+        if (!cancelled) setEmployees([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [canBookForOthers])
 
   function update(patch: Partial<BookingDraft>): void {
     setDraft((current) => ({ ...current, ...patch }))
@@ -96,7 +132,10 @@ export default function BookTimeOffModal({
         {
           method: 'POST',
           body: JSON.stringify(
-            buildCreateBody(draft, user?.role === 'Admin' ? user.id : undefined)
+            buildCreateBody(
+              draft,
+              canBookForOthers && bookingFor !== null ? bookingFor : undefined
+            )
           ),
         }
       )
@@ -124,7 +163,9 @@ export default function BookTimeOffModal({
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl md:text-3xl">Book time off</h2>
         <p className="text-sm text-text-secondary">
-          Your request will be sent to your manager for approval.
+          {bookingForSomeoneElse
+            ? 'This request will be recorded against the employee you choose.'
+            : 'Your request will be sent to your manager for approval.'}
         </p>
       </div>
       <form
@@ -132,6 +173,38 @@ export default function BookTimeOffModal({
         data-testid="book-time-off-form"
         className="flex flex-col gap-5"
       >
+        {canBookForOthers && (
+          <div className="flex min-w-0 flex-col gap-2">
+            <label
+              htmlFor="booking-employee"
+              className="text-sm text-text-secondary"
+            >
+              Employee
+            </label>
+            <select
+              id="booking-employee"
+              value={bookingFor ?? ''}
+              onChange={(event) =>
+                setEmployeeId(
+                  event.target.value ? Number(event.target.value) : null
+                )
+              }
+              className={CONTROL_CLASS}
+            >
+              {employees.length === 0 && user && (
+                <option value={user.id}>{user.email} (you)</option>
+              )}
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.id === user?.id
+                    ? `${employee.name} (you)`
+                    : employee.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="flex min-w-0 flex-col gap-2">
           <label htmlFor="leave-type" className="text-sm text-text-secondary">
             Leave type

@@ -136,6 +136,9 @@ export class LeaveRequestService implements ILeaveRequestService {
       status: lr.status,
       reason: lr.reason ?? null,
       manager_note: lr.managerNote ?? null,
+      reviewed_by_name: lr.reviewedBy
+        ? `${lr.reviewedBy.firstName} ${lr.reviewedBy.lastName}`
+        : null,
     };
   }
 
@@ -406,6 +409,7 @@ export class LeaveRequestService implements ILeaveRequestService {
 
     leaveRequest.status = LeaveStatus.Approved;
     leaveRequest.managerNote = reason ?? null;
+    leaveRequest.reviewedById = token?.id ?? null;
     await this.leaveRepo.save(leaveRequest);
     Logger.info("Leave request approved", { leave_request_id });
 
@@ -455,6 +459,7 @@ export class LeaveRequestService implements ILeaveRequestService {
 
     leaveRequest.status = LeaveStatus.Rejected;
     leaveRequest.managerNote = reason ?? null;
+    leaveRequest.reviewedById = token?.id ?? null;
     await this.leaveRepo.save(leaveRequest);
     Logger.info("Leave request rejected", { leave_request_id });
 
@@ -586,7 +591,7 @@ export class LeaveRequestService implements ILeaveRequestService {
 
     const pendingRequests = await this.leaveRepo.find({
       where,
-      relations: ["user", "user.department"],
+      relations: ["user", "user.department", "reviewedBy"],
       order: { createdAt: "ASC" },
     });
 
@@ -666,7 +671,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       const teamIds = team.map((u) => u.id);
       const requests = await this.leaveRepo.find({
         where: applyFilters({ userId: In(teamIds) }),
-        relations: ["user", "user.department"],
+        relations: ["user", "user.department", "reviewedBy"],
         order: { createdAt: "DESC" },
       });
       return {
@@ -691,7 +696,7 @@ export class LeaveRequestService implements ILeaveRequestService {
         throw new AppError("Employee not found", StatusCodes.BAD_REQUEST);
       const requests = await this.leaveRepo.find({
         where: applyFilters({ userId: id }),
-        relations: ["user", "user.department"],
+        relations: ["user", "user.department", "reviewedBy"],
         order: { createdAt: "DESC" },
       });
       return {
@@ -717,7 +722,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       const teamIds = team.map((u) => u.id);
       const requests = await this.leaveRepo.find({
         where: applyFilters({ userId: In(teamIds) }),
-        relations: ["user", "user.department"],
+        relations: ["user", "user.department", "reviewedBy"],
         order: { createdAt: "DESC" },
       });
       return {
@@ -728,7 +733,7 @@ export class LeaveRequestService implements ILeaveRequestService {
 
     const requests = await this.leaveRepo.find({
       where: applyFilters({}),
-      relations: ["user", "user.department"],
+      relations: ["user", "user.department", "reviewedBy"],
       order: { createdAt: "DESC" },
     });
     return {

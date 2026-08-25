@@ -48,6 +48,7 @@ export interface LeaveRequest {
   status: LeaveStatus
   reason: string | null
   manager_note: string | null
+  reviewed_by_name: string | null
 }
 
 export interface ExcludedPublicHoliday {

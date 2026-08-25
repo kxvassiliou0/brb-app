@@ -11,9 +11,14 @@ export const REVIEW_LABEL: Record<ReviewAction, string> = {
 
 export async function decideRequest(
   action: ReviewAction,
-  requestId: number
+  requestId: number,
+  reason?: string
 ): Promise<void> {
-  const payload: ReviewLeaveRequestBody = { leave_request_id: requestId }
+  const note = reason?.trim()
+  const payload: ReviewLeaveRequestBody = {
+    leave_request_id: requestId,
+    ...(note ? { reason: note } : {}),
+  }
   await apiFetch(`/api/leave-requests/${action}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),

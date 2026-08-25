@@ -2,7 +2,12 @@ import { getLeaveYear, isWithinLeaveYear } from '@/lib/leaveYear'
 import type { LeaveStatus, LeaveRequest, OwnLeaveRequest } from '@/types/api'
 
 export type RequestRow = OwnLeaveRequest &
-  Partial<Pick<LeaveRequest, 'employee_id' | 'employee_name' | 'department_id'>>
+  Partial<
+    Pick<
+      LeaveRequest,
+      'employee_id' | 'employee_name' | 'department_id' | 'reviewed_by_name'
+    >
+  >
 
 export type StatusFilter = 'All' | LeaveStatus
 

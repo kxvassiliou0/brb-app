@@ -70,7 +70,7 @@ afterEach(() => {
 
 describe('WCAG 2.5.8 target size', () => {
   it('sizes the touch-target token at or above the 24px minimum', () => {
-    const token = sizeTokens['touch-target']
+    const token = sizeTokens[TOUCH_TARGET_CLASS]
     expect(token).toBeDefined()
     expect(remToPx(token!)).toBeGreaterThanOrEqual(WCAG_258_MINIMUM_PX)
   })

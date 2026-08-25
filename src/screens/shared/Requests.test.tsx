@@ -60,6 +60,7 @@ function teamRequest(overrides: Partial<LeaveRequest> = {}): LeaveRequest {
     status: 'Pending',
     reason: null,
     manager_note: null,
+    reviewed_by_name: null,
     ...overrides,
   }
 }
@@ -87,21 +88,35 @@ function stubApi({
   allRequests = team,
   departments = [],
 }: StubOptions = {}) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input)
-    if (url.includes('/remaining/')) return jsonOk(BALANCE)
-    if (url.includes('/status/')) return jsonOk(own)
-    if (url.includes('/api/departments')) return jsonOk(departments)
-    const queue = url.match(/\/pending\/manager\/(\d+)/)
-    if (queue) return jsonOk(queues ? (queues[Number(queue[1])] ?? []) : team)
-    return jsonOk(allRequests)
-  })
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (init?.method === 'PATCH') return jsonOk({})
+      if (url.includes('/remaining/')) return jsonOk(BALANCE)
+      if (url.includes('/status/')) return jsonOk(own)
+      if (url.includes('/api/departments')) return jsonOk(departments)
+      const queue = url.match(/\/pending\/manager\/(\d+)/)
+      if (queue) return jsonOk(queues ? (queues[Number(queue[1])] ?? []) : team)
+      return jsonOk(allRequests)
+    }
+  )
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
 
 function bodyRows(): HTMLElement[] {
   return within(screen.getByTestId('data-table')).getAllByRole('row').slice(1)
+}
+
+function columnValues(header: string): string[] {
+  const headers = within(screen.getByTestId('data-table')).getAllByRole(
+    'columnheader'
+  )
+  const index = headers.findIndex((cell) => cell.textContent === header)
+  if (index === -1) throw new Error(`No "${header}" column`)
+  return bodyRows().map(
+    (row) => within(row).getAllByRole('cell')[index]!.textContent ?? ''
+  )
 }
 
 function statusColumn(): string[] {
@@ -828,5 +843,366 @@ describe('filtering', () => {
 
     expect(screen.queryByText('David Jones')).not.toBeInTheDocument()
     expect(screen.getByText('Eve Knowles')).toBeInTheDocument()
+  })
+})
+
+describe("the admin's company-wide view", () => {
+  const COMPANY_WIDE: LeaveRequest[] = [
+    teamRequest({
+      id: 50,
+      employee_id: 4,
+      employee_name: 'David Jones',
+      department_id: 1,
+      department_name: 'Engineering',
+      status: 'Pending',
+    }),
+    teamRequest({
+      id: 51,
+      employee_id: 6,
+      employee_name: 'Frank Harrison',
+      department_id: 3,
+      department_name: 'Finance',
+      status: 'Approved',
+      reviewed_by_name: 'Carol Reeves',
+    }),
+    teamRequest({
+      id: 52,
+      employee_id: 7,
+      employee_name: 'Grace Williams',
+      department_id: 4,
+      department_name: 'Marketing',
+      status: 'Rejected',
+      reviewed_by_name: 'Alice Thompson',
+    }),
+    teamRequest({
+      id: 53,
+      employee_id: 5,
+      employee_name: 'Eve Knowles',
+      department_id: 1,
+      department_name: 'Engineering',
+      status: 'Cancelled',
+    }),
+  ]
+
+  it('lists requests from every department, not only the admin’s own', async () => {
+    stubApi({ own: [ownRequest()], allRequests: COMPANY_WIDE })
+    renderRequests('Admin')
+
+    expect(await screen.findByText('David Jones')).toBeInTheDocument()
+    expect(screen.getByText('Frank Harrison')).toBeInTheDocument()
+    expect(screen.getByText('Grace Williams')).toBeInTheDocument()
+    expect(screen.getByText('Eve Knowles')).toBeInTheDocument()
+    expect(bodyRows()).toHaveLength(COMPANY_WIDE.length)
+  })
+
+  it('draws the list from the company-wide endpoint, not a manager queue', async () => {
+    const fetchMock = stubApi({ allRequests: COMPANY_WIDE })
+    renderRequests('Admin')
+
+    await screen.findByText('David Jones')
+    const paths = fetchMock.mock.calls.map(([input]) => String(input))
+
+    expect(paths.some((path) => path.endsWith('/api/leave-requests'))).toBe(
+      true
+    )
+    expect(paths.some((path) => path.includes('/pending/manager/'))).toBe(false)
+  })
+
+  it('approves a request from an employee who does not report to the admin', async () => {
+    const fetchMock = stubApi({
+      allRequests: [
+        teamRequest({
+          id: 51,
+          employee_id: 6,
+          employee_name: 'Frank Harrison',
+          status: 'Pending',
+        }),
+      ],
+    })
+    renderRequests('Admin')
+
+    await screen.findByText('Frank Harrison')
+    fireEvent.click(
+      within(bodyRows()[0]!).getByRole('button', { name: 'Approve' })
+    )
+
+    await waitFor(() => {
+      const approvals = fetchMock.mock.calls.filter(
+        ([input, init]) =>
+          init?.method === 'PATCH' &&
+          String(input).endsWith('/api/leave-requests/approve')
+      )
+      expect(approvals).toHaveLength(1)
+      expect(JSON.parse(String(approvals[0]![1]?.body))).toEqual({
+        leave_request_id: 51,
+      })
+    })
+  })
+
+  it('rejects a request from an employee who does not report to the admin', async () => {
+    const fetchMock = stubApi({
+      allRequests: [
+        teamRequest({
+          id: 52,
+          employee_id: 7,
+          employee_name: 'Grace Williams',
+          status: 'Pending',
+        }),
+      ],
+    })
+    renderRequests('Admin')
+
+    await screen.findByText('Grace Williams')
+    fireEvent.click(
+      within(bodyRows()[0]!).getByRole('button', { name: 'Decline' })
+    )
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Decline',
+      })
+    )
+
+    await waitFor(() => {
+      const rejections = fetchMock.mock.calls.filter(
+        ([input, init]) =>
+          init?.method === 'PATCH' &&
+          String(input).endsWith('/api/leave-requests/reject')
+      )
+      expect(rejections).toHaveLength(1)
+    })
+  })
+
+  it('names the reviewer on a reviewed request', async () => {
+    stubApi({ allRequests: COMPANY_WIDE })
+    renderRequests('Admin')
+
+    await screen.findByText('Frank Harrison')
+
+    expect(columnValues('Reviewed by')).toEqual([
+      '—',
+      'Carol Reeves',
+      'Alice Thompson',
+      '—',
+    ])
+  })
+
+  it('renders an explicit dash when nobody has reviewed the request', async () => {
+    stubApi({
+      allRequests: [
+        teamRequest({ id: 50, status: 'Pending', reviewed_by_name: null }),
+      ],
+    })
+    renderRequests('Admin')
+
+    await screen.findByText('David Jones')
+    const reviewer = columnValues('Reviewed by')
+
+    expect(reviewer).toEqual(['—'])
+    expect(reviewer[0]).not.toBe('')
+  })
+
+  it.each([
+    ['Pending', ['David Jones']],
+    ['Approved', ['Frank Harrison']],
+    ['Rejected', ['Grace Williams']],
+    ['Cancelled', ['Eve Knowles']],
+  ])('shows only %s requests under the %s tab', async (tab, expected) => {
+    stubApi({ allRequests: COMPANY_WIDE })
+    renderRequests('Admin')
+
+    await screen.findByText('David Jones')
+    clickStatusTab(tab)
+
+    expect(columnValues('Employee')).toEqual(expected)
+    expect(columnValues('Status')).toEqual([tab])
+  })
+
+  it('brings every status back under All', async () => {
+    stubApi({ allRequests: COMPANY_WIDE })
+    renderRequests('Admin')
+
+    await screen.findByText('David Jones')
+    clickStatusTab('Rejected')
+    expect(bodyRows()).toHaveLength(1)
+
+    clickStatusTab('All')
+
+    expect(columnValues('Status')).toEqual([
+      'Pending',
+      'Approved',
+      'Rejected',
+      'Cancelled',
+    ])
+  })
+
+  it('shows a Manager their own team only, never the company-wide list', async () => {
+    stubApi({
+      queues: {
+        [USER_ID]: [teamRequest({ id: 50, employee_name: 'David Jones' })],
+      },
+      allRequests: COMPANY_WIDE,
+    })
+    renderRequests('Manager')
+
+    expect(await screen.findByText('David Jones')).toBeInTheDocument()
+    expect(screen.queryByText('Frank Harrison')).not.toBeInTheDocument()
+    expect(screen.queryByText('Grace Williams')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eve Knowles')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Reviewed by' })
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('declining a request', () => {
+  function patchCalls(fetchMock: ReturnType<typeof stubApi>) {
+    return fetchMock.mock.calls.filter(
+      ([input, init]) =>
+        init?.method === 'PATCH' &&
+        String(input).endsWith('/api/leave-requests/reject')
+    )
+  }
+
+  function clickRowDecline(): void {
+    fireEvent.click(
+      within(bodyRows()[0]!).getByRole('button', { name: 'Decline' })
+    )
+  }
+
+  function confirmDecline(): void {
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Decline',
+      })
+    )
+  }
+
+  it('asks for confirmation instead of declining straight away', async () => {
+    const fetchMock = stubApi({ team: [teamRequest()] })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+
+    expect(screen.getByTestId('decline-confirmation')).toHaveTextContent(
+      'Decline this request?'
+    )
+    expect(patchCalls(fetchMock)).toHaveLength(0)
+  })
+
+  it('names the employee and the dates being turned down', async () => {
+    stubApi({
+      team: [
+        teamRequest({
+          employee_name: 'David Jones',
+          start_date: '2026-08-10',
+          end_date: '2026-08-14',
+          days_requested: 5,
+        }),
+      ],
+    })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+
+    const confirmation = screen.getByTestId('decline-confirmation')
+    expect(confirmation).toHaveTextContent('David Jones')
+    expect(confirmation).toHaveTextContent('10 Aug 2026 – 14 Aug 2026')
+    expect(confirmation).toHaveTextContent('5 days')
+  })
+
+  it('leaves the request pending when the manager backs out', async () => {
+    const fetchMock = stubApi({ team: [teamRequest()] })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Keep pending',
+      })
+    )
+
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    expect(patchCalls(fetchMock)).toHaveLength(0)
+  })
+
+  it('sends the note the reviewer typed with the rejection', async () => {
+    const fetchMock = stubApi({ team: [teamRequest({ id: 50 })] })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+    fireEvent.change(screen.getByLabelText('Manager note (optional)'), {
+      target: { value: 'Two others in Engineering are already away.' },
+    })
+    confirmDecline()
+
+    await waitFor(() => expect(patchCalls(fetchMock)).toHaveLength(1))
+    expect(JSON.parse(String(patchCalls(fetchMock)[0]![1]?.body))).toEqual({
+      leave_request_id: 50,
+      reason: 'Two others in Engineering are already away.',
+    })
+  })
+
+  it('declines without a note when the reviewer leaves it blank', async () => {
+    const fetchMock = stubApi({ team: [teamRequest({ id: 50 })] })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+    confirmDecline()
+
+    await waitFor(() => expect(patchCalls(fetchMock)).toHaveLength(1))
+    expect(JSON.parse(String(patchCalls(fetchMock)[0]![1]?.body))).toEqual({
+      leave_request_id: 50,
+    })
+  })
+
+  it('closes the confirmation once the request is declined', async () => {
+    stubApi({ team: [teamRequest()] })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+    confirmDecline()
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    )
+  })
+
+  it.each([
+    ['Manager', 'Manager note (optional)'],
+    ['Admin', 'Admin note (optional)'],
+  ] as [Role, string][])('labels the note for a %s', async (role, label) => {
+    stubApi({ team: [teamRequest()], allRequests: [teamRequest()] })
+    renderRequests(role)
+
+    await screen.findByText('David Jones')
+    clickRowDecline()
+
+    expect(screen.getByLabelText(label)).toBeInTheDocument()
+  })
+
+  it('approves without asking for confirmation', async () => {
+    const fetchMock = stubApi({ team: [teamRequest({ id: 50 })] })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    fireEvent.click(
+      within(bodyRows()[0]!).getByRole('button', { name: 'Approve' })
+    )
+
+    await waitFor(() => {
+      const approvals = fetchMock.mock.calls.filter(
+        ([input, init]) =>
+          init?.method === 'PATCH' &&
+          String(input).endsWith('/api/leave-requests/approve')
+      )
+      expect(approvals).toHaveLength(1)
+    })
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
   })
 })

@@ -3,6 +3,7 @@ import BookingConfirmation, {
   useBookingConfirmation,
 } from '@/components/BookingConfirmation'
 import BookTimeOffButton from '@/components/BookTimeOffButton'
+import DeclineRequestModal from '@/components/DeclineRequestModal'
 import PageHeader from '@/components/PageHeader'
 import RequestDateStrip from '@/components/RequestDateStrip'
 import RequestDetailsModal from '@/components/RequestDetailsModal'
@@ -64,6 +65,7 @@ export default function Requests() {
   const [error, setError] = useState<unknown>(null)
   const [deciding, setDeciding] = useState<number | null>(null)
   const [reviewingId, setReviewingId] = useState<number | null>(null)
+  const [decliningId, setDecliningId] = useState<number | null>(null)
   const [detailsId, setDetailsId] = useState<number | null>(null)
   const [reviewBalance, setReviewBalance] = useState<RemainingLeave | null>(
     null
@@ -152,6 +154,8 @@ export default function Requests() {
 
   const reviewing = (team ?? []).find((row) => row.id === reviewingId) ?? null
 
+  const declining = (team ?? []).find((row) => row.id === decliningId) ?? null
+
   const details = (own ?? []).find((row) => row.id === detailsId) ?? null
 
   const openReview = useCallback((requestId: number) => {
@@ -191,6 +195,10 @@ export default function Requests() {
 
   const handleDecide = useCallback(
     (action: ReviewAction, requestId: number) => {
+      if (action === 'reject') {
+        setDecliningId(requestId)
+        return
+      }
       setDeciding(requestId)
       setError(null)
       decideRequest(action, requestId)
@@ -208,7 +216,8 @@ export default function Requests() {
       )
     }
     if (showingTeam) {
-      return `${countLabel(countInLeaveYear(team ?? []), 'team request')} this year • ${countPending(team ?? [])} pending review`
+      const noun = isAdminUser ? 'request' : 'team request'
+      return `${countLabel(countInLeaveYear(team ?? []), noun)} this year • ${countPending(team ?? [])} pending review`
     }
     const remaining = balance
       ? `${balance.days_remaining} days remaining of ${balance.annual_allowance}`
@@ -216,7 +225,11 @@ export default function Requests() {
     return `${countLabel(countInLeaveYear(own ?? []), 'request')} this year • ${remaining}`
   }
 
-  const title = showingTeam ? 'Team requests' : 'My requests'
+  const title = !showingTeam
+    ? 'My requests'
+    : isAdminUser
+      ? 'All requests'
+      : 'Team requests'
 
   return (
     <div data-testid="screen-requests">
@@ -228,7 +241,7 @@ export default function Requests() {
 
       <BookingConfirmation message={bookingConfirmation ?? null} />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4">
         <RequestsToolbar
           filters={filters}
           onChange={patchFilters}
@@ -237,17 +250,19 @@ export default function Requests() {
           showDepartments={showingTeam && isAdminUser}
           departments={departments}
           canClear={hasActiveFilters(filters)}
+          trailing={
+            canReview ? (
+              <SegmentedControl
+                label="Whose requests to show"
+                testId="scope-filter"
+                variant="slider"
+                options={SCOPE_OPTIONS}
+                value={scope}
+                onChange={changeScope}
+              />
+            ) : null
+          }
         />
-        {canReview && (
-          <SegmentedControl
-            label="Whose requests to show"
-            testId="scope-filter"
-            variant="slider"
-            options={SCOPE_OPTIONS}
-            value={scope}
-            onChange={changeScope}
-          />
-        )}
       </div>
 
       <div className="flex flex-col gap-4 rounded-2xl bg-background-secondary p-4 sm:p-6">
@@ -269,6 +284,7 @@ export default function Requests() {
           error={error}
           onRetry={refresh}
           showEmployee={showingTeam}
+          showReviewer={showingTeam && isAdminUser}
           onDecide={showingTeam ? handleDecide : null}
           onOpen={showingTeam ? openReview : setDetailsId}
           decidingId={deciding}
@@ -276,10 +292,10 @@ export default function Requests() {
           emptyMessage={
             showingApprovalQueue
               ? 'Nothing is waiting for your approval.'
-              : showingTeam
-                ? 'No requests to review yet.'
-                : hasActiveFilters(filters)
-                  ? 'No requests match these filters.'
+              : hasActiveFilters(filters)
+                ? 'No requests match these filters.'
+                : showingTeam
+                  ? 'No requests to review yet.'
                   : "You haven't submitted any time-off requests. Book your first trip to get started!"
           }
           emptyAction={
@@ -292,6 +308,15 @@ export default function Requests() {
         <RequestDetailsModal
           request={details}
           onClose={() => setDetailsId(null)}
+        />
+      )}
+
+      {declining && (
+        <DeclineRequestModal
+          request={declining}
+          noteLabel={isAdminUser ? 'Admin note' : 'Manager note'}
+          onClose={() => setDecliningId(null)}
+          onDeclined={refresh}
         />
       )}
 

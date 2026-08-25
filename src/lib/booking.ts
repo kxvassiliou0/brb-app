@@ -1,6 +1,10 @@
 import { ApiRequestError } from '@/lib/api'
 import { countDays, countLabel, toIsoDate } from '@/lib/dates'
-import type { CreateLeaveRequestBody, LeaveType } from '@/types/api'
+import type {
+  CreateLeaveRequestBody,
+  LeaveType,
+  UserProfile,
+} from '@/types/api'
 
 export const LEAVE_TYPES = ['Vacation', 'Sick', 'Personal'] as const
 
@@ -86,6 +90,22 @@ export function buildCreateBody(
     leave_type: draft.leaveType as LeaveType,
     ...(reason ? { reason } : {}),
   }
+}
+
+export interface EmployeeOption {
+  id: number
+  name: string
+}
+
+export function employeeOptions(users: UserProfile[]): EmployeeOption[] {
+  return users
+    .map((user) => ({
+      id: user.id,
+      name:
+        `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() ||
+        `Employee #${user.id}`,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function bookingErrorMessage(

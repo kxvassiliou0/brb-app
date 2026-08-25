@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger'
+export type ButtonVariant =
+  'primary' | 'secondary' | 'danger' | 'ghost' | 'ghostDanger'
 
 interface ButtonProps {
   children: ReactNode
@@ -12,7 +13,12 @@ interface ButtonProps {
 }
 
 export const BUTTON_BASE =
-  'touch-target inline-flex items-center justify-center gap-3 rounded-full p-3 text-base leading-5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60'
+  'touch-target inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 text-base leading-5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60'
+
+export const BUTTON_ICON_BASE =
+  'touch-target inline-flex items-center justify-center rounded-lg p-1.5 text-base leading-5 font-medium disabled:cursor-not-allowed disabled:opacity-60'
+
+const ICON_VARIANTS: ButtonVariant[] = ['ghost', 'ghostDanger']
 
 export const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary:
@@ -20,6 +26,8 @@ export const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   secondary:
     'border border-border-primary bg-background-secondary text-text-secondary hover:bg-background-tertiary hover:text-text-primary',
   danger: 'bg-error-background text-error-foreground hover:brightness-95',
+  ghost: 'text-sage-foreground',
+  ghostDanger: 'text-error-foreground',
 }
 
 export default function Button({
@@ -30,12 +38,14 @@ export default function Button({
   disabled = false,
   onClick,
 }: ButtonProps) {
+  const base = ICON_VARIANTS.includes(variant) ? BUTTON_ICON_BASE : BUTTON_BASE
+
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`${BUTTON_BASE} ${BUTTON_VARIANT[variant]} ${fullWidth ? 'w-full' : ''}`}
+      className={`${base} ${BUTTON_VARIANT[variant]} ${fullWidth ? 'w-full' : ''}`}
     >
       {children}
     </button>

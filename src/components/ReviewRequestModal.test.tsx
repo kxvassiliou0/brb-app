@@ -18,6 +18,7 @@ function request(overrides: Partial<LeaveRequest> = {}): LeaveRequest {
     status: 'Pending',
     reason: null,
     manager_note: null,
+    reviewed_by_name: null,
     ...overrides,
   }
 }
