@@ -11,8 +11,35 @@ import { AppError } from "../helpers/AppError.ts";
 import { PasswordHandler } from "../helpers/PasswordHandler.ts";
 import type { IUserService } from "../types/IUserService.ts";
 
+export const DUPLICATE_EMAIL_ERROR =
+  "That email address already belongs to another user";
+
+const MYSQL_DUPLICATE_ENTRY = 1062;
+
+function isDuplicateEntry(error: unknown): boolean {
+  const candidate = error as {
+    code?: string;
+    errno?: number;
+    driverError?: { code?: string; errno?: number };
+  };
+  const code = candidate?.code ?? candidate?.driverError?.code;
+  const errno = candidate?.errno ?? candidate?.driverError?.errno;
+  return code === "ER_DUP_ENTRY" || errno === MYSQL_DUPLICATE_ENTRY;
+}
+
 export class UserService implements IUserService {
   constructor(private readonly repo: Repository<User>) {}
+
+  private async saveUser(user: User): Promise<User> {
+    try {
+      return await this.repo.save(user);
+    } catch (error) {
+      if (isDuplicateEntry(error)) {
+        throw new AppError(DUPLICATE_EMAIL_ERROR, StatusCodes.CONFLICT);
+      }
+      throw error;
+    }
+  }
 
   async getAll(): Promise<Array<UserDTOListItem>> {
     const users = await this.repo.find({
@@ -124,7 +151,7 @@ export class UserService implements IUserService {
         StatusCodes.UNPROCESSABLE_ENTITY,
       );
     }
-    const saved = await this.repo.save(user);
+    const saved = await this.saveUser(user);
     return (await this.repo.findOneBy({ id: saved.id }))!;
   }
 
@@ -146,7 +173,7 @@ export class UserService implements IUserService {
         StatusCodes.UNPROCESSABLE_ENTITY,
       );
     }
-    await this.repo.save(user);
+    await this.saveUser(user);
     return (await this.repo.findOneBy({ id }))!;
   }
 

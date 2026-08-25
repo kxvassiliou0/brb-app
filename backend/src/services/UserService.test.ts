@@ -6,7 +6,7 @@ import { RoleType } from "../enums/index";
 import { AppError } from "../helpers/AppError";
 import { PasswordHandler } from "../helpers/PasswordHandler";
 import { makeDepartment, makeJobRole, makeUser } from "../test/ObjectMother";
-import { UserService } from "./UserService";
+import { DUPLICATE_EMAIL_ERROR, UserService } from "./UserService";
 
 let mockRepo: MockProxy<Repository<User>>;
 let service: UserService;
@@ -426,9 +426,77 @@ describe("UserService.create", () => {
       }),
     ).rejects.toThrow(AppError);
   });
+
+  it("translates a duplicate email into a readable CONFLICT rather than a driver error", async () => {
+    // Arrange - the email column is unique, so MySQL answers with ER_DUP_ENTRY
+    mockRepo.save.mockRejectedValue(
+      Object.assign(
+        new Error("Duplicate entry 'alice@company.com' for key 'IDX_97'"),
+        { code: "ER_DUP_ENTRY", errno: 1062 },
+      ),
+    );
+
+    // Act
+    const failure = service.create({
+      firstName: "Alice",
+      lastName: "Smith",
+      email: "alice@company.com",
+      password: "Password123!",
+      role: RoleType.Employee,
+      annualLeaveAllowance: 25,
+      departmentId: 1,
+      jobRoleId: 1,
+    });
+
+    // Assert
+    await expect(failure).rejects.toThrow(
+      new AppError(DUPLICATE_EMAIL_ERROR, StatusCodes.CONFLICT),
+    );
+    await expect(failure).rejects.toMatchObject({
+      statusCode: StatusCodes.CONFLICT,
+    });
+  });
+
+  it("lets any other save failure through untouched", async () => {
+    // Arrange
+    mockRepo.save.mockRejectedValue(new Error("Connection lost"));
+
+    // Act & Assert
+    await expect(
+      service.create({
+        firstName: "Alice",
+        lastName: "Smith",
+        email: "alice@company.com",
+        password: "Password123!",
+        role: RoleType.Employee,
+        annualLeaveAllowance: 25,
+        departmentId: 1,
+        jobRoleId: 1,
+      }),
+    ).rejects.toThrow("Connection lost");
+  });
 });
 
 describe("UserService.update", () => {
+  it("translates a duplicate email into a readable CONFLICT", async () => {
+    // Arrange
+    mockRepo.findOneBy.mockResolvedValue(
+      makeUser({ password: "Password123!" }),
+    );
+    mockRepo.save.mockRejectedValue(
+      Object.assign(new Error("Duplicate entry"), {
+        driverError: { code: "ER_DUP_ENTRY", errno: 1062 },
+      }),
+    );
+
+    // Act & Assert
+    await expect(
+      service.update(1, { email: "taken@company.com" }),
+    ).rejects.toThrow(
+      new AppError(DUPLICATE_EMAIL_ERROR, StatusCodes.CONFLICT),
+    );
+  });
+
   it("finds, updates, and returns the user", async () => {
     // Arrange
     const user = makeUser({ password: "Password123!" });

@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest'
+import { ApiRequestError } from '@/lib/api'
 import {
+  buildCreateBody,
   buildUpdateBody,
   canDeleteEmployee,
+  DEFAULT_ANNUAL_LEAVE_ALLOWANCE,
   deletionConsequences,
   directReports,
   draftFromRecord,
+  emptyEmployeeDraft,
   fullName,
   hasEmployeeErrors,
+  HTTP_CONFLICT,
+  isDuplicateEmailError,
   PASSWORD_MIN_LENGTH,
   validateEmployee,
+  validateNewEmployee,
   type EmployeeDraft,
 } from '@/lib/employeeAdmin'
 import type { UserListItem, UserRecord } from '@/types/api'
@@ -171,6 +178,131 @@ describe('validating an edited employee', () => {
       validateEmployee(draft({ managerId: String(RECORD.id) }), RECORD.id)
         .managerId
     ).toBe('Someone cannot be their own line manager')
+  })
+})
+
+describe('the draft a new employee starts from', () => {
+  it('starts every typed field empty, so nothing is invented for the Admin', () => {
+    const blank = emptyEmployeeDraft()
+
+    expect(blank.firstName).toBe('')
+    expect(blank.lastName).toBe('')
+    expect(blank.email).toBe('')
+    expect(blank.password).toBe('')
+    expect(blank.departmentId).toBe('')
+    expect(blank.jobRoleId).toBe('')
+  })
+
+  it('defaults the allowance to the twenty five days the entity defaults to', () => {
+    expect(DEFAULT_ANNUAL_LEAVE_ALLOWANCE).toBe(25)
+    expect(emptyEmployeeDraft().annualLeaveAllowance).toBe('25')
+  })
+
+  it('defaults to the least privileged role and to no line manager', () => {
+    expect(emptyEmployeeDraft().role).toBe('Employee')
+    expect(emptyEmployeeDraft().managerId).toBe('')
+  })
+})
+
+describe('validating a new employee', () => {
+  function newDraft(overrides: Partial<EmployeeDraft> = {}): EmployeeDraft {
+    return {
+      ...emptyEmployeeDraft(),
+      firstName: 'Nina',
+      lastName: 'Newstarter',
+      email: 'nina@company.com',
+      departmentId: '1',
+      jobRoleId: '5',
+      password: 'first-password',
+      ...overrides,
+    }
+  }
+
+  it('accepts a fully completed draft', () => {
+    expect(hasEmployeeErrors(validateNewEmployee(newDraft()))).toBe(false)
+  })
+
+  it('requires a password, because a new starter has none to keep', () => {
+    expect(validateNewEmployee(newDraft({ password: '' })).password).toBe(
+      'Please enter a password'
+    )
+  })
+
+  it('still holds a typed password to the ten character minimum', () => {
+    expect(validateNewEmployee(newDraft({ password: 'short' })).password).toBe(
+      `Password must be at least ${PASSWORD_MIN_LENGTH} characters long`
+    )
+  })
+
+  it.each([
+    ['firstName', 'firstName'],
+    ['lastName', 'lastName'],
+    ['email', 'email'],
+    ['departmentId', 'departmentId'],
+    ['jobRoleId', 'jobRoleId'],
+  ] as const)('requires %s', (_name, key) => {
+    expect(validateNewEmployee(newDraft({ [key]: '' }))[key]).toBeDefined()
+  })
+})
+
+describe('the create payload', () => {
+  function newDraft(overrides: Partial<EmployeeDraft> = {}): EmployeeDraft {
+    return {
+      ...emptyEmployeeDraft(),
+      firstName: ' Nina ',
+      lastName: 'Newstarter',
+      email: ' nina@company.com ',
+      departmentId: '2',
+      jobRoleId: '5',
+      password: 'first-password',
+      ...overrides,
+    }
+  }
+
+  it('always carries the password, unlike the update payload', () => {
+    expect(buildCreateBody(newDraft()).password).toBe('first-password')
+  })
+
+  it('sends the trimmed strings and parsed numbers the API expects', () => {
+    expect(buildCreateBody(newDraft())).toEqual({
+      firstName: 'Nina',
+      lastName: 'Newstarter',
+      email: 'nina@company.com',
+      role: 'Employee',
+      annualLeaveAllowance: DEFAULT_ANNUAL_LEAVE_ALLOWANCE,
+      departmentId: 2,
+      jobRoleId: 5,
+      managerId: null,
+      password: 'first-password',
+    })
+  })
+
+  it('sends a null managerId when no line manager was chosen', () => {
+    expect(buildCreateBody(newDraft({ managerId: '' })).managerId).toBeNull()
+  })
+})
+
+describe('recognising a refused duplicate email', () => {
+  it('recognises the conflict status the API answers with', () => {
+    expect(
+      isDuplicateEmailError(new ApiRequestError('Nope', HTTP_CONFLICT))
+    ).toBe(true)
+  })
+
+  it.each([
+    'That email address already belongs to another user',
+    "Duplicate entry 'nina@company.com' for key 'IDX_97'",
+    'UNIQUE constraint failed: user.email',
+  ])('recognises "%s"', (message) => {
+    expect(isDuplicateEmailError(new ApiRequestError(message, 400))).toBe(true)
+  })
+
+  it('leaves an unrelated refusal alone', () => {
+    expect(
+      isDuplicateEmailError(
+        new ApiRequestError('Annual leave allowance must be positive', 422)
+      )
+    ).toBe(false)
   })
 })
 

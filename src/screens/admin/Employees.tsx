@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import AddEmployeeModal, {
+  ADD_EMPLOYEE_LABEL,
+} from '@/components/AddEmployeeModal'
 import Button from '@/components/Button'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
 import DeleteEmployeeModal from '@/components/DeleteEmployeeModal'
@@ -11,6 +14,7 @@ import {
   canDeleteEmployee,
   fullName,
   SELF_DELETE_MESSAGE,
+  USERS_PATH,
 } from '@/lib/employeeAdmin'
 import { useApiResource } from '@/lib/useApiResource'
 import type { ApiSuccess, UserListItem } from '@/types/api'
@@ -33,7 +37,8 @@ export function describeRoster(employees: UserListItem[] | null): string {
 export default function Employees() {
   const { user } = useAuth()
   const { data, error, retry } =
-    useApiResource<ApiSuccess<UserListItem[]>>('/api/users')
+    useApiResource<ApiSuccess<UserListItem[]>>(USERS_PATH)
+  const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
@@ -141,7 +146,16 @@ export default function Employees() {
 
   return (
     <div data-testid="screen-employees">
-      <PageHeader title="Employees" description={describeRoster(employees)} />
+      <PageHeader
+        title="Employees"
+        description={describeRoster(employees)}
+        action={
+          <Button onClick={() => setAdding(true)}>
+            <Icon name="plus" />
+            {ADD_EMPLOYEE_LABEL}
+          </Button>
+        }
+      />
       <div className="rounded-2xl bg-background-secondary p-4 sm:p-6">
         <DataTable
           caption="Employees"
@@ -155,6 +169,14 @@ export default function Employees() {
           emptyMessage="No employees have been added yet."
         />
       </div>
+
+      {adding && (
+        <AddEmployeeModal
+          employees={employees ?? []}
+          onClose={() => setAdding(false)}
+          onCreated={retry}
+        />
+      )}
 
       {editing && employees && (
         <EditEmployeeModal
