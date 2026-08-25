@@ -34,6 +34,10 @@ export interface UserProfile {
   jobRole: UserRelation
 }
 
+export interface UserListItem extends UserProfile {
+  manager: UserRelation | null
+}
+
 export interface LeaveRequest {
   id: number
   employee_id: number

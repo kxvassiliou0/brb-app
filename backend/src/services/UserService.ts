@@ -1,7 +1,11 @@
 import { validate } from "class-validator";
 import { StatusCodes } from "http-status-codes";
 import type { Repository } from "typeorm";
-import { UserDTOProfile, UserDTORelation } from "../dto/UserDTOProfile.ts";
+import {
+  UserDTOListItem,
+  UserDTOProfile,
+  UserDTORelation,
+} from "../dto/UserDTOProfile.ts";
 import { User } from "../entities/User.entity.ts";
 import { AppError } from "../helpers/AppError.ts";
 import { PasswordHandler } from "../helpers/PasswordHandler.ts";
@@ -10,8 +14,30 @@ import type { IUserService } from "../types/IUserService.ts";
 export class UserService implements IUserService {
   constructor(private readonly repo: Repository<User>) {}
 
-  async getAll(): Promise<Array<User>> {
-    return this.repo.find();
+  async getAll(): Promise<Array<UserDTOListItem>> {
+    const users = await this.repo.find({
+      relations: { department: true, jobRole: true, manager: true },
+      order: { firstName: "ASC", lastName: "ASC" },
+    });
+    return users.map(
+      (user) =>
+        new UserDTOListItem(
+          user.id,
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.role,
+          user.annualLeaveAllowance,
+          new UserDTORelation(user.department.id, user.department.name),
+          new UserDTORelation(user.jobRole.id, user.jobRole.name),
+          user.manager
+            ? new UserDTORelation(
+                user.manager.id,
+                `${user.manager.firstName} ${user.manager.lastName}`,
+              )
+            : null,
+        ),
+    );
   }
 
   async getById(id: number): Promise<User> {

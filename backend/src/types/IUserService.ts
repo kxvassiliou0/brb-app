@@ -1,8 +1,8 @@
-import type { UserDTOProfile } from "../dto/UserDTOProfile.ts";
+import type { UserDTOListItem, UserDTOProfile } from "../dto/UserDTOProfile.ts";
 import type { User } from "../entities/User.entity.ts";
 
 export interface IUserService {
-  getAll(): Promise<Array<User>>;
+  getAll(): Promise<Array<UserDTOListItem>>;
   getById(id: number): Promise<User>;
   getOwnProfile(id: number): Promise<UserDTOProfile>;
   changeOwnPassword(

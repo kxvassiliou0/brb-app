@@ -18,17 +18,96 @@ beforeEach(() => {
 });
 
 describe("UserService.getAll", () => {
-  it("returns all users from the repository", async () => {
+  const engineering = makeDepartment({ id: 3, name: "Engineering" });
+  const contractor = makeJobRole({ id: 4, name: "Contractor" });
+
+  it("returns one list item per user with the relation names resolved", async () => {
     // Arrange
-    const users = [makeUser(), makeUser({ id: 2 })];
-    mockRepo.find.mockResolvedValue(users);
+    const manager = makeUser({
+      id: 2,
+      firstName: "Bob",
+      lastName: "Mitchell",
+      department: engineering,
+      jobRole: contractor,
+    });
+    mockRepo.find.mockResolvedValue([
+      makeUser({
+        id: 1,
+        department: engineering,
+        jobRole: contractor,
+        manager,
+        managerId: manager.id,
+      }),
+      manager,
+    ]);
 
     // Act
     const result = await service.getAll();
 
     // Assert
-    expect(result).toEqual(users);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      id: 1,
+      department: { id: 3, name: "Engineering" },
+      jobRole: { id: 4, name: "Contractor" },
+      manager: { id: 2, name: "Bob Mitchell" },
+    });
     expect(mockRepo.find).toHaveBeenCalledTimes(1);
+  });
+
+  it("loads the department, job role and manager relations", async () => {
+    // Arrange
+    mockRepo.find.mockResolvedValue([]);
+
+    // Act
+    await service.getAll();
+
+    // Assert
+    expect(mockRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relations: { department: true, jobRole: true, manager: true },
+      }),
+    );
+  });
+
+  it("reports a user without a line manager as null rather than omitting them", async () => {
+    // Arrange
+    mockRepo.find.mockResolvedValue([
+      makeUser({
+        department: engineering,
+        jobRole: contractor,
+        manager: null,
+        managerId: null,
+      }),
+    ]);
+
+    // Act
+    const result = await service.getAll();
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0]!.manager).toBeNull();
+  });
+
+  it("never exposes the password or salt", async () => {
+    // Arrange
+    mockRepo.find.mockResolvedValue([
+      makeUser({
+        department: engineering,
+        jobRole: contractor,
+        password: "hashed-secret",
+        salt: "secret-salt",
+      }),
+    ]);
+
+    // Act
+    const result = await service.getAll();
+
+    // Assert
+    expect(JSON.stringify(result)).not.toContain("hashed-secret");
+    expect(JSON.stringify(result)).not.toContain("secret-salt");
+    expect(result[0]).not.toHaveProperty("password");
+    expect(result[0]).not.toHaveProperty("salt");
   });
 });
 
