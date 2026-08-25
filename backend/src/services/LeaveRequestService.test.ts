@@ -1380,6 +1380,35 @@ describe("LeaveRequestService.getLeaveCalendar", () => {
     expect(Array.isArray(result.data)).toBe(true);
   });
 
+  it("returns the user relation and the status of each entry", async () => {
+    // Arrange
+    const token = { id: 1, role: RoleType.Admin };
+    const lr = {
+      ...makeLeaveRequest({ userId: 4, status: LeaveStatus.Approved }),
+      user: makeUser({ id: 4, firstName: "Sophia", lastName: "Lambert" }),
+    };
+    mockLeaveRepo.find.mockResolvedValue([lr as LeaveRequest]);
+
+    // Act
+    const result = await service.getLeaveCalendar(token, {
+      from: "2026-09-01",
+      to: "2026-09-30",
+    });
+
+    // Assert
+    expect(result.data).toEqual([
+      {
+        employee_id: 4,
+        name: "Sophia Lambert",
+        department_id: 1,
+        leave_type: LeaveType.Vacation,
+        start_date: "2026-09-01",
+        end_date: "2026-09-05",
+        status: LeaveStatus.Approved,
+      },
+    ]);
+  });
+
   it("returns empty array when manager has no team", async () => {
     // Arrange
     const token = { id: 2, role: RoleType.Manager };

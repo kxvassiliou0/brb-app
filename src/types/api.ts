@@ -108,6 +108,7 @@ export interface CalendarEntry {
   leave_type: LeaveType
   start_date: string
   end_date: string
+  status: LeaveStatus
 }
 
 export interface LeaveUsageEmployee {

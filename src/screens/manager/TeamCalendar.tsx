@@ -1,55 +1,112 @@
-import { useMemo } from 'react'
-import DataTable, { type DataTableColumn } from '@/components/DataTable'
+import { useMemo, useState } from 'react'
+import BookTimeOffButton from '@/components/BookTimeOffButton'
+import BookTimeOffModal from '@/components/BookTimeOffModal'
+import Button from '@/components/Button'
+import MonthCalendar from '@/components/MonthCalendar'
 import PageHeader from '@/components/PageHeader'
-import { formatDateRange, toIsoDate } from '@/lib/dates'
+import { ErrorState, LoadingState } from '@/components/states'
+import { monthGridRange, monthOf } from '@/lib/calendar'
+import { formatDateFull, toIsoDate } from '@/lib/dates'
+import { holidaysByDate, type PublicHoliday } from '@/lib/publicHolidays'
+import { calendarSummary } from '@/lib/teamCalendar'
 import { useApiResource } from '@/lib/useApiResource'
 import type { ApiSuccess, CalendarEntry } from '@/types/api'
 
-function currentMonthRange(): { from: string; to: string } {
-  const now = new Date()
-  return {
-    from: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
-    to: toIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
-  }
+interface SelectedRange {
+  startDate: string
+  endDate: string
 }
 
-export default function TeamCalendar() {
-  const { from, to } = currentMonthRange()
+const SELECTION_HINT =
+  'Select a start date, then an end date, to book time off.'
 
+export default function TeamCalendar() {
+  const today = toIsoDate(new Date())
+  const [month, setMonth] = useState(() => monthOf(today))
+  const [selectionStart, setSelectionStart] = useState<string | null>(null)
+  const [range, setRange] = useState<SelectedRange | null>(null)
+
+  const { from, to } = monthGridRange(month)
   const { data, error, retry } = useApiResource<ApiSuccess<CalendarEntry[]>>(
     `/api/leave-requests/calendar?from=${from}&to=${to}`
   )
-
-  const columns = useMemo<DataTableColumn<CalendarEntry>[]>(
-    () => [
-      { key: 'name', header: 'Name', cell: (r) => r.name },
-      { key: 'type', header: 'Type', cell: (r) => r.leave_type },
-      {
-        key: 'dates',
-        header: 'Dates',
-        cell: (r) => formatDateRange(r.start_date, r.end_date),
-      },
-    ],
-    []
+  const { data: holidayData } = useApiResource<PublicHoliday[]>(
+    '/api/public-holidays'
   )
+
+  const entries = data?.data ?? null
+  const holidays = useMemo(
+    () => holidaysByDate(Array.isArray(holidayData) ? holidayData : []),
+    [holidayData]
+  )
+
+  function selectDay(date: string): void {
+    if (selectionStart === null) {
+      setSelectionStart(date)
+      return
+    }
+    const backwards = date < selectionStart
+    setSelectionStart(null)
+    setRange({
+      startDate: backwards ? date : selectionStart,
+      endDate: backwards ? selectionStart : date,
+    })
+  }
 
   return (
     <div data-testid="screen-team-calendar">
       <PageHeader
         title="Team calendar"
-        description="Approved time off this month."
+        description={
+          entries === null ? undefined : calendarSummary(entries, month, today)
+        }
+        action={<BookTimeOffButton onBooked={retry} />}
       />
-      <DataTable
-        caption="Approved time off this month"
-        columns={columns}
-        rows={data?.data ?? null}
-        rowKey={(r) => `${r.employee_id}-${r.start_date}`}
-        error={error}
-        onRetry={retry}
-        loadingLabel="Loading team calendar"
-        errorFallbackMessage="Failed to load team calendar"
-        emptyMessage="Nobody on your team is off this month."
-      />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p
+          role="status"
+          aria-live="polite"
+          data-testid="selection-status"
+          className="text-sm text-text-secondary"
+        >
+          {selectionStart === null
+            ? SELECTION_HINT
+            : `Start date ${formatDateFull(selectionStart)} selected. Choose an end date, or the same date again for a single day.`}
+        </p>
+        {selectionStart !== null && (
+          <Button variant="secondary" onClick={() => setSelectionStart(null)}>
+            Clear selection
+          </Button>
+        )}
+      </div>
+
+      {error ? (
+        <ErrorState
+          error={error}
+          onRetry={retry}
+          fallbackMessage="Failed to load team calendar"
+        />
+      ) : entries === null ? (
+        <LoadingState label="Loading team calendar" />
+      ) : (
+        <MonthCalendar
+          month={month}
+          entries={entries}
+          holidays={holidays}
+          selectionStart={selectionStart}
+          onMonthChange={setMonth}
+          onDayClick={selectDay}
+        />
+      )}
+
+      {range && (
+        <BookTimeOffModal
+          initialRange={range}
+          onClose={() => setRange(null)}
+          onBooked={retry}
+        />
+      )}
     </div>
   )
 }

@@ -798,6 +798,7 @@ export class LeaveRequestService implements ILeaveRequestService {
         leave_type: lr.leaveType,
         start_date: this.toDateString(new Date(lr.startDate)),
         end_date: this.toDateString(new Date(lr.endDate)),
+        status: lr.status,
       })),
     };
   }
