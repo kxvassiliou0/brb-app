@@ -1,11 +1,14 @@
+import { useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
 import BookTimeOffButton from '@/components/BookTimeOffButton'
 import { ErrorState, LoadingState } from '@/components/states'
 import LinkButton from '@/components/LinkButton'
 import PageHeader from '@/components/PageHeader'
 import StatCard from '@/components/StatCard'
+import TeamBalancesTable from '@/components/TeamBalancesTable'
 import { REQUESTS_PATH } from '@/lib/routeAccess'
 import { useApiResource } from '@/lib/useApiResource'
+import { useTeamBalances } from '@/lib/useTeamBalances'
 import type { ApiSuccess } from '@/types/api'
 
 export default function ManagerDashboard() {
@@ -13,11 +16,17 @@ export default function ManagerDashboard() {
   const { data, error, retry } = useApiResource<ApiSuccess<unknown[]>>(
     user ? `/api/leave-requests/pending/manager/${user.id}` : null
   )
+  const balances = useTeamBalances(user?.id)
 
   const pendingCount = data === null ? null : data.data.length
 
+  const refresh = useCallback(() => {
+    retry()
+    balances.retry()
+  }, [retry, balances])
+
   return (
-    <div data-testid="screen-manager-dashboard">
+    <div data-testid="screen-manager-dashboard" className="flex flex-col gap-6">
       <PageHeader
         title="Manager dashboard"
         description="Overview of your team's activity."
@@ -26,7 +35,7 @@ export default function ManagerDashboard() {
             <LinkButton to={REQUESTS_PATH} variant="secondary">
               Review requests
             </LinkButton>
-            <BookTimeOffButton onBooked={retry} />
+            <BookTimeOffButton onBooked={refresh} />
           </div>
         }
       />
@@ -43,6 +52,12 @@ export default function ManagerDashboard() {
           <StatCard label="Pending requests" value={pendingCount} />
         </dl>
       )}
+
+      <TeamBalancesTable
+        rows={balances.rows}
+        error={balances.error}
+        onRetry={balances.retry}
+      />
     </div>
   )
 }

@@ -6,12 +6,12 @@ import { initialsFromName } from '@/components/UserSummary'
 import { countLabel, formatDate, formatDateRange } from '@/lib/dates'
 import { overlappingNames } from '@/lib/requestFilters'
 import { decideRequest, REVIEW_LABEL } from '@/lib/reviewRequest'
-import type { LeaveRequest } from '@/types/api'
+import type { LeaveRequest, RemainingLeave } from '@/types/api'
 
 interface ReviewRequestModalProps {
   request: LeaveRequest
   team: LeaveRequest[]
-  balanceAfter: number | null
+  balance: RemainingLeave | null
   onClose: () => void
   onReviewed: () => void
 }
@@ -42,7 +42,7 @@ function Row({
 export default function ReviewRequestModal({
   request,
   team,
-  balanceAfter,
+  balance,
   onClose,
   onReviewed,
 }: ReviewRequestModalProps) {
@@ -51,6 +51,8 @@ export default function ReviewRequestModal({
 
   const overlap = overlappingNames(team, request)
   const name = request.employee_name ?? `Request #${request.id}`
+  const balanceAfter =
+    balance === null ? null : balance.days_remaining - request.days_requested
 
   async function decide(action: 'approve' | 'reject') {
     setError(null)
@@ -96,6 +98,27 @@ export default function ReviewRequestModal({
           emphasis={false}
         />
         <Row label="Leave type" value={request.leave_type} emphasis={false} />
+        {balance === null ? (
+          <Row label="Balance" value="Unavailable" emphasis={false} />
+        ) : (
+          <>
+            <Row
+              label="Entitlement"
+              value={countLabel(balance.annual_allowance, 'day')}
+              emphasis={false}
+            />
+            <Row
+              label="Days used"
+              value={countLabel(balance.days_used, 'day')}
+              emphasis={false}
+            />
+            <Row
+              label="Days remaining"
+              value={countLabel(balance.days_remaining, 'day')}
+              emphasis={false}
+            />
+          </>
+        )}
         <Row
           label="Balance after"
           value={
@@ -103,7 +126,7 @@ export default function ReviewRequestModal({
               ? 'Unavailable'
               : countLabel(balanceAfter, 'day')
           }
-          emphasis={false}
+          emphasis={balanceAfter !== null && balanceAfter < 0}
         />
         <Row
           label="Team overlap"
