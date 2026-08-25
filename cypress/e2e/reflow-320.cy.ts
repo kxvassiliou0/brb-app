@@ -2,12 +2,10 @@ import {
   assertNoHorizontalScroll,
   describeElement,
   login,
+  NARROW,
   USERS,
+  WCAG_258_MINIMUM_PX,
 } from '../support/e2e'
-
-const NARROW = { width: 320, height: 568 }
-
-const WCAG_258_MINIMUM_PX = 24
 
 const INTERACTIVE = 'a, button, input, select, textarea, [role="button"]'
 

@@ -5,9 +5,12 @@ import {
   USERS,
 } from '../support/e2e'
 
-const DESKTOP = { width: 1280, height: 800 }
+const ZOOM_BASELINE = { width: 1280, height: 800 }
 
-const ZOOMED_VIEWPORT = { width: DESKTOP.width / 2, height: DESKTOP.height / 2 }
+const ZOOMED_VIEWPORT = {
+  width: ZOOM_BASELINE.width / 2,
+  height: ZOOM_BASELINE.height / 2,
+}
 
 const CLIP_TOLERANCE_PX = 1
 
@@ -57,7 +60,7 @@ function assertScreenHoldsAtDoubledText(path: string, testId: string) {
 
 describe('200% text resize (WCAG 1.4.4)', () => {
   beforeEach(() => {
-    cy.viewport(DESKTOP.width, DESKTOP.height)
+    cy.viewport(ZOOM_BASELINE.width, ZOOM_BASELINE.height)
   })
 
   it('holds the sign-in screen without clipping', () => {

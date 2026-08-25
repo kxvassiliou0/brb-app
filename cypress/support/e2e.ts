@@ -4,6 +4,12 @@ export const USERS = {
   employee: 'david.jones@company.com',
 } as const
 
+export const DESKTOP = { width: 1280, height: 900 } as const
+
+export const NARROW = { width: 320, height: 568 } as const
+
+export const WCAG_258_MINIMUM_PX = 24
+
 const PASSWORD = 'Password123!'
 
 export function login(email: string, landsOn: string): void {

@@ -1,12 +1,10 @@
-import { login, USERS } from '../support/e2e'
+import { DESKTOP, login, USERS } from '../support/e2e'
 
 const API_URL = Cypress.env('apiUrl') ?? 'http://localhost:3000'
 
 const PASSWORD = 'Password123!'
 
 const MARKER = 'Booked by the book-time-off spec'
-
-const DESKTOP = { width: 1280, height: 900 }
 
 interface OwnRequest {
   id: number
