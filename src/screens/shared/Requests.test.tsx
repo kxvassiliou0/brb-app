@@ -56,6 +56,8 @@ function teamRequest(overrides: Partial<LeaveRequest> = {}): LeaveRequest {
 interface StubOptions {
   own?: OwnLeaveRequest[]
   team?: LeaveRequest[]
+  queues?: Record<number, LeaveRequest[]>
+  allRequests?: LeaveRequest[]
   departments?: { id: number; name: string }[]
 }
 
@@ -67,13 +69,21 @@ function jsonOk(data: unknown): Response {
   } as unknown as Response
 }
 
-function stubApi({ own = [], team = [], departments = [] }: StubOptions = {}) {
+function stubApi({
+  own = [],
+  team = [],
+  queues,
+  allRequests = team,
+  departments = [],
+}: StubOptions = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
     if (url.includes('/remaining/')) return jsonOk(BALANCE)
     if (url.includes('/status/')) return jsonOk(own)
     if (url.includes('/api/departments')) return jsonOk(departments)
-    return jsonOk(team)
+    const queue = url.match(/\/pending\/manager\/(\d+)/)
+    if (queue) return jsonOk(queues ? (queues[Number(queue[1])] ?? []) : team)
+    return jsonOk(allRequests)
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
@@ -194,6 +204,75 @@ describe('what each role sees', () => {
 
     expect(await screen.findByText('Personal')).toBeInTheDocument()
     expect(screen.queryByText('David Jones')).not.toBeInTheDocument()
+  })
+})
+
+describe("the manager's approval queue", () => {
+  it('lists only outstanding requests, never decided or cancelled ones', async () => {
+    stubApi({
+      team: [teamRequest({ id: 50, employee_name: 'David Jones' })],
+      allRequests: [
+        teamRequest({ id: 60, employee_name: 'Ada Poole', status: 'Approved' }),
+        teamRequest({ id: 61, employee_name: 'Ben Cole', status: 'Rejected' }),
+        teamRequest({ id: 62, employee_name: 'Cara Lin', status: 'Cancelled' }),
+      ],
+    })
+    renderRequests('Manager')
+
+    expect(await screen.findByText('David Jones')).toBeInTheDocument()
+    expect(screen.queryByText('Ada Poole')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ben Cole')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cara Lin')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('status-filter')).not.toBeInTheDocument()
+  })
+
+  it("draws the queue from the signed-in manager's own reports", async () => {
+    stubApi({
+      queues: {
+        [USER_ID]: [teamRequest({ id: 50, employee_name: 'David Jones' })],
+        [USER_ID + 7]: [
+          teamRequest({ id: 70, employee_name: 'Frank Harrison' }),
+        ],
+      },
+    })
+    renderRequests('Manager')
+
+    expect(await screen.findByText('David Jones')).toBeInTheDocument()
+    expect(screen.queryByText('Frank Harrison')).not.toBeInTheDocument()
+  })
+
+  it('offers both an approve and a reject action on every row', async () => {
+    stubApi({
+      team: [
+        teamRequest({ id: 50, employee_name: 'David Jones' }),
+        teamRequest({ id: 51, employee_name: 'Eve Knowles' }),
+      ],
+    })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+    const rows = within(screen.getByTestId('data-table'))
+      .getAllByRole('row')
+      .slice(1)
+
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(
+        within(row).getByRole('button', { name: 'Approve' })
+      ).toBeInTheDocument()
+      expect(
+        within(row).getByRole('button', { name: 'Decline' })
+      ).toBeInTheDocument()
+    }
+  })
+
+  it('shows an empty state when nothing is awaiting approval', async () => {
+    stubApi({ own: [ownRequest()], team: [] })
+    renderRequests('Manager')
+
+    expect(
+      await screen.findByText('Nothing is waiting for your approval.')
+    ).toBeInTheDocument()
   })
 })
 
