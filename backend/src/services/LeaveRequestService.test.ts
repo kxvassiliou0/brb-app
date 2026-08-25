@@ -1550,3 +1550,90 @@ describe("LeaveRequestService.canAccessEmployee", () => {
     expect(result).toBe(false);
   });
 });
+
+describe("LeaveRequestService reviewer", () => {
+  it("names the reviewer from the reviewedBy relation", () => {
+    // Arrange
+    const lr = makeLeaveRequest({
+      status: LeaveStatus.Approved,
+      reviewedById: 2,
+      reviewedBy: makeUser({ id: 2, firstName: "Bob", lastName: "Mitchell" }),
+    });
+
+    // Act
+    const formatted = service.formatLeaveRequest(lr);
+
+    // Assert
+    expect(formatted.reviewed_by_name).toBe("Bob Mitchell");
+  });
+
+  it("reports a null reviewer for a request nobody has reviewed", () => {
+    // Arrange
+    const lr = makeLeaveRequest({
+      status: LeaveStatus.Pending,
+      reviewedById: null,
+      reviewedBy: null,
+    });
+
+    // Act
+    const formatted = service.formatLeaveRequest(lr);
+
+    // Assert
+    expect(formatted.reviewed_by_name).toBeNull();
+  });
+
+  it("records the approving admin as the reviewer", async () => {
+    // Arrange
+    const token = { id: 1, role: RoleType.Admin };
+    const lr = makeLeaveRequest({ userId: 4, status: LeaveStatus.Pending });
+    mockLeaveRepo.findOne.mockResolvedValue(lr);
+    mockLeaveRepo.save.mockResolvedValue(lr);
+
+    // Act
+    await service.approveLeaveRequest(token, { leave_request_id: 1 });
+
+    // Assert
+    expect(mockLeaveRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: LeaveStatus.Approved,
+        reviewedById: 1,
+      }),
+    );
+  });
+
+  it("records the rejecting manager as the reviewer", async () => {
+    // Arrange
+    const token = { id: 2, role: RoleType.Manager };
+    const lr = makeLeaveRequest({ userId: 4, status: LeaveStatus.Pending });
+    mockLeaveRepo.findOne.mockResolvedValue(lr);
+    mockUserRepo.findOne.mockResolvedValue(makeUser({ id: 4, managerId: 2 }));
+    mockLeaveRepo.save.mockResolvedValue(lr);
+
+    // Act
+    await service.rejectLeaveRequest(token, { leave_request_id: 1 });
+
+    // Assert
+    expect(mockLeaveRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: LeaveStatus.Rejected,
+        reviewedById: 2,
+      }),
+    );
+  });
+
+  it("loads the reviewedBy relation for the company-wide admin list", async () => {
+    // Arrange
+    const token = { id: 1, role: RoleType.Admin };
+    mockLeaveRepo.find.mockResolvedValue([]);
+
+    // Act
+    await service.getAllLeaveRequests(token, {});
+
+    // Assert
+    expect(mockLeaveRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relations: ["user", "user.department", "reviewedBy"],
+      }),
+    );
+  });
+});

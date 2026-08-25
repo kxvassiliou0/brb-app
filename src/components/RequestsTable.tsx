@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import Button from '@/components/Button'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
+import Icon from '@/components/Icon'
 import StatusPill from '@/components/StatusPill'
 import { formatDate, formatDateRange } from '@/lib/dates'
 import type { RequestRow } from '@/lib/requestFilters'
@@ -14,6 +15,7 @@ interface RequestsTableProps {
   error: unknown
   onRetry: () => void
   showEmployee: boolean
+  showReviewer: boolean
   onDecide: ((action: ReviewAction, requestId: number) => void) | null
   onOpen: (requestId: number) => void
   decidingId: number | null
@@ -27,6 +29,7 @@ export default function RequestsTable({
   error,
   onRetry,
   showEmployee,
+  showReviewer,
   onDecide,
   onOpen,
   decidingId,
@@ -79,6 +82,18 @@ export default function RequestsTable({
       },
     ]
 
+    if (showReviewer) {
+      base.push({
+        key: 'reviewer',
+        header: 'Reviewed by',
+        cell: (r) => (
+          <span className="whitespace-nowrap text-text-secondary">
+            {r.reviewed_by_name?.trim() ? r.reviewed_by_name : '—'}
+          </span>
+        ),
+      })
+    }
+
     if (showEmployee) {
       base.unshift({
         key: 'employee',
@@ -97,20 +112,22 @@ export default function RequestsTable({
         align: 'right',
         cell: (r) =>
           onDecide && r.status === 'Pending' ? (
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end">
               <Button
-                variant="secondary"
+                variant="ghostDanger"
                 disabled={decidingId === r.id}
                 onClick={() => onDecide('reject', r.id)}
               >
-                {REVIEW_LABEL.reject}
+                <Icon name="cross" />
+                <span className="sr-only">{REVIEW_LABEL.reject}</span>
               </Button>
               <Button
-                variant="primary"
+                variant="ghost"
                 disabled={decidingId === r.id}
                 onClick={() => onDecide('approve', r.id)}
               >
-                {REVIEW_LABEL.approve}
+                <Icon name="check" />
+                <span className="sr-only">{REVIEW_LABEL.approve}</span>
               </Button>
             </div>
           ) : null,
@@ -118,7 +135,7 @@ export default function RequestsTable({
     }
 
     return base
-  }, [showEmployee, onDecide, onOpen, decidingId])
+  }, [showEmployee, showReviewer, onDecide, onOpen, decidingId])
 
   return (
     <DataTable

@@ -27,7 +27,7 @@ export default function SearchInput({
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="touch-target w-full rounded-xl border border-border-primary bg-background-secondary py-3 pr-4 pl-12 text-base text-text-primary placeholder:text-text-secondary"
+        className="touch-target w-full rounded-xl border border-border-primary bg-background-secondary py-2 pr-4 pl-12 text-base text-text-primary placeholder:text-text-secondary"
       />
     </div>
   )

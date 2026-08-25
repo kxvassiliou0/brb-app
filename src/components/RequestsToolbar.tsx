@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import DateRangeFilter from '@/components/DateRangeFilter'
 import Icon from '@/components/Icon'
 import SearchInput from '@/components/SearchInput'
@@ -12,6 +13,7 @@ interface RequestsToolbarProps {
   showSearch: boolean
   showDepartments: boolean
   departments: DepartmentRow[]
+  trailing?: ReactNode
 }
 
 export default function RequestsToolbar({
@@ -22,6 +24,7 @@ export default function RequestsToolbar({
   showSearch,
   showDepartments,
   departments,
+  trailing,
 }: RequestsToolbarProps) {
   return (
     <div
@@ -59,7 +62,7 @@ export default function RequestsToolbar({
                   : null,
               })
             }
-            className="touch-target w-full appearance-none rounded-xl border border-border-primary bg-background-secondary py-3 pr-12 pl-4 text-base text-text-primary"
+            className="touch-target w-full appearance-none rounded-xl border border-border-primary bg-background-secondary py-2 pr-12 pl-4 text-base text-text-primary"
           >
             <option value="">Department: All</option>
             {departments.map((department) => (
@@ -84,6 +87,8 @@ export default function RequestsToolbar({
       >
         Clear filters
       </button>
+
+      {trailing && <div className="ms-auto">{trailing}</div>}
     </div>
   )
 }

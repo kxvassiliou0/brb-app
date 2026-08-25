@@ -6,7 +6,15 @@ import {
   within,
 } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from 'vitest'
 import type { BookingConfirmationState } from '@/components/BookingConfirmation'
 import BookTimeOffModal from '@/components/BookTimeOffModal'
 import { setStoredToken } from '@/lib/api'
@@ -41,7 +49,11 @@ interface StubOptions {
   gateCreateOn?: Promise<unknown>
 }
 
-let fetchMock: ReturnType<typeof vi.fn>
+type FetchMock = Mock<
+  (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+>
+
+let fetchMock: FetchMock
 
 function stubApi({
   balance = BALANCE,
@@ -151,8 +163,8 @@ function submit(): void {
 
 function createCalls(): RequestInit[] {
   return fetchMock.mock.calls
-    .filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
-    .map(([, init]) => init as RequestInit)
+    .map(([, init]) => init)
+    .filter((init): init is RequestInit => init?.method === 'POST')
 }
 
 function createdBody(): Record<string, unknown> {
@@ -657,5 +669,108 @@ describe('the dialog itself', () => {
       .map((element) => element.tagName.toLowerCase())
 
     expect(undersized).toEqual([])
+  })
+})
+
+describe('booking as an Admin', () => {
+  const EMPLOYEES = [
+    { id: EMPLOYEE_ID, firstName: 'Alice', lastName: 'Thompson' },
+    { id: 4, firstName: 'David', lastName: 'Jones' },
+    { id: 7, firstName: 'Grace', lastName: 'Williams' },
+  ]
+
+  function stubAdminApi(options: StubOptions = {}): void {
+    stubApi(options)
+    const inner = fetchMock
+    fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes('/api/users')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: EMPLOYEES }),
+        } as unknown as Response
+      }
+      return inner(input, init)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+  }
+
+  async function adminLoaded(): Promise<void> {
+    await screen.findByRole('option', { name: 'David Jones' })
+  }
+
+  function chooseEmployee(id: number): void {
+    fireEvent.change(control('booking-employee'), {
+      target: { value: String(id) },
+    })
+  }
+
+  it('offers every employee, with the signed-in admin marked as themselves', async () => {
+    stubAdminApi()
+    renderModal(vi.fn(), 'Admin')
+    await adminLoaded()
+
+    const options = within(control('booking-employee'))
+      .getAllByRole('option')
+      .map((option) => option.textContent)
+
+    expect(options).toEqual([
+      'Alice Thompson (you)',
+      'David Jones',
+      'Grace Williams',
+    ])
+  })
+
+  it('sends the chosen employee_id when booking on behalf of another user', async () => {
+    stubAdminApi()
+    renderModal(vi.fn(), 'Admin')
+    await adminLoaded()
+
+    chooseEmployee(4)
+    selectLeaveType('Vacation')
+    pickDate('start-date', '2026-08-10')
+    pickDate('end-date', '2026-08-14')
+    submit()
+
+    await waitFor(() => expect(createCalls()).toHaveLength(1))
+    expect(createdBody().employee_id).toBe(4)
+  })
+
+  it('books against the admin themselves when nobody else is chosen', async () => {
+    stubAdminApi()
+    renderModal(vi.fn(), 'Admin')
+    await adminLoaded()
+
+    selectLeaveType('Sick')
+    pickDate('start-date', '2026-08-10')
+    pickDate('end-date', '2026-08-10')
+    submit()
+
+    await waitFor(() => expect(createCalls()).toHaveLength(1))
+    expect(createdBody().employee_id).toBe(EMPLOYEE_ID)
+  })
+
+  it('reads the balance of the employee being booked for', async () => {
+    stubAdminApi()
+    renderModal(vi.fn(), 'Admin')
+    await adminLoaded()
+
+    chooseEmployee(7)
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([input]) =>
+          String(input).includes('/api/leave-requests/remaining/7')
+        )
+      ).toBe(true)
+    )
+  })
+
+  it('withholds the employee picker from a Manager', async () => {
+    stubApi()
+    renderModal(vi.fn(), 'Manager')
+    await loaded()
+
+    expect(document.getElementById('booking-employee')).toBeNull()
   })
 })

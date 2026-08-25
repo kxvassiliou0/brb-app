@@ -19,7 +19,7 @@ interface DatePickerProps {
 }
 
 const TRIGGER_CLASS =
-  'touch-target w-full rounded-lg border px-4 py-3 text-left text-base text-text-primary'
+  'touch-target w-full rounded-lg border px-4 py-2 text-left text-base text-text-primary'
 
 const DAY_CLASS =
   'touch-target flex items-center justify-center rounded-lg text-sm disabled:cursor-not-allowed disabled:line-through disabled:opacity-40'

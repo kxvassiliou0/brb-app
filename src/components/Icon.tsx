@@ -11,6 +11,7 @@ export type IconName =
   | 'departments'
   | 'people'
   | 'check'
+  | 'cross'
   | 'search'
   | 'chevronDown'
   | 'note'
@@ -93,6 +94,10 @@ const ICONS: Record<IconName, { viewBox: string; paths: string[] }> = {
   check: {
     viewBox: '20 369.6 20 20',
     paths: ['M36 375.5L27.75 383.75L24 380'],
+  },
+  cross: {
+    viewBox: '0 0 20 20',
+    paths: ['M14.5 5.5L5.5 14.5M5.5 5.5L14.5 14.5'],
   },
   search: {
     viewBox: '20 401.9 20 20',

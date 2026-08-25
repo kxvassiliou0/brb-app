@@ -78,7 +78,7 @@ function navFor(role: Role): NavItem[] {
 }
 
 const SIDEBAR_LINK =
-  'touch-target flex items-center gap-3 rounded-xl p-3 text-sm font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
+  'touch-target flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
 
 const BOTTOM_LINK =
   'touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'

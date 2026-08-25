@@ -38,6 +38,7 @@ function request(id: number): LeaveRequest {
     status: 'Pending',
     reason: null,
     manager_note: null,
+    reviewed_by_name: null,
   }
 }
 
@@ -84,6 +85,7 @@ describe('skeleton dimensions', () => {
           error={null}
           onRetry={() => {}}
           showEmployee={false}
+          showReviewer={false}
           onDecide={null}
           onOpen={() => {}}
           decidingId={null}
