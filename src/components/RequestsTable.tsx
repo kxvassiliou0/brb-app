@@ -6,6 +6,9 @@ import { formatDate, formatDateRange } from '@/lib/dates'
 import type { RequestRow } from '@/lib/requestFilters'
 import { REVIEW_LABEL, type ReviewAction } from '@/lib/reviewRequest'
 
+const OPENS =
+  'touch-target text-left font-medium whitespace-nowrap text-text-primary underline decoration-1 underline-offset-4 hover:text-sage-foreground'
+
 interface RequestsTableProps {
   rows: RequestRow[] | null
   error: unknown
@@ -33,7 +36,22 @@ export default function RequestsTable({
 }: RequestsTableProps) {
   const columns = useMemo<DataTableColumn<RequestRow>[]>(() => {
     const base: DataTableColumn<RequestRow>[] = [
-      { key: 'type', header: 'Type', cell: (r) => r.leave_type },
+      {
+        key: 'type',
+        header: 'Type',
+        cell: (r) =>
+          showEmployee ? (
+            r.leave_type
+          ) : (
+            <button
+              type="button"
+              onClick={() => onOpen(r.id)}
+              className={OPENS}
+            >
+              {r.leave_type}
+            </button>
+          ),
+      },
       {
         key: 'dates',
         header: 'Dates',
@@ -66,11 +84,7 @@ export default function RequestsTable({
         key: 'employee',
         header: 'Employee',
         cell: (r) => (
-          <button
-            type="button"
-            onClick={() => onOpen(r.id)}
-            className="touch-target text-left font-medium whitespace-nowrap text-text-primary underline decoration-1 underline-offset-4 hover:text-sage-foreground"
-          >
+          <button type="button" onClick={() => onOpen(r.id)} className={OPENS}>
             {r.employee_name ?? `#${r.employee_id}`}
           </button>
         ),

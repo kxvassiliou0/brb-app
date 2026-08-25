@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Button from '@/components/Button'
+import DetailRow from '@/components/DetailRow'
 import Icon from '@/components/Icon'
 import Modal from '@/components/Modal'
 import { initialsFromName } from '@/components/UserSummary'
@@ -14,29 +15,6 @@ interface ReviewRequestModalProps {
   balance: RemainingLeave | null
   onClose: () => void
   onReviewed: () => void
-}
-
-function Row({
-  label,
-  value,
-  emphasis,
-}: {
-  label: string
-  value: string
-  emphasis: boolean
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-6 border-b border-border-primary py-4">
-      <dt className="text-text-secondary">{label}</dt>
-      <dd
-        className={`text-right font-medium ${
-          emphasis ? 'text-pending-foreground' : 'text-text-primary'
-        }`}
-      >
-        {value}
-      </dd>
-    </div>
-  )
 }
 
 export default function ReviewRequestModal({
@@ -87,39 +65,34 @@ export default function ReviewRequestModal({
       </div>
 
       <dl className="flex flex-col">
-        <Row
+        <DetailRow
           label="Dates"
           value={formatDateRange(request.start_date, request.end_date)}
-          emphasis={false}
         />
-        <Row
+        <DetailRow
           label="Duration"
           value={countLabel(request.days_requested, 'day')}
-          emphasis={false}
         />
-        <Row label="Leave type" value={request.leave_type} emphasis={false} />
+        <DetailRow label="Leave type" value={request.leave_type} />
         {balance === null ? (
-          <Row label="Balance" value="Unavailable" emphasis={false} />
+          <DetailRow label="Balance" value="Unavailable" />
         ) : (
           <>
-            <Row
+            <DetailRow
               label="Entitlement"
               value={countLabel(balance.annual_allowance, 'day')}
-              emphasis={false}
             />
-            <Row
+            <DetailRow
               label="Days used"
               value={countLabel(balance.days_used, 'day')}
-              emphasis={false}
             />
-            <Row
+            <DetailRow
               label="Days remaining"
               value={countLabel(balance.days_remaining, 'day')}
-              emphasis={false}
             />
           </>
         )}
-        <Row
+        <DetailRow
           label="Balance after"
           value={
             balanceAfter === null
@@ -128,7 +101,7 @@ export default function ReviewRequestModal({
           }
           emphasis={balanceAfter !== null && balanceAfter < 0}
         />
-        <Row
+        <DetailRow
           label="Team overlap"
           value={
             overlap.length === 0

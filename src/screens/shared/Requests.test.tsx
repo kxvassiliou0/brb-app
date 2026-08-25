@@ -13,7 +13,12 @@ import { DATE_STRIP_DAYS } from '@/lib/requestFilters'
 import { REQUESTS_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
 import { makeUserJwt } from '@/test/jwt'
-import type { LeaveRequest, OwnLeaveRequest, RemainingLeave } from '@/types/api'
+import type {
+  LeaveRequest,
+  LeaveStatus,
+  OwnLeaveRequest,
+  RemainingLeave,
+} from '@/types/api'
 
 const USER_ID = 2
 
@@ -95,7 +100,23 @@ function stubApi({
   return fetchMock
 }
 
-function reviewRow(label: string): string {
+function bodyRows(): HTMLElement[] {
+  return within(screen.getByTestId('data-table')).getAllByRole('row').slice(1)
+}
+
+function statusColumn(): string[] {
+  return bodyRows().map(
+    (row) => within(row).getAllByRole('cell').at(-1)!.textContent ?? ''
+  )
+}
+
+function clickStatusTab(name: string): void {
+  fireEvent.click(
+    within(screen.getByTestId('status-filter')).getByRole('button', { name })
+  )
+}
+
+function detailRow(label: string): string {
   const modal = screen.queryByTestId('modal')
   if (!modal) return ''
   const term = within(modal).queryByText(label)
@@ -178,6 +199,282 @@ describe('the booking confirmation', () => {
     const highlighted = document.querySelectorAll('tr[data-highlighted="true"]')
     expect(highlighted).toHaveLength(1)
     expect(highlighted[0]).toHaveTextContent('1 Sept 2026 – 2 Sept 2026')
+  })
+})
+
+describe('the list of my requests', () => {
+  it('keeps the order the API returned, most recent request first', async () => {
+    stubApi({
+      own: [
+        ownRequest({
+          id: 3,
+          date_requested: '2026-07-30',
+          start_date: '2026-08-03',
+          end_date: '2026-08-04',
+        }),
+        ownRequest({
+          id: 2,
+          date_requested: '2026-07-10',
+          start_date: '2026-12-21',
+          end_date: '2026-12-22',
+        }),
+        ownRequest({
+          id: 1,
+          date_requested: '2026-06-01',
+          start_date: '2026-09-14',
+          end_date: '2026-09-15',
+        }),
+      ],
+    })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    const requested = bodyRows().map(
+      (row) => within(row).getAllByRole('cell')[3]!.textContent
+    )
+
+    expect(requested).toEqual(['30 Jul 2026', '10 Jul 2026', '1 Jun 2026'])
+  })
+
+  it('describes every row by type, dates, days, date requested and status', async () => {
+    stubApi({
+      own: [
+        ownRequest({
+          leave_type: 'Sick',
+          start_date: '2026-08-10',
+          end_date: '2026-08-14',
+          days_requested: 5,
+          date_requested: '2026-07-02',
+          status: 'Approved',
+        }),
+      ],
+    })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    const cells = within(bodyRows()[0]!)
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent)
+
+    expect(cells).toEqual([
+      'Sick',
+      '10 Aug 2026 – 14 Aug 2026',
+      '5',
+      '2 Jul 2026',
+      'Approved',
+    ])
+  })
+
+  it('names the status in text, so colour is never the only signal', async () => {
+    const statuses: LeaveStatus[] = [
+      'Pending',
+      'Approved',
+      'Rejected',
+      'Cancelled',
+    ]
+    stubApi({
+      own: statuses.map((status, index) =>
+        ownRequest({ id: index + 1, status })
+      ),
+    })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    for (const element of Array.from(document.querySelectorAll('[class]'))) {
+      element.removeAttribute('class')
+    }
+
+    expect(statusColumn()).toEqual(statuses)
+  })
+
+  it('associates every column header with its column', async () => {
+    stubApi({ own: [ownRequest()] })
+    renderRequests('Employee')
+
+    const table = await screen.findByTestId('data-table')
+    const headers = within(table).getAllByRole('columnheader')
+
+    expect(headers.map((header) => header.textContent)).toEqual([
+      'Type',
+      'Dates',
+      'Days',
+      'Date requested',
+      'Status',
+    ])
+    for (const header of headers) {
+      expect(header).toHaveAttribute('scope', 'col')
+    }
+    expect(within(bodyRows()[0]!).getAllByRole('cell')).toHaveLength(
+      headers.length
+    )
+  })
+
+  it('opens the full request from the leftmost column', async () => {
+    stubApi({
+      own: [
+        ownRequest({
+          id: 1,
+          leave_type: 'Vacation',
+          start_date: '2026-08-10',
+          end_date: '2026-08-14',
+          days_requested: 5,
+          date_requested: '2026-07-02',
+          reason: 'Autumn trip',
+        }),
+      ],
+    })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    fireEvent.click(screen.getByRole('button', { name: 'Vacation' }))
+
+    const modal = within(screen.getByTestId('modal'))
+    expect(modal.getByRole('heading', { name: 'Vacation leave' })).toBeVisible()
+    expect(detailRow('Dates')).toBe('10 Aug 2026 – 14 Aug 2026')
+    expect(detailRow('Duration')).toBe('5 days')
+    expect(detailRow('Date requested')).toBe('2 Jul 2026')
+    expect(detailRow('Status')).toBe('Pending')
+    expect(modal.getByText('Autumn trip')).toBeInTheDocument()
+  })
+
+  it("explains the manager's reasoning at the foot of a rejected request", async () => {
+    stubApi({
+      own: [
+        ownRequest({
+          id: 1,
+          leave_type: 'Personal',
+          status: 'Rejected',
+          manager_note: 'Two others in Engineering are already away that week.',
+        }),
+        ownRequest({ id: 2, leave_type: 'Sick', status: 'Pending' }),
+      ],
+    })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    expect(screen.queryByTestId('manager-note')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Personal' }))
+    const note = screen.getByTestId('manager-note')
+
+    expect(note).toHaveTextContent(
+      'Two others in Engineering are already away that week.'
+    )
+    const blocks = Array.from(screen.getByTestId('modal').children)
+    expect(blocks.indexOf(note)).toBe(blocks.length - 2)
+    expect(detailRow('Status')).toBe('Rejected')
+  })
+
+  it('leaves the manager note off a request nobody rejected', async () => {
+    stubApi({
+      own: [
+        ownRequest({
+          id: 1,
+          leave_type: 'Sick',
+          status: 'Approved',
+          manager_note: 'Approved on the phone.',
+        }),
+      ],
+    })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    fireEvent.click(screen.getByRole('button', { name: 'Sick' }))
+
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
+    expect(screen.queryByTestId('manager-note')).not.toBeInTheDocument()
+  })
+
+  it('closes the request details again', async () => {
+    stubApi({ own: [ownRequest({ id: 1, leave_type: 'Vacation' })] })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    fireEvent.click(screen.getByRole('button', { name: 'Vacation' }))
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', { name: 'Close' })
+    )
+
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+  })
+
+  it('invites a user with no requests to book their first trip', async () => {
+    stubApi({ own: [] })
+    renderRequests('Employee')
+
+    expect(
+      await screen.findByText(
+        "You haven't submitted any time-off requests. Book your first trip to get started!"
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('table-empty-state')).toBeInTheDocument()
+  })
+})
+
+describe('the status tabs', () => {
+  const MIXED: OwnLeaveRequest[] = [
+    ownRequest({ id: 1, status: 'Pending' }),
+    ownRequest({ id: 2, status: 'Pending' }),
+    ownRequest({ id: 3, status: 'Approved' }),
+    ownRequest({ id: 4, status: 'Rejected' }),
+    ownRequest({ id: 5, status: 'Cancelled' }),
+  ]
+
+  it('covers All plus every status a leave request can hold', async () => {
+    stubApi({ own: MIXED })
+    renderRequests('Employee')
+
+    const tabs = within(
+      await screen.findByTestId('status-filter')
+    ).getAllByRole('button')
+
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'All',
+      'Pending',
+      'Approved',
+      'Rejected',
+      'Cancelled',
+    ])
+  })
+
+  it.each([
+    ['Pending', ['Pending', 'Pending']],
+    ['Approved', ['Approved']],
+    ['Rejected', ['Rejected']],
+    ['Cancelled', ['Cancelled']],
+  ])('shows only %s requests under the %s tab', async (tab, expected) => {
+    stubApi({ own: MIXED })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    clickStatusTab(tab)
+
+    expect(statusColumn()).toEqual(expected)
+  })
+
+  it('brings every request back under All', async () => {
+    stubApi({ own: MIXED })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    clickStatusTab('Cancelled')
+    expect(statusColumn()).toEqual(['Cancelled'])
+
+    clickStatusTab('All')
+
+    expect(statusColumn()).toEqual(MIXED.map((request) => request.status))
+  })
+
+  it('tells a user with no cancelled requests that none match', async () => {
+    stubApi({ own: [ownRequest({ id: 1, status: 'Approved' })] })
+    renderRequests('Employee')
+
+    await screen.findByTestId('data-table')
+    clickStatusTab('Cancelled')
+
+    expect(
+      screen.getByText('No requests match these filters.')
+    ).toBeInTheDocument()
   })
 })
 
@@ -328,7 +625,7 @@ describe("the manager's approval queue", () => {
 
     const names = await screen.findAllByRole('button', { name: 'David Jones' })
     fireEvent.click(names[0]!)
-    await waitFor(() => expect(reviewRow('Days remaining')).toBe('18 days'))
+    await waitFor(() => expect(detailRow('Days remaining')).toBe('18 days'))
 
     fireEvent.click(
       within(screen.getByTestId('modal')).getByRole('button', {
@@ -340,9 +637,9 @@ describe("the manager's approval queue", () => {
     )
 
     fireEvent.click(await screen.findByRole('button', { name: 'David Jones' }))
-    await waitFor(() => expect(reviewRow('Days remaining')).toBe('13 days'))
-    expect(reviewRow('Days used')).toBe('12 days')
-    expect(reviewRow('Entitlement')).toBe('25 days')
+    await waitFor(() => expect(detailRow('Days remaining')).toBe('13 days'))
+    expect(detailRow('Days used')).toBe('12 days')
+    expect(detailRow('Entitlement')).toBe('25 days')
   })
 })
 
@@ -469,28 +766,6 @@ describe('the scope toggle', () => {
 })
 
 describe('filtering', () => {
-  it('narrows the table by status', async () => {
-    stubApi({
-      own: [
-        ownRequest({ id: 1, leave_type: 'Vacation', status: 'Pending' }),
-        ownRequest({ id: 2, leave_type: 'Sick', status: 'Approved' }),
-      ],
-    })
-    renderRequests('Employee')
-
-    await screen.findByTestId('data-table')
-    expect(screen.getByText('Sick')).toBeInTheDocument()
-
-    fireEvent.click(
-      within(screen.getByTestId('status-filter')).getByRole('button', {
-        name: 'Pending',
-      })
-    )
-
-    expect(screen.queryByText('Sick')).not.toBeInTheDocument()
-    expect(screen.getByText('Vacation')).toBeInTheDocument()
-  })
-
   it('offers the department filter to an Admin only', async () => {
     stubApi({
       team: [teamRequest()],

@@ -5,6 +5,7 @@ import BookingConfirmation, {
 import BookTimeOffButton from '@/components/BookTimeOffButton'
 import PageHeader from '@/components/PageHeader'
 import RequestDateStrip from '@/components/RequestDateStrip'
+import RequestDetailsModal from '@/components/RequestDetailsModal'
 import RequestsTable from '@/components/RequestsTable'
 import RequestsToolbar from '@/components/RequestsToolbar'
 import ReviewRequestModal from '@/components/ReviewRequestModal'
@@ -63,6 +64,7 @@ export default function Requests() {
   const [error, setError] = useState<unknown>(null)
   const [deciding, setDeciding] = useState<number | null>(null)
   const [reviewingId, setReviewingId] = useState<number | null>(null)
+  const [detailsId, setDetailsId] = useState<number | null>(null)
   const [reviewBalance, setReviewBalance] = useState<RemainingLeave | null>(
     null
   )
@@ -149,6 +151,8 @@ export default function Requests() {
   )
 
   const reviewing = (team ?? []).find((row) => row.id === reviewingId) ?? null
+
+  const details = (own ?? []).find((row) => row.id === detailsId) ?? null
 
   const openReview = useCallback((requestId: number) => {
     setReviewBalance(null)
@@ -266,7 +270,7 @@ export default function Requests() {
           onRetry={refresh}
           showEmployee={showingTeam}
           onDecide={showingTeam ? handleDecide : null}
-          onOpen={openReview}
+          onOpen={showingTeam ? openReview : setDetailsId}
           decidingId={deciding}
           highlightRequestId={bookingRequestId ?? null}
           emptyMessage={
@@ -283,6 +287,13 @@ export default function Requests() {
           }
         />
       </div>
+
+      {details && (
+        <RequestDetailsModal
+          request={details}
+          onClose={() => setDetailsId(null)}
+        />
+      )}
 
       {reviewing && (
         <ReviewRequestModal
