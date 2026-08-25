@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Button from '@/components/Button'
 import DetailRow from '@/components/DetailRow'
+import FormAlert from '@/components/FormAlert'
 import Icon from '@/components/Icon'
 import Modal from '@/components/Modal'
 import { initialsFromName } from '@/components/UserSummary'
@@ -119,14 +120,7 @@ export default function ReviewRequestModal({
         </p>
       )}
 
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg bg-error-background px-4 py-3 text-sm text-error-foreground"
-        >
-          {error}
-        </p>
-      )}
+      {error && <FormAlert message={error} />}
 
       <div className="flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">
         <Button

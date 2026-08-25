@@ -23,6 +23,8 @@ export interface DepartmentRow {
   name: string
 }
 
+export type JobRoleRow = DepartmentRow
+
 export interface UserProfile {
   id: number
   firstName: string
@@ -37,6 +39,20 @@ export interface UserProfile {
 export interface UserListItem extends UserProfile {
   manager: UserRelation | null
 }
+
+export interface UserRecord {
+  id: number
+  firstName: string
+  lastName: string
+  email: string
+  role: RoleType
+  annualLeaveAllowance: number
+  departmentId: number
+  jobRoleId: number
+  managerId: number | null
+}
+
+export type UpdateUserBody = Omit<UserRecord, 'id'> & { password?: string }
 
 export interface LeaveRequest {
   id: number

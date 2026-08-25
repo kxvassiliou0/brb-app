@@ -1,17 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Button from '@/components/Button'
 import DataTable, { type DataTableColumn } from '@/components/DataTable'
+import DeleteEmployeeModal from '@/components/DeleteEmployeeModal'
+import EditEmployeeModal from '@/components/EditEmployeeModal'
 import Icon from '@/components/Icon'
 import PageHeader from '@/components/PageHeader'
+import { useAuth } from '@/lib/auth'
 import { countLabel } from '@/lib/dates'
+import {
+  canDeleteEmployee,
+  fullName,
+  SELF_DELETE_MESSAGE,
+} from '@/lib/employeeAdmin'
 import { useApiResource } from '@/lib/useApiResource'
 import type { ApiSuccess, UserListItem } from '@/types/api'
 
 export const NO_MANAGER = 'None'
-
-export function fullName(employee: UserListItem): string {
-  return `${employee.firstName} ${employee.lastName}`
-}
 
 export function managerName(employee: UserListItem): string {
   return employee.manager?.name.trim() ? employee.manager.name : NO_MANAGER
@@ -27,10 +31,21 @@ export function describeRoster(employees: UserListItem[] | null): string {
 }
 
 export default function Employees() {
+  const { user } = useAuth()
   const { data, error, retry } =
     useApiResource<ApiSuccess<UserListItem[]>>('/api/users')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   const employees = data?.data ?? null
+
+  const find = (id: number | null): UserListItem | undefined =>
+    id === null
+      ? undefined
+      : (employees?.find((row) => row.id === id) ?? undefined)
+
+  const editing = find(editingId)
+  const deleting = find(deletingId)
 
   const columns = useMemo<DataTableColumn<UserListItem>[]>(
     () => [
@@ -94,21 +109,34 @@ export default function Employees() {
         header: 'Actions',
         hideCardLabel: true,
         align: 'right',
-        cell: (employee) => (
-          <div className="flex items-center justify-end">
-            <Button variant="ghost">
-              <Icon name="pencil" />
-              <span className="sr-only">Edit {fullName(employee)}</span>
-            </Button>
-            <Button variant="ghostDanger">
-              <Icon name="trash" />
-              <span className="sr-only">Delete {fullName(employee)}</span>
-            </Button>
-          </div>
-        ),
+        cell: (employee) => {
+          const name = fullName(employee)
+          const deletable = canDeleteEmployee(employee, user?.id)
+          return (
+            <div className="flex items-center justify-end">
+              <Button variant="ghost" onClick={() => setEditingId(employee.id)}>
+                <Icon name="pencil" />
+                <span className="sr-only">Edit {name}</span>
+              </Button>
+              <Button
+                variant="ghostDanger"
+                disabled={!deletable}
+                title={deletable ? undefined : SELF_DELETE_MESSAGE}
+                onClick={() => setDeletingId(employee.id)}
+              >
+                <Icon name="trash" />
+                <span className="sr-only">
+                  {deletable
+                    ? `Delete ${name}`
+                    : `Delete ${name} (${SELF_DELETE_MESSAGE})`}
+                </span>
+              </Button>
+            </div>
+          )
+        },
       },
     ],
-    []
+    [user?.id]
   )
 
   return (
@@ -127,6 +155,24 @@ export default function Employees() {
           emptyMessage="No employees have been added yet."
         />
       </div>
+
+      {editing && employees && (
+        <EditEmployeeModal
+          employee={editing}
+          employees={employees}
+          onClose={() => setEditingId(null)}
+          onSaved={retry}
+        />
+      )}
+
+      {deleting && employees && (
+        <DeleteEmployeeModal
+          employee={deleting}
+          employees={employees}
+          onClose={() => setDeletingId(null)}
+          onDeleted={retry}
+        />
+      )}
     </div>
   )
 }

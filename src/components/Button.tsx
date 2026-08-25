@@ -9,6 +9,7 @@ interface ButtonProps {
   variant?: ButtonVariant
   fullWidth?: boolean
   disabled?: boolean
+  title?: string
   onClick?: () => void
 }
 
@@ -36,6 +37,7 @@ export default function Button({
   variant = 'primary',
   fullWidth = false,
   disabled = false,
+  title,
   onClick,
 }: ButtonProps) {
   const base = ICON_VARIANTS.includes(variant) ? BUTTON_ICON_BASE : BUTTON_BASE
@@ -44,6 +46,7 @@ export default function Button({
     <button
       type={type}
       disabled={disabled}
+      title={title}
       onClick={onClick}
       className={`${base} ${BUTTON_VARIANT[variant]} ${fullWidth ? 'w-full' : ''}`}
     >
