@@ -16,6 +16,14 @@ const LONG_DATE: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 }
 
+const FULL_DATE: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+}
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 export function toIsoDate(value: Date | string): string {
@@ -36,6 +44,12 @@ export function formatDate(date: string): string {
   const parsed = new Date(date)
   if (Number.isNaN(parsed.getTime())) return date
   return parsed.toLocaleDateString(LOCALE, SHORT_DATE)
+}
+
+export function formatDateFull(date: string): string {
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return date
+  return parsed.toLocaleDateString(LOCALE, FULL_DATE)
 }
 
 export function formatDateRange(startDate: string, endDate: string): string {

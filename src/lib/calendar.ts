@@ -1,5 +1,7 @@
 const LOCALE = 'en-GB'
 
+export const DAYS_IN_WEEK = 7
+
 const DAYS_IN_GRID = 42
 
 export const WEEKDAY_LABELS = [
@@ -66,4 +68,47 @@ export function monthMatrix(month: string): CalendarDay[] {
       inMonth: day.getUTCMonth() === monthIndex,
     }
   })
+}
+
+export function monthWeeks(month: string): CalendarDay[][] {
+  const days = monthMatrix(month)
+  return Array.from({ length: days.length / DAYS_IN_WEEK }, (_, week) =>
+    days.slice(week * DAYS_IN_WEEK, (week + 1) * DAYS_IN_WEEK)
+  )
+}
+
+export function monthBounds(month: string): { from: string; to: string } {
+  const { year, monthIndex } = parseMonth(month)
+  return {
+    from: isoFromUtc(new Date(Date.UTC(year, monthIndex, 1))),
+    to: isoFromUtc(new Date(Date.UTC(year, monthIndex + 1, 0))),
+  }
+}
+
+export function monthGridRange(month: string): { from: string; to: string } {
+  const days = monthMatrix(month)
+  return {
+    from: days[0]?.date ?? '',
+    to: days[days.length - 1]?.date ?? '',
+  }
+}
+
+export function weekOf(date: string): { from: string; to: string } {
+  const day = new Date(`${date}T00:00:00Z`)
+  const mondayOffset = (day.getUTCDay() + 6) % 7
+  const monday = new Date(
+    Date.UTC(
+      day.getUTCFullYear(),
+      day.getUTCMonth(),
+      day.getUTCDate() - mondayOffset
+    )
+  )
+  const sunday = new Date(
+    Date.UTC(
+      monday.getUTCFullYear(),
+      monday.getUTCMonth(),
+      monday.getUTCDate() + DAYS_IN_WEEK - 1
+    )
+  )
+  return { from: isoFromUtc(monday), to: isoFromUtc(sunday) }
 }

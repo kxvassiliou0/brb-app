@@ -41,6 +41,7 @@ function calendarEntry(overrides: Partial<CalendarEntry> = {}): CalendarEntry {
     leave_type: 'Vacation',
     start_date: '2026-09-01',
     end_date: '2026-09-04',
+    status: 'Approved',
     ...overrides,
   }
 }

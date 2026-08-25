@@ -43,16 +43,20 @@ import type {
 interface BookTimeOffModalProps {
   onClose: () => void
   onBooked?: () => void
+  initialRange?: { startDate: string; endDate: string }
 }
 
 export default function BookTimeOffModal({
   onClose,
   onBooked,
+  initialRange,
 }: BookTimeOffModalProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const canBookForOthers = isAdmin(user?.role)
-  const [draft, setDraft] = useState<BookingDraft>(EMPTY_DRAFT)
+  const [draft, setDraft] = useState<BookingDraft>(
+    initialRange ? { ...EMPTY_DRAFT, ...initialRange } : EMPTY_DRAFT
+  )
   const [errors, setErrors] = useState<BookingErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
