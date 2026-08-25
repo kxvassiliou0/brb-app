@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router'
 import type { BookingConfirmationState } from '@/components/BookingConfirmation'
 import Button from '@/components/Button'
 import DatePicker from '@/components/DatePicker'
-import { CONTROL_CLASS } from '@/components/InputWithLabel'
+import FormAlert from '@/components/FormAlert'
+import {
+  CONTROL_CLASS,
+  SelectWithLabel,
+  type SelectOption,
+} from '@/components/InputWithLabel'
 import Modal from '@/components/Modal'
 import { apiFetch } from '@/lib/api'
 import { cachedGet, clearApiCache } from '@/lib/apiCache'
@@ -158,6 +163,15 @@ export default function BookTimeOffModal({
 
   const days = requestedDays(draft)
 
+  const bookingForOptions: SelectOption[] =
+    employees.length === 0 && user
+      ? [{ value: String(user.id), label: `${user.email} (you)` }]
+      : employees.map((employee) => ({
+          value: String(employee.id),
+          label:
+            employee.id === user?.id ? `${employee.name} (you)` : employee.name,
+        }))
+
   return (
     <Modal label="Book time off" onClose={onClose}>
       <div className="flex flex-col gap-1">
@@ -174,63 +188,24 @@ export default function BookTimeOffModal({
         className="flex flex-col gap-5"
       >
         {canBookForOthers && (
-          <div className="flex min-w-0 flex-col gap-2">
-            <label
-              htmlFor="booking-employee"
-              className="text-sm text-text-secondary"
-            >
-              Employee
-            </label>
-            <select
-              id="booking-employee"
-              value={bookingFor ?? ''}
-              onChange={(event) =>
-                setEmployeeId(
-                  event.target.value ? Number(event.target.value) : null
-                )
-              }
-              className={CONTROL_CLASS}
-            >
-              {employees.length === 0 && user && (
-                <option value={user.id}>{user.email} (you)</option>
-              )}
-              {employees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.id === user?.id
-                    ? `${employee.name} (you)`
-                    : employee.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectWithLabel
+            id="booking-employee"
+            label="Employee"
+            value={bookingFor === null ? '' : String(bookingFor)}
+            onChange={(value) => setEmployeeId(value ? Number(value) : null)}
+            options={bookingForOptions}
+          />
         )}
 
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="leave-type" className="text-sm text-text-secondary">
-            Leave type
-          </label>
-          <select
-            id="leave-type"
-            value={draft.leaveType}
-            aria-describedby={errors.leaveType ? 'leave-type-error' : undefined}
-            onChange={(event) =>
-              update({ leaveType: event.target.value as LeaveType | '' })
-            }
-            className={`${CONTROL_CLASS} ${errors.leaveType ? 'border-error-foreground text-error-foreground' : ''}`}
-          >
-            <option value="">Select leave type</option>
-            {LEAVE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          {errors.leaveType && (
-            <p id="leave-type-error" className="text-sm text-error-foreground">
-              {errors.leaveType}
-            </p>
-          )}
-        </div>
+        <SelectWithLabel
+          id="leave-type"
+          label="Leave type"
+          value={draft.leaveType}
+          onChange={(value) => update({ leaveType: value as LeaveType | '' })}
+          options={LEAVE_TYPES.map((type) => ({ value: type, label: type }))}
+          placeholder="Select leave type"
+          error={errors.leaveType}
+        />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <DatePicker
@@ -281,14 +256,7 @@ export default function BookTimeOffModal({
           </p>
         )}
 
-        {submitError && (
-          <p
-            role="alert"
-            className="rounded-lg bg-error-background px-4 py-3 text-sm text-error-foreground"
-          >
-            {submitError}
-          </p>
-        )}
+        {submitError && <FormAlert message={submitError} />}
 
         <div className="flex flex-col gap-3 sm:flex-row-reverse">
           <Button type="submit" disabled={submitting}>

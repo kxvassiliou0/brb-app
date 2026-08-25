@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Button from '@/components/Button'
+import FormAlert from '@/components/FormAlert'
 import { CONTROL_CLASS } from '@/components/InputWithLabel'
 import Modal from '@/components/Modal'
 import { countLabel, formatDateRange } from '@/lib/dates'
@@ -66,14 +67,7 @@ export default function DeclineRequestModal({
         />
       </div>
 
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg bg-error-background px-4 py-3 text-sm text-error-foreground"
-        >
-          {error}
-        </p>
-      )}
+      {error && <FormAlert message={error} />}
 
       <div className="flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">
         <Button variant="danger" disabled={submitting} onClick={confirm}>

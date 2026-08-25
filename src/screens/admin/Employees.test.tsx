@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setStoredToken } from '@/lib/api'
@@ -7,7 +13,8 @@ import { HOME_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
 import { makeUserJwt } from '@/test/jwt'
 import { desktopWidth, mobileWidth, setViewportWidth } from '@/test/viewport'
-import type { UserListItem } from '@/types/api'
+import { SELF_DELETE_MESSAGE } from '@/lib/employeeAdmin'
+import type { UserListItem, UserRecord } from '@/types/api'
 import Employees from './Employees'
 
 const ALICE: UserListItem = {
@@ -36,6 +43,8 @@ const DAVID: UserListItem = {
 
 const EMPLOYEES = [ALICE, DAVID]
 
+const OTHER_ADMIN_ID = 99
+
 function stubUsers(payload: unknown = EMPLOYEES): void {
   vi.stubGlobal(
     'fetch',
@@ -47,9 +56,21 @@ function stubUsers(payload: unknown = EMPLOYEES): void {
   )
 }
 
-async function renderScreen(payload: unknown = EMPLOYEES) {
+function signIn(id: number): void {
+  setStoredToken(makeUserJwt({ id, email: 'admin@company.com', role: 'Admin' }))
+}
+
+async function renderScreen(
+  payload: unknown = EMPLOYEES,
+  signedInId: number = OTHER_ADMIN_ID
+) {
   stubUsers(payload)
-  render(<Employees />)
+  signIn(signedInId)
+  render(
+    <AuthProvider>
+      <Employees />
+    </AuthProvider>
+  )
   return screen.findByText(ALICE.email)
 }
 
@@ -183,6 +204,123 @@ describe('the employee list below the mobile breakpoint', () => {
     expect(
       first.getByRole('button', { name: 'Edit Alice Thompson' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('deleting an employee from the list', () => {
+  it('opens a confirmation naming that employee rather than deleting at once', async () => {
+    setViewportWidth(desktopWidth())
+    await renderScreen()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete David Jones' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Delete David Jones?' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Every leave request David Jones has made/)
+    ).toBeInTheDocument()
+  })
+
+  it('refuses to let an Admin delete the account they are signed in as', async () => {
+    setViewportWidth(desktopWidth())
+    await renderScreen(EMPLOYEES, ALICE.id)
+
+    const ownRow = screen.getByRole('button', {
+      name: `Delete ${ALICE.firstName} ${ALICE.lastName} (${SELF_DELETE_MESSAGE})`,
+    })
+    expect(ownRow).toBeDisabled()
+    expect(ownRow).toHaveAttribute('title', SELF_DELETE_MESSAGE)
+
+    fireEvent.click(ownRow)
+    expect(screen.queryByTestId('delete-confirmation')).not.toBeInTheDocument()
+  })
+
+  it('still allows the same Admin to delete anybody else', async () => {
+    setViewportWidth(desktopWidth())
+    await renderScreen(EMPLOYEES, ALICE.id)
+
+    expect(
+      screen.getByRole('button', { name: 'Delete David Jones' })
+    ).toBeEnabled()
+  })
+})
+
+describe('editing an employee from the list', () => {
+  const DAVID_RECORD: UserRecord = {
+    id: DAVID.id,
+    firstName: DAVID.firstName,
+    lastName: DAVID.lastName,
+    email: DAVID.email,
+    role: DAVID.role,
+    annualLeaveAllowance: DAVID.annualLeaveAllowance,
+    departmentId: DAVID.department.id,
+    jobRoleId: DAVID.jobRole.id,
+    managerId: DAVID.manager?.id ?? null,
+  }
+
+  function respond(body: unknown): Response {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => body,
+    } as unknown as Response
+  }
+
+  function stubEditFlow(afterSave: UserListItem[]): void {
+    let listCalls = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (init?.method === 'PATCH') return respond({ data: DAVID_RECORD })
+        if (url.includes('/api/departments'))
+          return respond({ data: [ALICE.department, DAVID.department] })
+        if (url.includes('/api/job-roles'))
+          return respond({ data: [ALICE.jobRole, DAVID.jobRole] })
+        if (url.endsWith(`/api/users/${DAVID.id}`))
+          return respond({ data: DAVID_RECORD })
+        listCalls += 1
+        return respond({ data: listCalls === 1 ? EMPLOYEES : afterSave })
+      })
+    )
+  }
+
+  async function openEditor(afterSave: UserListItem[]) {
+    setViewportWidth(desktopWidth())
+    stubEditFlow(afterSave)
+    signIn(OTHER_ADMIN_ID)
+    render(
+      <AuthProvider>
+        <Employees />
+      </AuthProvider>
+    )
+    await screen.findByText(DAVID.email)
+    fireEvent.click(screen.getByRole('button', { name: 'Edit David Jones' }))
+    return screen.findByTestId('edit-employee-form')
+  }
+
+  it('opens the form pre-populated from the record', async () => {
+    await openEditor(EMPLOYEES)
+
+    expect(screen.getByLabelText('First name')).toHaveValue('David')
+    expect(screen.getByLabelText('Email')).toHaveValue(DAVID.email)
+    expect(screen.getByLabelText('New password')).toHaveValue('')
+  })
+
+  it('reflects a saved change in the list without tearing the page down', async () => {
+    const updated = [ALICE, { ...DAVID, annualLeaveAllowance: 30 }]
+    const form = await openEditor(updated)
+    const screenNode = screen.getByTestId('screen-employees')
+
+    fireEvent.change(screen.getByLabelText('Annual leave allowance (days)'), {
+      target: { value: '30' },
+    })
+    fireEvent.submit(form)
+
+    expect(await screen.findByText('30 days')).toBeInTheDocument()
+    expect(screen.queryByTestId('edit-employee-form')).not.toBeInTheDocument()
+    expect(screen.getByTestId('screen-employees')).toBe(screenNode)
   })
 })
 

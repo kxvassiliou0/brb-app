@@ -12,12 +12,102 @@ export const WCAG_258_MINIMUM_PX = 24
 
 const PASSWORD = 'Password123!'
 
+export const API_URL = 'http://localhost:3000'
+
 export function login(email: string, landsOn: string): void {
   cy.visit('/login')
   cy.get('#email').type(email)
   cy.get('#password').type(PASSWORD)
   cy.contains('button', 'Sign in').click()
   cy.url().should('include', landsOn)
+}
+
+export interface ApiUser {
+  id: number
+  email: string
+}
+
+export interface NewUser {
+  firstName: string
+  lastName: string
+  email: string
+  role: 'Admin' | 'Manager' | 'Employee'
+  annualLeaveAllowance: number
+  departmentId: number
+  jobRoleId: number
+  managerId?: number | null
+}
+
+function adminToken(): Cypress.Chainable<string> {
+  return cy
+    .request('POST', `${API_URL}/api/login`, {
+      email: USERS.admin,
+      password: PASSWORD,
+    })
+    .then((response) => String(response.body))
+}
+
+function asAdmin<T>(
+  request: (headers: Record<string, string>) => Cypress.Chainable<T>
+): Cypress.Chainable<T> {
+  return adminToken().then((token) =>
+    request({ Authorization: `Bearer ${token}` })
+  )
+}
+
+export function apiCreateUser(user: NewUser): Cypress.Chainable<number> {
+  return asAdmin((headers) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API_URL}/api/users`,
+        headers,
+        body: { managerId: null, ...user, password: PASSWORD },
+      })
+      .then((response) => response.body.data.id as number)
+  )
+}
+
+export function apiDeleteUser(id: number): void {
+  asAdmin((headers) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API_URL}/api/users/${id}`,
+      headers,
+      failOnStatusCode: false,
+    })
+  )
+}
+
+export function apiRemoveUsersByEmail(emails: string[]): void {
+  asAdmin((headers) =>
+    cy
+      .request({ method: 'GET', url: `${API_URL}/api/users`, headers })
+      .then((response) => {
+        const users = (response.body.data ?? []) as ApiUser[]
+        users
+          .filter((user) => emails.includes(user.email))
+          .forEach((user) => apiDeleteUser(user.id))
+      })
+  )
+}
+
+export function apiFirstIds(): Cypress.Chainable<{
+  departmentId: number
+  jobRoleId: number
+}> {
+  return asAdmin((headers) =>
+    cy
+      .request({ method: 'GET', url: `${API_URL}/api/departments`, headers })
+      .then((departments) =>
+        cy
+          .request({ method: 'GET', url: `${API_URL}/api/job-roles`, headers })
+          .then((jobRoles) => ({
+            departmentId: departments.body.data[0].id as number,
+            jobRoleId: jobRoles.body.data[0].id as number,
+          }))
+      )
+  )
 }
 
 export function describeElement(el: Element): string {
