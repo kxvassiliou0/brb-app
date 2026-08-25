@@ -27,6 +27,7 @@ import {
 } from '@/lib/requestFilters'
 import { canReviewRequests, isAdmin } from '@/lib/routeAccess'
 import { decideRequest, type ReviewAction } from '@/lib/reviewRequest'
+import { remainingLeavePath } from '@/lib/teamBalances'
 import type {
   ApiSuccess,
   DepartmentRow,
@@ -62,7 +63,9 @@ export default function Requests() {
   const [error, setError] = useState<unknown>(null)
   const [deciding, setDeciding] = useState<number | null>(null)
   const [reviewingId, setReviewingId] = useState<number | null>(null)
-  const [reviewBalance, setReviewBalance] = useState<number | null>(null)
+  const [reviewBalance, setReviewBalance] = useState<RemainingLeave | null>(
+    null
+  )
 
   const refresh = useCallback(() => {
     setOwn(null)
@@ -81,10 +84,7 @@ export default function Requests() {
         `/api/leave-requests/status/${user.id}`,
         force
       ),
-      cachedGet<ApiSuccess<RemainingLeave>>(
-        `/api/leave-requests/remaining/${user.id}`,
-        force
-      ),
+      cachedGet<ApiSuccess<RemainingLeave>>(remainingLeavePath(user.id), force),
     ])
       .then(([requests, remaining]) => {
         if (cancelled) return
@@ -160,12 +160,10 @@ export default function Requests() {
     let cancelled = false
 
     cachedGet<ApiSuccess<RemainingLeave>>(
-      `/api/leave-requests/remaining/${reviewing.employee_id}`
+      remainingLeavePath(reviewing.employee_id)
     )
       .then((res) => {
-        if (!cancelled) {
-          setReviewBalance(res.data.days_remaining - reviewing.days_requested)
-        }
+        if (!cancelled) setReviewBalance(res.data)
       })
       .catch(() => {
         if (!cancelled) setReviewBalance(null)
@@ -290,7 +288,7 @@ export default function Requests() {
         <ReviewRequestModal
           request={reviewing}
           team={team ?? []}
-          balanceAfter={reviewBalance}
+          balance={reviewBalance}
           onClose={() => setReviewingId(null)}
           onReviewed={refresh}
         />
