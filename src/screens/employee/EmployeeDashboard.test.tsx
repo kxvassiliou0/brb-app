@@ -184,6 +184,33 @@ describe('employee dashboard summary figures', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows days used and days remaining that add up to the entitlement', async () => {
+    stubDashboard({})
+    renderDashboard()
+
+    const remaining = Number.parseInt(await statValue('Remaining leave'), 10)
+    const used = Number.parseInt(await statValue('Booked this year'), 10)
+
+    expect(used + remaining).toBe(PROFILE.annualLeaveAllowance)
+    expect(
+      within(statCard('Remaining leave')).getByText('of 25 annual allowance')
+    ).toBeInTheDocument()
+  })
+
+  it('renders a spent balance as zero rather than a negative figure', async () => {
+    stubDashboard({
+      balance: { annual_allowance: 25, days_used: 25, days_remaining: 0 },
+    })
+    renderDashboard()
+
+    expect(await statValue('Remaining leave')).toBe('0 days')
+    expect(await statValue('Booked this year')).toBe('25 days')
+    expect(
+      await screen.findByRole('heading', { name: /You have 0 days left/ })
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/-\d/)).not.toBeInTheDocument()
+  })
+
   it('counts only Sick requests in the sick leave figure', async () => {
     stubDashboard({
       requests: [
