@@ -1,10 +1,11 @@
-import { assertNoHorizontalScroll, login, USERS } from '../support/e2e'
-
-const DESKTOP = { width: 1280, height: 900 }
-
-const MOBILE = { width: 320, height: 720 }
-
-const WCAG_258_MINIMUM_PX = 24
+import {
+  assertNoHorizontalScroll,
+  DESKTOP,
+  login,
+  NARROW,
+  USERS,
+  WCAG_258_MINIMUM_PX,
+} from '../support/e2e'
 
 function isoDate(monthsAhead: number, dayOfMonth: number): string {
   const today = new Date()
@@ -105,7 +106,7 @@ describe('the team calendar', () => {
   })
 
   it('reflows to 320px without scrolling the page sideways', () => {
-    cy.viewport(MOBILE.width, MOBILE.height)
+    cy.viewport(NARROW.width, NARROW.height)
     cy.get('[data-testid="calendar-month"]').should('be.visible')
     assertNoHorizontalScroll()
   })
