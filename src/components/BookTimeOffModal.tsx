@@ -34,7 +34,7 @@ import { isAdmin, REQUESTS_PATH } from '@/lib/routeAccess'
 import { remainingLeavePath } from '@/lib/teamBalances'
 import type {
   ApiSuccess,
-  CreateLeaveRequestResult,
+  LeaveRequest,
   LeaveType,
   RemainingLeave,
   UserProfile,
@@ -136,7 +136,7 @@ export default function BookTimeOffModal({
     setSubmitError(null)
     setSubmitting(true)
     try {
-      const created = await apiFetch<ApiSuccess<CreateLeaveRequestResult>>(
+      const created = await apiFetch<ApiSuccess<LeaveRequest>>(
         '/api/leave-requests',
         {
           method: 'POST',

@@ -5,11 +5,6 @@ export interface IUserService {
   getAll(): Promise<Array<UserDTOListItem>>;
   getById(id: number): Promise<User>;
   getOwnProfile(id: number): Promise<UserDTOProfile>;
-  changeOwnPassword(
-    id: number,
-    currentPassword: string,
-    newPassword: string,
-  ): Promise<void>;
   create(data: Partial<User>): Promise<User>;
   update(id: number, data: Partial<User>): Promise<User>;
   delete(id: number): Promise<void>;

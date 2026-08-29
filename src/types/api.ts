@@ -73,16 +73,6 @@ export interface LeaveRequest {
   reviewed_by_name: string | null
 }
 
-export interface ExcludedPublicHoliday {
-  date: string
-  name: string
-}
-
-export interface CreateLeaveRequestResult extends LeaveRequest {
-  days_requested: number
-  excluded_public_holidays: ExcludedPublicHoliday[]
-}
-
 export interface OwnLeaveRequest {
   id: number
   leave_type: LeaveType
