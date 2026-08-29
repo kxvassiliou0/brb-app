@@ -3,13 +3,16 @@ import BookingConfirmation, {
   useBookingConfirmation,
 } from '@/components/BookingConfirmation'
 import BookTimeOffButton from '@/components/BookTimeOffButton'
+import Button from '@/components/Button'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import DeclineRequestModal from '@/components/DeclineRequestModal'
 import PageHeader from '@/components/PageHeader'
 import RequestDateStrip from '@/components/RequestDateStrip'
 import RequestDetailsModal from '@/components/RequestDetailsModal'
 import RequestsTable from '@/components/RequestsTable'
-import RequestsToolbar from '@/components/RequestsToolbar'
+import RequestsToolbar, {
+  CLEAR_FILTERS_LABEL,
+} from '@/components/RequestsToolbar'
 import ReviewRequestModal from '@/components/ReviewRequestModal'
 import SegmentedControl from '@/components/SegmentedControl'
 import { cachedGet } from '@/lib/apiCache'
@@ -131,15 +134,13 @@ export default function Requests() {
         if (!cancelled) setError(err)
       })
 
-    if (isAdminUser) {
-      cachedGet<ApiSuccess<DepartmentRow[]>>('/api/departments', force)
-        .then((res) => {
-          if (!cancelled) setDepartments(res.data)
-        })
-        .catch(() => {
-          if (!cancelled) setDepartments([])
-        })
-    }
+    cachedGet<ApiSuccess<DepartmentRow[]>>('/api/departments', force)
+      .then((res) => {
+        if (!cancelled) setDepartments(res.data)
+      })
+      .catch(() => {
+        if (!cancelled) setDepartments([])
+      })
 
     return () => {
       cancelled = true
@@ -284,6 +285,8 @@ export default function Requests() {
     return `${countLabel(countInLeaveYear(own ?? []), 'request')} this year • ${remaining}`
   }
 
+  const filtering = hasActiveFilters(filters)
+
   const title = !showingTeam
     ? 'My requests'
     : isAdminUser
@@ -306,9 +309,9 @@ export default function Requests() {
           onChange={patchFilters}
           onClear={clearFilters}
           showSearch={showingTeam}
-          showDepartments={showingTeam && isAdminUser}
+          showDepartments={showingTeam}
           departments={departments}
-          canClear={hasActiveFilters(filters)}
+          canClear={filtering}
           trailing={
             canReview ? (
               <SegmentedControl
@@ -351,16 +354,22 @@ export default function Requests() {
           cancellingId={cancellingId}
           highlightRequestId={bookingRequestId ?? null}
           emptyMessage={
-            showingApprovalQueue
-              ? 'Nothing is waiting for your approval.'
-              : hasActiveFilters(filters)
-                ? 'No requests match these filters.'
+            filtering
+              ? 'No requests match these filters.'
+              : showingApprovalQueue
+                ? 'Nothing is waiting for your approval.'
                 : showingTeam
                   ? 'No requests to review yet.'
                   : "You haven't submitted any time-off requests. Book your first trip to get started!"
           }
           emptyAction={
-            showingTeam ? null : <BookTimeOffButton onBooked={refresh} />
+            filtering ? (
+              <Button variant="secondary" onClick={clearFilters}>
+                {CLEAR_FILTERS_LABEL}
+              </Button>
+            ) : showingTeam ? null : (
+              <BookTimeOffButton onBooked={refresh} />
+            )
           }
         />
       </div>

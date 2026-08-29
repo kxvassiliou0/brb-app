@@ -5,6 +5,8 @@ import SearchInput from '@/components/SearchInput'
 import type { RequestFilters } from '@/lib/requestFilters'
 import type { DepartmentRow } from '@/types/api'
 
+export const CLEAR_FILTERS_LABEL = 'Clear filters'
+
 interface RequestsToolbarProps {
   filters: RequestFilters
   onChange: (patch: Partial<RequestFilters>) => void
@@ -51,9 +53,11 @@ export default function RequestsToolbar({
 
       {showDepartments && (
         <div className="relative flex min-w-0 items-center">
+          <label htmlFor="filter-department" className="sr-only">
+            Filter by department
+          </label>
           <select
             id="filter-department"
-            aria-label="Filter by department"
             value={filters.departmentId ?? ''}
             onChange={(event) =>
               onChange({
@@ -64,15 +68,15 @@ export default function RequestsToolbar({
             }
             className="touch-target w-full appearance-none rounded-xl border border-border-primary bg-background-secondary py-2 pr-12 pl-4 text-base text-text-primary"
           >
-            <option value="">Department: All</option>
+            <option value="">All departments</option>
             {departments.map((department) => (
               <option key={department.id} value={department.id}>
-                Department: {department.name}
+                {department.name}
               </option>
             ))}
           </select>
           <span className="pointer-events-none absolute right-4 flex text-text-primary">
-            <Icon name="plus" />
+            <Icon name="chevronDown" />
           </span>
         </div>
       )}
@@ -85,7 +89,7 @@ export default function RequestsToolbar({
           canClear ? '' : 'pointer-events-none invisible'
         }`}
       >
-        Clear filters
+        {CLEAR_FILTERS_LABEL}
       </button>
 
       {trailing && <div className="ms-auto">{trailing}</div>}
