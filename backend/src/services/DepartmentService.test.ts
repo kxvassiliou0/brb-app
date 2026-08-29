@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { mock, MockProxy } from "jest-mock-extended";
-import type { DeleteResult, Repository } from "typeorm";
+import type { DeleteResult, Repository, SelectQueryBuilder } from "typeorm";
 import { Department } from "../entities/Department.entity";
 import { AppError } from "../helpers/AppError";
 import { makeDepartment } from "../test/ObjectMother";
@@ -8,6 +8,20 @@ import { DepartmentService } from "./DepartmentService";
 
 let mockRepo: MockProxy<Repository<Department>>;
 let service: DepartmentService;
+
+function stubQueryBuilder(result: Array<Department>): {
+  loadRelationCountAndMap: jest.Mock;
+} {
+  const builder = {
+    loadRelationCountAndMap: jest.fn(),
+    getMany: jest.fn().mockResolvedValue(result),
+  };
+  builder.loadRelationCountAndMap.mockReturnValue(builder);
+  mockRepo.createQueryBuilder.mockReturnValue(
+    builder as unknown as SelectQueryBuilder<Department>,
+  );
+  return builder;
+}
 
 beforeEach(() => {
   mockRepo = mock<Repository<Department>>();
@@ -22,13 +36,45 @@ describe("DepartmentService.getAll", () => {
       makeDepartment(),
       makeDepartment({ id: 2, name: "Finance" }),
     ];
-    mockRepo.find.mockResolvedValue(depts);
+    stubQueryBuilder(depts);
 
     // Act
     const result = await service.getAll();
 
     // Assert
     expect(result).toEqual(depts);
+  });
+
+  it("returns the number of users in each department", async () => {
+    // Arrange
+    stubQueryBuilder([
+      makeDepartment({ id: 1, name: "Engineering", userCount: 50 }),
+      makeDepartment({ id: 2, name: "Finance", userCount: 0 }),
+    ]);
+
+    // Act
+    const result = await service.getAll();
+
+    // Assert
+    expect(result).toEqual([
+      expect.objectContaining({ name: "Engineering", userCount: 50 }),
+      expect.objectContaining({ name: "Finance", userCount: 0 }),
+    ]);
+  });
+
+  it("counts the users relation rather than loading every user", async () => {
+    // Arrange
+    const builder = stubQueryBuilder([]);
+
+    // Act
+    await service.getAll();
+
+    // Assert
+    expect(builder.loadRelationCountAndMap).toHaveBeenCalledWith(
+      "department.userCount",
+      "department.users",
+    );
+    expect(mockRepo.find).not.toHaveBeenCalled();
   });
 });
 

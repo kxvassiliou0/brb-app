@@ -102,6 +102,37 @@ export function apiRemoveUsersByEmail(emails: string[]): void {
   )
 }
 
+export interface ApiJobRole {
+  id: number
+  name: string
+  userCount: number
+}
+
+export function apiJobRoles(): Cypress.Chainable<ApiJobRole[]> {
+  return asAdmin((headers) =>
+    cy
+      .request({ method: 'GET', url: `${API_URL}/api/job-roles`, headers })
+      .then((response) => (response.body.data ?? []) as ApiJobRole[])
+  )
+}
+
+export function apiRemoveJobRolesByName(names: string[]): void {
+  apiJobRoles().then((jobRoles) => {
+    jobRoles
+      .filter((jobRole) => names.includes(jobRole.name))
+      .forEach((jobRole) => {
+        asAdmin((headers) =>
+          cy.request({
+            method: 'DELETE',
+            url: `${API_URL}/api/job-roles/${jobRole.id}`,
+            headers,
+            failOnStatusCode: false,
+          })
+        )
+      })
+  })
+}
+
 export function apiFirstIds(): Cypress.Chainable<{
   departmentId: number
   jobRoleId: number

@@ -1,42 +1,31 @@
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states'
-import PageHeader from '@/components/layout/PageHeader'
+import OrgUnitSection from '@/components/orgUnits/OrgUnitSection'
+import { DEPARTMENT, JOB_ROLE, type OrgUnit } from '@/lib/orgUnits'
 import { useApiResource } from '@/lib/useApiResource'
-import type { ApiSuccess, DepartmentRow } from '@/types/api'
+import type { ApiSuccess } from '@/types/api'
 
 export default function Departments() {
-  const { data, error, retry } =
-    useApiResource<ApiSuccess<DepartmentRow[]>>('/api/departments')
-
-  const departments = data?.data ?? null
+  const departments = useApiResource<ApiSuccess<OrgUnit[]>>(DEPARTMENT.apiPath)
+  const jobRoles = useApiResource<ApiSuccess<OrgUnit[]>>(JOB_ROLE.apiPath)
 
   return (
-    <div data-testid="screen-departments">
-      <PageHeader
-        title="Departments"
-        description="Departments in your organization."
+    <div data-testid="screen-departments" className="flex flex-col gap-12">
+      <OrgUnitSection
+        kind={DEPARTMENT}
+        units={departments.data?.data ?? null}
+        error={departments.error}
+        onRetry={departments.retry}
+        onChanged={departments.retry}
+        heading={<h1 className="text-2xl md:text-3xl">Departments</h1>}
       />
-      {error ? (
-        <ErrorState
-          error={error}
-          onRetry={retry}
-          fallbackMessage="Failed to load departments"
-        />
-      ) : departments === null ? (
-        <LoadingState label="Loading departments" />
-      ) : departments.length === 0 ? (
-        <EmptyState message="No departments have been created yet." />
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {departments.map((department) => (
-            <li
-              key={department.id}
-              className="rounded-xl border border-border-primary bg-background-secondary p-4"
-            >
-              {department.name}
-            </li>
-          ))}
-        </ul>
-      )}
+
+      <OrgUnitSection
+        kind={JOB_ROLE}
+        units={jobRoles.data?.data ?? null}
+        error={jobRoles.error}
+        onRetry={jobRoles.retry}
+        onChanged={jobRoles.retry}
+        heading={<h2 className="text-2xl md:text-3xl">Job roles</h2>}
+      />
     </div>
   )
 }

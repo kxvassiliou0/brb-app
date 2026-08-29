@@ -1,3 +1,4 @@
+import { StatusCodes } from 'http-status-codes'
 import { ApiRequestError, apiFetch, getApiErrorMessage } from '@/lib/api'
 import { clearApiCache } from '@/lib/apiCache'
 import type {
@@ -13,8 +14,6 @@ export const PASSWORD_MIN_LENGTH = 10
 export const ROLES: RoleType[] = ['Employee', 'Manager', 'Admin']
 
 export const DEFAULT_ANNUAL_LEAVE_ALLOWANCE = 25
-
-export const HTTP_CONFLICT = 409
 
 export const DUPLICATE_EMAIL_MESSAGE =
   'That email address already belongs to someone else. Please use a different one.'
@@ -133,7 +132,7 @@ export function hasEmployeeErrors(errors: EmployeeErrors): boolean {
 }
 
 export function isDuplicateEmailError(error: unknown): boolean {
-  if (error instanceof ApiRequestError && error.status === HTTP_CONFLICT)
+  if (error instanceof ApiRequestError && error.status === StatusCodes.CONFLICT)
     return true
 
   const message = getApiErrorMessage(error, '').toLowerCase()

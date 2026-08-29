@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { mock, MockProxy } from "jest-mock-extended";
-import type { DeleteResult, Repository } from "typeorm";
+import type { DeleteResult, Repository, SelectQueryBuilder } from "typeorm";
 import { JobRole } from "../entities/JobRole.entity";
 import { AppError } from "../helpers/AppError";
 import { makeJobRole } from "../test/ObjectMother";
@@ -8,6 +8,20 @@ import { JobRoleService } from "./JobRoleService";
 
 let mockRepo: MockProxy<Repository<JobRole>>;
 let service: JobRoleService;
+
+function stubQueryBuilder(result: Array<JobRole>): {
+  loadRelationCountAndMap: jest.Mock;
+} {
+  const builder = {
+    loadRelationCountAndMap: jest.fn(),
+    getMany: jest.fn().mockResolvedValue(result),
+  };
+  builder.loadRelationCountAndMap.mockReturnValue(builder);
+  mockRepo.createQueryBuilder.mockReturnValue(
+    builder as unknown as SelectQueryBuilder<JobRole>,
+  );
+  return builder;
+}
 
 beforeEach(() => {
   mockRepo = mock<Repository<JobRole>>();
@@ -22,13 +36,45 @@ describe("JobRoleService.getAll", () => {
       makeJobRole(),
       makeJobRole({ id: 2, name: "Senior Contractor" }),
     ];
-    mockRepo.find.mockResolvedValue(jobRoles);
+    stubQueryBuilder(jobRoles);
 
     // Act
     const result = await service.getAll();
 
     // Assert
     expect(result).toEqual(jobRoles);
+  });
+
+  it("returns the number of users holding each job role", async () => {
+    // Arrange
+    stubQueryBuilder([
+      makeJobRole({ id: 1, name: "Contractor", userCount: 3 }),
+      makeJobRole({ id: 2, name: "Lead Engineer", userCount: 0 }),
+    ]);
+
+    // Act
+    const result = await service.getAll();
+
+    // Assert
+    expect(result).toEqual([
+      expect.objectContaining({ name: "Contractor", userCount: 3 }),
+      expect.objectContaining({ name: "Lead Engineer", userCount: 0 }),
+    ]);
+  });
+
+  it("counts the users relation rather than loading every user", async () => {
+    // Arrange
+    const builder = stubQueryBuilder([]);
+
+    // Act
+    await service.getAll();
+
+    // Assert
+    expect(builder.loadRelationCountAndMap).toHaveBeenCalledWith(
+      "jobRole.userCount",
+      "jobRole.users",
+    );
+    expect(mockRepo.find).not.toHaveBeenCalled();
   });
 });
 

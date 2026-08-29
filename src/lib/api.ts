@@ -1,3 +1,4 @@
+import { StatusCodes } from 'http-status-codes'
 export const DEFAULT_API_BASE_URL = 'http://localhost:3000'
 
 export function resolveApiBaseUrl(env: ImportMetaEnv): string {
@@ -7,7 +8,6 @@ export function resolveApiBaseUrl(env: ImportMetaEnv): string {
 
 const API_BASE_URL = resolveApiBaseUrl(import.meta.env)
 const TOKEN_KEY = 'lbs_token'
-export const HTTP_TOO_MANY_REQUESTS = 429
 const RATE_LIMIT_MESSAGE =
   'Too many requests. Please wait a few minutes and try again.'
 
@@ -52,9 +52,10 @@ export async function apiFetch<T>(
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
-  if (res.status === HTTP_TOO_MANY_REQUESTS) {
+  if (res.status === StatusCodes.TOO_MANY_REQUESTS) {
     throw new ApiRequestError(RATE_LIMIT_MESSAGE, res.status)
   }
+  if (res.status === StatusCodes.NO_CONTENT) return { data: [] } as T
   const body = await res.json().catch(() => null)
   if (!res.ok) {
     throw new ApiRequestError(
@@ -74,7 +75,7 @@ export async function loginRequest(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
-  if (res.status === HTTP_TOO_MANY_REQUESTS) {
+  if (res.status === StatusCodes.TOO_MANY_REQUESTS) {
     throw new Error(RATE_LIMIT_MESSAGE)
   }
   const text = await res.text()

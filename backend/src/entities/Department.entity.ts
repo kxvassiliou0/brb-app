@@ -15,4 +15,6 @@ export class Department {
 
   @OneToMany(() => User, (user: User) => user.department)
   users!: Array<User>;
+
+  userCount?: number;
 }

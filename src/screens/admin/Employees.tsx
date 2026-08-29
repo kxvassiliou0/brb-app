@@ -1,13 +1,12 @@
-import { useMemo, useState } from 'react'
 import AddEmployeeModal, {
   ADD_EMPLOYEE_LABEL,
 } from '@/components/employees/AddEmployeeModal'
-import Button from '@/components/ui/Button'
-import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
 import DeleteEmployeeModal from '@/components/employees/DeleteEmployeeModal'
 import EditEmployeeModal from '@/components/employees/EditEmployeeModal'
-import Icon from '@/components/ui/Icon'
 import PageHeader from '@/components/layout/PageHeader'
+import Button from '@/components/ui/Button'
+import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
+import Icon from '@/components/ui/Icon'
 import { useAuth } from '@/lib/auth'
 import { countLabel } from '@/lib/dates'
 import {
@@ -18,6 +17,7 @@ import {
 } from '@/lib/employeeAdmin'
 import { useApiResource } from '@/lib/useApiResource'
 import type { ApiSuccess, UserListItem } from '@/types/api'
+import { useMemo, useState } from 'react'
 
 export const NO_MANAGER = 'None'
 
@@ -26,7 +26,7 @@ export function managerName(employee: UserListItem): string {
 }
 
 export function describeRoster(employees: UserListItem[] | null): string {
-  if (employees === null) return 'Everyone in your organization.'
+  if (employees === null) return 'Everyone in your organisation.'
   const departments = new Set(
     employees.map((employee) => employee.department.id)
   )
