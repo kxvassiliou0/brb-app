@@ -118,13 +118,13 @@ describe('cancelling a leave request', () => {
           cy.contains('button', 'Cancel request').click()
         })
 
-      cy.get('[data-testid="confirm-dialog"]')
+      cy.get('[data-testid="modal"]')
         .should('be.visible')
         .and('contain.text', displayDate(start))
       cy.get('[role="dialog"]').should('have.attr', 'aria-modal', 'true')
 
-      cy.contains('[data-testid="confirm-dialog"] button', 'Confirm').click()
-      cy.get('[data-testid="confirm-dialog"]').should('not.exist')
+      cy.contains('[data-testid="modal"] button', 'Confirm').click()
+      cy.get('[data-testid="modal"]').should('not.exist')
 
       cy.contains(
         '[data-testid="data-table"] tbody tr',
@@ -159,9 +159,9 @@ describe('cancelling a leave request', () => {
       cy.contains('button', 'Cancel request').click()
     })
 
-    cy.contains('[data-testid="confirm-dialog"] button', 'Keep request').click()
+    cy.contains('[data-testid="modal"] button', 'Keep request').click()
 
-    cy.get('[data-testid="confirm-dialog"]').should('not.exist')
+    cy.get('[data-testid="modal"]').should('not.exist')
     cy.contains(
       '[data-testid="data-table"] tbody tr',
       displayDate(start)
@@ -190,8 +190,8 @@ describe('cancelling a leave request', () => {
     ).within(() => {
       cy.contains('button', 'Cancel request').click()
     })
-    cy.contains('[data-testid="confirm-dialog"] button', 'Confirm').click()
-    cy.get('[data-testid="confirm-dialog"]').should('not.exist')
+    cy.contains('[data-testid="modal"] button', 'Confirm').click()
+    cy.get('[data-testid="modal"]').should('not.exist')
 
     cy.contains('button', 'Sign out').click()
 

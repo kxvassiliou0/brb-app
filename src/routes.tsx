@@ -1,6 +1,6 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
-import ProtectedRoute from '@/components/ProtectedRoute'
-import AppLayout from '@/layouts/AppLayout'
+import ProtectedRoute from '@/components/layout/ProtectedRoute'
+import AppLayout from '@/components/layout/AppLayout'
 import { ADMIN_ROLES, TEAM_ROLES } from '@/lib/routeAccess'
 import Dashboard from '@/screens/Dashboard'
 import Login from '@/screens/Login'

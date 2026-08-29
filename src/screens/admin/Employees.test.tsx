@@ -11,8 +11,12 @@ import { setStoredToken } from '@/lib/api'
 import { AuthProvider } from '@/lib/auth'
 import { HOME_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
-import { makeUserJwt } from '@/test/jwt'
-import { desktopWidth, mobileWidth, setViewportWidth } from '@/test/viewport'
+import { makeUserJwt } from '@/test-support/jwt'
+import {
+  desktopWidth,
+  mobileWidth,
+  setViewportWidth,
+} from '@/test-support/viewport'
 import { SELF_DELETE_MESSAGE } from '@/lib/employeeAdmin'
 import type { UserListItem, UserRecord } from '@/types/api'
 import Employees from './Employees'
@@ -233,7 +237,7 @@ describe('deleting an employee from the list', () => {
     expect(ownRow).toHaveAttribute('title', SELF_DELETE_MESSAGE)
 
     fireEvent.click(ownRow)
-    expect(screen.queryByTestId('delete-confirmation')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
   })
 
   it('still allows the same Admin to delete anybody else', async () => {

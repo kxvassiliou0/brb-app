@@ -6,7 +6,7 @@ import { AuthProvider } from '@/lib/auth'
 import { HOME_PATH, type Role } from '@/lib/routeAccess'
 import { REPORTS_COVERAGE_NOTE } from '@/lib/teamBalances'
 import { routes } from '@/routes'
-import { makeUserJwt } from '@/test/jwt'
+import { makeUserJwt } from '@/test-support/jwt'
 import type { CalendarEntry, LeaveRequest, RemainingLeave } from '@/types/api'
 
 const MANAGER_ID = 2

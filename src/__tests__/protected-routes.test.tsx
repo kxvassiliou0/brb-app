@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth'
 import { getStoredToken, setStoredToken } from '@/lib/api'
 import { HOME_PATH, type Role } from '@/lib/routeAccess'
-import { makeExpiredUserJwt, makeUserJwt } from '@/test/jwt'
+import { makeExpiredUserJwt, makeUserJwt } from '@/test-support/jwt'
 import { routes } from '@/routes'
 
 function renderAt(path: string) {

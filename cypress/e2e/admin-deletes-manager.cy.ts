@@ -18,7 +18,7 @@ function row(name: string) {
 
 function openDeleteFor(name: string): void {
   row(name).contains('button', `Delete ${name}`).click()
-  cy.get('[data-testid="delete-confirmation"]').should('be.visible')
+  cy.get('[data-testid="modal"]').should('be.visible')
 }
 
 describe('an Admin deleting a manager', () => {
@@ -114,6 +114,6 @@ describe('an Admin deleting their own account', () => {
       .should('be.disabled')
       .and('have.attr', 'title', 'You cannot delete your own account')
 
-    cy.get('[data-testid="delete-confirmation"]').should('not.exist')
+    cy.get('[data-testid="modal"]').should('not.exist')
   })
 })

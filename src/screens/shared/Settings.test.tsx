@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setStoredToken } from '@/lib/api'
 import { AuthProvider } from '@/lib/auth'
 import { routes } from '@/routes'
-import { makeUserJwt } from '@/test/jwt'
+import { makeUserJwt } from '@/test-support/jwt'
 import type { RemainingLeave, UserProfile } from '@/types/api'
 
 const USER_ID = 4

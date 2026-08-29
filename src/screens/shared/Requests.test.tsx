@@ -12,7 +12,7 @@ import { AuthProvider } from '@/lib/auth'
 import { DATE_STRIP_DAYS } from '@/lib/requestFilters'
 import { REQUESTS_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
-import { makeUserJwt } from '@/test/jwt'
+import { makeUserJwt } from '@/test-support/jwt'
 import type {
   LeaveRequest,
   LeaveStatus,
@@ -376,7 +376,7 @@ describe('the list of my requests', () => {
       'Two others in Engineering are already away that week.'
     )
     const blocks = Array.from(screen.getByTestId('modal').children)
-    expect(blocks.indexOf(note)).toBe(blocks.length - 2)
+    expect(blocks.indexOf(note)).toBe(blocks.length - 1)
     expect(detailRow('Status')).toBe('Rejected')
   })
 
@@ -406,9 +406,7 @@ describe('the list of my requests', () => {
 
     await screen.findByTestId('data-table')
     fireEvent.click(screen.getByRole('button', { name: 'Vacation' }))
-    fireEvent.click(
-      within(screen.getByTestId('modal')).getByRole('button', { name: 'Close' })
-    )
+    fireEvent.click(screen.getByTestId('modal-close'))
 
     expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
   })
@@ -1266,7 +1264,7 @@ describe('declining a request', () => {
     await screen.findByText('David Jones')
     clickRowDecline()
 
-    expect(screen.getByTestId('decline-confirmation')).toHaveTextContent(
+    expect(screen.getByTestId('modal')).toHaveTextContent(
       'Decline this request?'
     )
     expect(patchCalls(fetchMock)).toHaveLength(0)
@@ -1288,7 +1286,7 @@ describe('declining a request', () => {
     await screen.findByText('David Jones')
     clickRowDecline()
 
-    const confirmation = screen.getByTestId('decline-confirmation')
+    const confirmation = screen.getByTestId('modal')
     expect(confirmation).toHaveTextContent('David Jones')
     expect(confirmation).toHaveTextContent('10 Aug 2026 – 14 Aug 2026')
     expect(confirmation).toHaveTextContent('5 days')

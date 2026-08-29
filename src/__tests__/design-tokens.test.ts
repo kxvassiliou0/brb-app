@@ -10,7 +10,7 @@ import {
   fontTokens,
   readFile,
   remToPx,
-} from '@/test/tokens'
+} from '@/test-support/tokens'
 import { BREAKPOINTS } from '@/lib/breakpoints'
 
 const BACKGROUND_TOKENS = {

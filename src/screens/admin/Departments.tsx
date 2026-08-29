@@ -1,5 +1,5 @@
-import { EmptyState, ErrorState, LoadingState } from '@/components/states'
-import PageHeader from '@/components/PageHeader'
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states'
+import PageHeader from '@/components/layout/PageHeader'
 import { useApiResource } from '@/lib/useApiResource'
 import type { ApiSuccess, DepartmentRow } from '@/types/api'
 

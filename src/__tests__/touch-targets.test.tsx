@@ -5,9 +5,13 @@ import { AuthProvider } from '@/lib/auth'
 import { setStoredToken } from '@/lib/api'
 import { NAV_BREAKPOINT } from '@/lib/breakpoints'
 import type { Role } from '@/lib/routeAccess'
-import { makeUserJwt } from '@/test/jwt'
-import { css, remToPx, sizeTokens } from '@/test/tokens'
-import { desktopWidth, mobileWidth, setViewportWidth } from '@/test/viewport'
+import { makeUserJwt } from '@/test-support/jwt'
+import { css, remToPx, sizeTokens } from '@/test-support/tokens'
+import {
+  desktopWidth,
+  mobileWidth,
+  setViewportWidth,
+} from '@/test-support/viewport'
 import { routes } from '@/routes'
 
 const WCAG_258_MINIMUM_PX = 24
