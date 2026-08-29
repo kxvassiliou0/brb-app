@@ -5,12 +5,17 @@ export const CONTROL_CLASS =
 
 const INVALID_CLASS = 'border-error-foreground text-error-foreground'
 
+const READ_ONLY_CLASS =
+  'bg-background-primary text-text-secondary cursor-not-allowed select-none'
+
 export function errorId(id: string): string {
   return `${id}-error`
 }
 
-export function controlClass(error?: string): string {
-  return `${CONTROL_CLASS} ${error ? INVALID_CLASS : ''}`
+export function controlClass(error?: string, readOnly?: boolean): string {
+  return `${CONTROL_CLASS} ${error ? INVALID_CLASS : ''} ${
+    readOnly ? READ_ONLY_CLASS : ''
+  }`
 }
 
 interface FieldProps {
@@ -46,11 +51,12 @@ interface InputWithLabelProps {
   id: string
   label: string
   value: string
-  onChange: (value: string) => void
+  onChange?: (value: string) => void
   type?: 'text' | 'email' | 'password' | 'date' | 'number'
   placeholder?: string
   autoComplete?: string
   required?: boolean
+  readOnly?: boolean
   hint?: string
   error?: string
 }
@@ -64,6 +70,7 @@ export default function InputWithLabel({
   placeholder,
   autoComplete,
   required = false,
+  readOnly = false,
   hint,
   error,
 }: InputWithLabelProps) {
@@ -73,12 +80,15 @@ export default function InputWithLabel({
         id={id}
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange?.(e.target.value)}
+        onMouseDown={readOnly ? (e) => e.preventDefault() : undefined}
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
+        readOnly={readOnly}
+        aria-readonly={readOnly || undefined}
         aria-describedby={error ? errorId(id) : hint ? `${id}-hint` : undefined}
-        className={controlClass(error)}
+        className={controlClass(error, readOnly)}
       />
     </Field>
   )
