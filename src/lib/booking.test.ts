@@ -1,10 +1,9 @@
+import { StatusCodes } from 'http-status-codes'
 import { describe, expect, it } from 'vitest'
 import { ApiRequestError } from '@/lib/api'
 import {
   bookingErrorMessage,
   buildCreateBody,
-  HTTP_BAD_REQUEST,
-  HTTP_CONFLICT,
   hasBookingErrors,
   INVALID_DATES_MESSAGE,
   LEAVE_TYPES,
@@ -135,7 +134,7 @@ describe('server error messages', () => {
     const message = bookingErrorMessage(
       new ApiRequestError(
         'Date range of request overlaps with existing request',
-        HTTP_CONFLICT
+        StatusCodes.CONFLICT
       ),
       draft(),
       18
@@ -149,7 +148,7 @@ describe('server error messages', () => {
     const message = bookingErrorMessage(
       new ApiRequestError(
         'Days requested exceed remaining balance',
-        HTTP_BAD_REQUEST
+        StatusCodes.BAD_REQUEST
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
@@ -162,7 +161,7 @@ describe('server error messages', () => {
     const message = bookingErrorMessage(
       new ApiRequestError(
         'Days requested exceed remaining balance',
-        HTTP_BAD_REQUEST
+        StatusCodes.BAD_REQUEST
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       1
@@ -172,7 +171,7 @@ describe('server error messages', () => {
 
   it('passes any other server message through unchanged', () => {
     const message = bookingErrorMessage(
-      new ApiRequestError('Invalid employee ID', HTTP_BAD_REQUEST),
+      new ApiRequestError('Invalid employee ID', StatusCodes.BAD_REQUEST),
       draft(),
       18
     )
@@ -185,7 +184,7 @@ describe('server error messages', () => {
     'End date of 2026-08-01 is before the start date of 2026-08-10',
   ])('explains a 400 about the dates in plain language: %s', (serverError) => {
     const message = bookingErrorMessage(
-      new ApiRequestError(serverError, HTTP_BAD_REQUEST),
+      new ApiRequestError(serverError, StatusCodes.BAD_REQUEST),
       draft(),
       18
     )
@@ -197,7 +196,7 @@ describe('server error messages', () => {
     const balance = bookingErrorMessage(
       new ApiRequestError(
         'Days requested exceed remaining balance',
-        HTTP_BAD_REQUEST
+        StatusCodes.BAD_REQUEST
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
@@ -205,13 +204,13 @@ describe('server error messages', () => {
     const overlap = bookingErrorMessage(
       new ApiRequestError(
         'Date range of request overlaps with existing request',
-        HTTP_CONFLICT
+        StatusCodes.CONFLICT
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
     )
     const dates = bookingErrorMessage(
-      new ApiRequestError('Invalid date format', HTTP_BAD_REQUEST),
+      new ApiRequestError('Invalid date format', StatusCodes.BAD_REQUEST),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
     )
@@ -226,7 +225,7 @@ describe('server error messages', () => {
     const message = bookingErrorMessage(
       new ApiRequestError(
         'Days requested exceed remaining balance',
-        HTTP_BAD_REQUEST
+        StatusCodes.BAD_REQUEST
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       null

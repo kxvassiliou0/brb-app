@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
-import { apiFetch } from '../../lib/api'
-import { ErrorState, LoadingState } from '@/components/ui/states'
 import PageHeader from '@/components/layout/PageHeader'
 import StatCard from '@/components/ui/StatCard'
+import { ErrorState, LoadingState } from '@/components/ui/states'
+import { useCallback, useEffect, useState } from 'react'
+import { apiFetch } from '../../lib/api'
 
 interface Counts {
   users: number
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
     <div data-testid="screen-admin-dashboard">
       <PageHeader
         title="Admin dashboard"
-        description="Overview of organization-wide activity."
+        description="Overview of organisation-wide activity."
       />
       {error ? (
         <ErrorState

@@ -1,8 +1,8 @@
+import { StatusCodes } from 'http-status-codes'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth'
-import { HTTP_TOO_MANY_REQUESTS } from '@/lib/api'
 import { routes } from '@/routes'
 
 beforeEach(() => {
@@ -19,7 +19,7 @@ describe('Login', () => {
       'fetch',
       vi.fn(async () => ({
         ok: false,
-        status: HTTP_TOO_MANY_REQUESTS,
+        status: StatusCodes.TOO_MANY_REQUESTS,
         text: async () => 'Too many requests - try again later',
       }))
     )

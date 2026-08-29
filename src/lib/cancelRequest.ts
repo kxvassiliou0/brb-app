@@ -1,6 +1,6 @@
+import { StatusCodes } from 'http-status-codes'
 import { ApiRequestError, apiFetch, getApiErrorMessage } from '@/lib/api'
 import { clearApiCache } from '@/lib/apiCache'
-import { HTTP_BAD_REQUEST } from '@/lib/booking'
 import type {
   ApiSuccess,
   DeleteLeaveRequestBody,
@@ -41,7 +41,7 @@ export async function cancelRequest(
 export function cancelErrorMessage(error: unknown): string {
   if (
     error instanceof ApiRequestError &&
-    error.status === HTTP_BAD_REQUEST &&
+    error.status === StatusCodes.BAD_REQUEST &&
     ALREADY_CANCELLED.test(error.message)
   ) {
     return ALREADY_CANCELLED_MESSAGE

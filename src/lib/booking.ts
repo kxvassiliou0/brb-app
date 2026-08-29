@@ -1,3 +1,4 @@
+import { StatusCodes } from 'http-status-codes'
 import { ApiRequestError } from '@/lib/api'
 import { countDays, countLabel, toIsoDate } from '@/lib/dates'
 import type {
@@ -7,10 +8,6 @@ import type {
 } from '@/types/api'
 
 export const LEAVE_TYPES = ['Vacation', 'Sick', 'Personal'] as const
-
-export const HTTP_BAD_REQUEST = 400
-
-export const HTTP_CONFLICT = 409
 
 const BALANCE_ERROR = /exceed[s]? remaining balance/i
 
@@ -118,14 +115,17 @@ export function bookingErrorMessage(
       ? error.message
       : 'Your request could not be sent. Please try again.'
   }
-  if (error.status === HTTP_CONFLICT) return OVERLAP_MESSAGE
-  if (error.status === HTTP_BAD_REQUEST && BALANCE_ERROR.test(error.message)) {
+  if (error.status === StatusCodes.CONFLICT) return OVERLAP_MESSAGE
+  if (
+    error.status === StatusCodes.BAD_REQUEST &&
+    BALANCE_ERROR.test(error.message)
+  ) {
     return daysRemaining === null
       ? `This request is longer than your remaining balance. ${error.message}.`
       : `This request needs ${countLabel(requestedDays(draft), 'day')} but you have only ${countLabel(daysRemaining, 'day')} remaining.`
   }
   if (
-    error.status === HTTP_BAD_REQUEST &&
+    error.status === StatusCodes.BAD_REQUEST &&
     INVALID_DATE_ERROR.test(error.message)
   ) {
     return INVALID_DATES_MESSAGE

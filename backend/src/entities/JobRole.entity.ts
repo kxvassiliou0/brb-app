@@ -15,4 +15,6 @@ export class JobRole {
 
   @OneToMany(() => User, (user: User) => user.jobRole)
   users!: Array<User>;
+
+  userCount?: number;
 }

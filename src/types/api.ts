@@ -21,6 +21,7 @@ export interface UserRelation {
 export interface DepartmentRow {
   id: number
   name: string
+  userCount: number
 }
 
 export type JobRoleRow = DepartmentRow

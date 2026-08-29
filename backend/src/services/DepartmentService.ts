@@ -9,7 +9,10 @@ export class DepartmentService implements IDepartmentService {
   constructor(private readonly repo: Repository<Department>) {}
 
   async getAll(): Promise<Array<Department>> {
-    return this.repo.find();
+    return this.repo
+      .createQueryBuilder("department")
+      .loadRelationCountAndMap("department.userCount", "department.users")
+      .getMany();
   }
 
   async getById(id: number): Promise<Department> {

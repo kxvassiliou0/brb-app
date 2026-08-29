@@ -1,3 +1,4 @@
+import { StatusCodes } from 'http-status-codes'
 import { describe, expect, it } from 'vitest'
 import { ApiRequestError } from '@/lib/api'
 import {
@@ -11,7 +12,6 @@ import {
   emptyEmployeeDraft,
   fullName,
   hasEmployeeErrors,
-  HTTP_CONFLICT,
   isDuplicateEmailError,
   PASSWORD_MIN_LENGTH,
   validateEmployee,
@@ -285,7 +285,7 @@ describe('the create payload', () => {
 describe('recognising a refused duplicate email', () => {
   it('recognises the conflict status the API answers with', () => {
     expect(
-      isDuplicateEmailError(new ApiRequestError('Nope', HTTP_CONFLICT))
+      isDuplicateEmailError(new ApiRequestError('Nope', StatusCodes.CONFLICT))
     ).toBe(true)
   })
 

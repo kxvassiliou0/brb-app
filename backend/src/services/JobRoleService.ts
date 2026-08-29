@@ -9,7 +9,10 @@ export class JobRoleService implements IJobRoleService {
   constructor(private readonly repo: Repository<JobRole>) {}
 
   async getAll(): Promise<Array<JobRole>> {
-    return this.repo.find();
+    return this.repo
+      .createQueryBuilder("jobRole")
+      .loadRelationCountAndMap("jobRole.userCount", "jobRole.users")
+      .getMany();
   }
 
   async getById(id: number): Promise<JobRole> {
