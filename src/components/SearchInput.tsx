@@ -17,13 +17,15 @@ export default function SearchInput({
 }: SearchInputProps) {
   return (
     <div className="relative flex w-full min-w-0 items-center">
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
       <span className="pointer-events-none absolute left-4 flex text-text-primary">
         <Icon name="search" />
       </span>
       <input
         id={id}
         type="search"
-        aria-label={label}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}

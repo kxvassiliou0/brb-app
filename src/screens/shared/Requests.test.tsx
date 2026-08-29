@@ -781,32 +781,90 @@ describe('the scope toggle', () => {
 })
 
 describe('filtering', () => {
-  it('offers the department filter to an Admin only', async () => {
-    stubApi({
-      team: [teamRequest()],
-      departments: [{ id: 1, name: 'Engineering' }],
+  const COMPANY: LeaveRequest[] = [
+    teamRequest({
+      id: 60,
+      employee_name: 'David Jones',
+      department_id: 1,
+      status: 'Pending',
+    }),
+    teamRequest({
+      id: 61,
+      employee_name: 'David Jones',
+      department_id: 1,
+      status: 'Approved',
+    }),
+    teamRequest({
+      id: 62,
+      employee_name: 'Davina Jones',
+      department_id: 3,
+      status: 'Pending',
+    }),
+    teamRequest({
+      id: 63,
+      employee_name: 'Eve Knowles',
+      department_id: 1,
+      status: 'Pending',
+    }),
+  ]
+
+  const DEPARTMENTS = [
+    { id: 1, name: 'Engineering' },
+    { id: 3, name: 'Finance' },
+  ]
+
+  function searchFor(term: string): void {
+    fireEvent.change(screen.getByLabelText('Search by employee'), {
+      target: { value: term },
     })
+  }
+
+  function chooseDepartment(id: string): void {
+    fireEvent.change(screen.getByLabelText('Filter by department'), {
+      target: { value: id },
+    })
+  }
+
+  function employeeColumn(): string[] {
+    return columnValues('Employee')
+  }
+
+  it('offers the department filter to an Admin', async () => {
+    stubApi({ team: [teamRequest()], departments: DEPARTMENTS })
     renderRequests('Admin')
 
     expect(await screen.findByText('David Jones')).toBeInTheDocument()
     expect(screen.getByLabelText('Filter by department')).toBeInTheDocument()
   })
 
-  it('withholds the department filter from a Manager', async () => {
-    const fetchMock = stubApi({
-      team: [teamRequest()],
-      departments: [{ id: 1, name: 'Engineering' }],
-    })
+  it('offers the department filter to a Manager as well', async () => {
+    stubApi({ team: [teamRequest()], departments: DEPARTMENTS })
     renderRequests('Manager')
 
     expect(await screen.findByText('David Jones')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Filter by department')).toBeNull()
     expect(screen.getByLabelText('Search by employee')).toBeInTheDocument()
 
-    const departmentCalls = fetchMock.mock.calls.filter(([input]) =>
-      String(input).includes('/api/departments')
-    )
-    expect(departmentCalls).toHaveLength(0)
+    const options = within(
+      screen.getByLabelText('Filter by department')
+    ).getAllByRole('option')
+
+    expect(options.map((option) => option.textContent)).toEqual([
+      'All departments',
+      'Engineering',
+      'Finance',
+    ])
+  })
+
+  it('labels the search field with an element, not a placeholder alone', async () => {
+    stubApi({ team: [teamRequest()] })
+    renderRequests('Manager')
+
+    const field = await screen.findByLabelText('Search by employee')
+    const label = document.querySelector(`label[for="${field.id}"]`)
+
+    expect(label).toHaveTextContent('Search by employee')
+    expect(field).not.toHaveAttribute('aria-label')
+    expect(field).toHaveAccessibleName('Search by employee')
   })
 
   it('keeps Clear filters in the layout so nothing shifts when it activates', async () => {
@@ -825,6 +883,20 @@ describe('filtering', () => {
     expect(screen.getByTestId('clear-filters')).not.toHaveClass('invisible')
   })
 
+  it('matches part of a name whatever case it is typed in', async () => {
+    stubApi({ team: COMPANY, departments: DEPARTMENTS })
+    renderRequests('Admin')
+
+    await screen.findByTestId('data-table')
+    searchFor('JON')
+
+    expect(employeeColumn()).toEqual([
+      'David Jones',
+      'David Jones',
+      'Davina Jones',
+    ])
+  })
+
   it('filters the team queue by employee name', async () => {
     stubApi({
       own: [],
@@ -837,12 +909,122 @@ describe('filtering', () => {
 
     await screen.findByText('David Jones')
 
-    fireEvent.change(screen.getByLabelText('Search by employee'), {
-      target: { value: 'eve' },
-    })
+    searchFor('eve')
 
     expect(screen.queryByText('David Jones')).not.toBeInTheDocument()
     expect(screen.getByText('Eve Knowles')).toBeInTheDocument()
+  })
+
+  it('narrows by name, department and status together rather than one replacing another', async () => {
+    stubApi({ team: COMPANY, departments: DEPARTMENTS })
+    renderRequests('Admin')
+
+    await screen.findByTestId('data-table')
+
+    searchFor('jones')
+    expect(employeeColumn()).toEqual([
+      'David Jones',
+      'David Jones',
+      'Davina Jones',
+    ])
+
+    chooseDepartment('1')
+    expect(employeeColumn()).toEqual(['David Jones', 'David Jones'])
+    expect(statusColumn()).toEqual(['Pending', 'Approved'])
+
+    clickStatusTab('Pending')
+    expect(employeeColumn()).toEqual(['David Jones'])
+    expect(statusColumn()).toEqual(['Pending'])
+  })
+
+  it('restores every row once the filters are cleared', async () => {
+    stubApi({ team: COMPANY, departments: DEPARTMENTS })
+    renderRequests('Admin')
+
+    await screen.findByTestId('data-table')
+    expect(bodyRows()).toHaveLength(COMPANY.length)
+
+    searchFor('jones')
+    chooseDepartment('1')
+    clickStatusTab('Pending')
+    expect(bodyRows()).toHaveLength(1)
+
+    fireEvent.click(screen.getByTestId('clear-filters'))
+
+    expect(bodyRows()).toHaveLength(COMPANY.length)
+    expect(screen.getByLabelText('Search by employee')).toHaveValue('')
+    expect(screen.getByLabelText('Filter by department')).toHaveValue('')
+  })
+
+  it('explains that nothing matches and clears the filters from the empty state', async () => {
+    stubApi({ team: COMPANY, departments: DEPARTMENTS })
+    renderRequests('Admin')
+
+    await screen.findByTestId('data-table')
+
+    searchFor('jones')
+    chooseDepartment('3')
+    clickStatusTab('Approved')
+
+    const empty = screen.getByTestId('table-empty-state')
+    expect(
+      within(empty).getByText('No requests match these filters.')
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      within(empty).getByRole('button', { name: 'Clear filters' })
+    )
+
+    expect(screen.queryByTestId('table-empty-state')).toBeNull()
+    expect(bodyRows()).toHaveLength(COMPANY.length)
+  })
+
+  it("never surfaces a row from outside a manager's own team", async () => {
+    const fetchMock = stubApi({
+      queues: {
+        [USER_ID]: [
+          teamRequest({
+            id: 70,
+            employee_name: 'David Jones',
+            department_id: 1,
+          }),
+          teamRequest({
+            id: 71,
+            employee_name: 'Eve Knowles',
+            department_id: 1,
+          }),
+        ],
+      },
+      allRequests: [
+        teamRequest({
+          id: 72,
+          employee_name: 'Grace Williams',
+          department_id: 4,
+        }),
+      ],
+      departments: [...DEPARTMENTS, { id: 4, name: 'Marketing' }],
+    })
+    renderRequests('Manager')
+
+    await screen.findByText('David Jones')
+
+    searchFor('grace')
+    expect(screen.getByTestId('table-empty-state')).toBeInTheDocument()
+    expect(screen.queryByText('Grace Williams')).toBeNull()
+
+    searchFor('')
+    chooseDepartment('4')
+    expect(screen.getByTestId('table-empty-state')).toBeInTheDocument()
+    expect(screen.queryByText('Grace Williams')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('clear-filters'))
+    expect(employeeColumn()).toEqual(['David Jones', 'Eve Knowles'])
+
+    const companyWide = fetchMock.mock.calls.filter(
+      ([input]) =>
+        new URL(String(input), 'http://x').pathname === '/api/leave-requests'
+    )
+    expect(companyWide).toHaveLength(0)
   })
 })
 
