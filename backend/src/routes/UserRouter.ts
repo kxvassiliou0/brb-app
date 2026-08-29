@@ -44,11 +44,6 @@ export class UserRouter implements IRouter {
       this.userController.create,
     );
     this.router.patch(
-      "/me/password",
-      requireRole(RoleType.Employee, RoleType.Manager, RoleType.Admin),
-      this.userController.changeOwnPassword,
-    );
-    this.router.patch(
       "/:id",
       requireRole(RoleType.Admin),
       this.userController.update,

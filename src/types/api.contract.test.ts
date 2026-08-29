@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type {
   CalendarEntry,
   CreateLeaveRequestBody,
-  CreateLeaveRequestResult,
   DeleteLeaveRequestBody,
   DeleteLeaveRequestResult,
-  ExcludedPublicHoliday,
   LeaveRequest,
   LeaveUsageEmployee,
   LeaveUsageReport,
@@ -39,8 +37,6 @@ export const calendarEntryIsSnakeCase: AssertSnakeCase<CalendarEntry> = true
 export const leaveUsageEmployeeIsSnakeCase: AssertSnakeCase<LeaveUsageEmployee> = true
 export const leaveUsageReportIsSnakeCase: AssertSnakeCase<LeaveUsageReport> = true
 export const createBodyIsSnakeCase: AssertSnakeCase<CreateLeaveRequestBody> = true
-export const createResultIsSnakeCase: AssertSnakeCase<CreateLeaveRequestResult> = true
-export const excludedHolidayIsSnakeCase: AssertSnakeCase<ExcludedPublicHoliday> = true
 export const deleteBodyIsSnakeCase: AssertSnakeCase<DeleteLeaveRequestBody> = true
 export const reviewBodyIsSnakeCase: AssertSnakeCase<ReviewLeaveRequestBody> = true
 export const deleteResultIsSnakeCase: AssertSnakeCase<DeleteLeaveRequestResult> = true
@@ -82,7 +78,5 @@ describe('API contract field naming', () => {
     expect(leaveRequestIsSnakeCase).toBe(true)
     expect(remainingLeaveIsSnakeCase).toBe(true)
     expect(calendarEntryIsSnakeCase).toBe(true)
-    expect(createResultIsSnakeCase).toBe(true)
-    expect(excludedHolidayIsSnakeCase).toBe(true)
   })
 })

@@ -4,7 +4,6 @@ export type TokenPayload = { id?: number; role?: RoleType };
 export type ServiceResult = { message: string; data: unknown };
 export type DateRangeQuery = { from?: string; to?: string };
 export type CsvExportResult = { csv: string; filename: string };
-export type ExcludedPublicHoliday = { date: string; name: string };
 
 export interface ILeaveRequestService {
   createLeaveRequest(
