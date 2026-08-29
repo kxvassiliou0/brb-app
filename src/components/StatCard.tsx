@@ -1,14 +1,28 @@
+export type StatCardTone = 'default' | 'recessed' | 'positive'
+
+const TONE: Record<StatCardTone, string> = {
+  default: 'border border-border-primary bg-background-secondary',
+  recessed: 'bg-background-primary',
+  positive: 'bg-sage-background',
+}
+
 interface StatCardProps {
   label: string
   value: number | string
   hint?: string
+  tone?: StatCardTone
 }
 
-export default function StatCard({ label, value, hint }: StatCardProps) {
+export default function StatCard({
+  label,
+  value,
+  hint,
+  tone = 'default',
+}: StatCardProps) {
   return (
     <div
       data-testid="stat-card"
-      className="rounded-xl border border-border-primary bg-background-secondary p-4 sm:p-6"
+      className={`rounded-xl p-4 sm:p-6 ${TONE[tone]}`}
     >
       <dt className="text-sm text-text-secondary">{label}</dt>
       <dd
