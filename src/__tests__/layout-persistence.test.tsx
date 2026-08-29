@@ -3,7 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { AuthProvider } from '@/lib/auth'
 import { setStoredToken } from '@/lib/api'
-import { makeUserJwt } from '@/test/jwt'
+import { makeUserJwt } from '@/test-support/jwt'
 import { routes } from '@/routes'
 
 beforeEach(() => {

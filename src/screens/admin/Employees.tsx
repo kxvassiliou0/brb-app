@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import AddEmployeeModal, {
   ADD_EMPLOYEE_LABEL,
-} from '@/components/AddEmployeeModal'
-import Button from '@/components/Button'
-import DataTable, { type DataTableColumn } from '@/components/DataTable'
-import DeleteEmployeeModal from '@/components/DeleteEmployeeModal'
-import EditEmployeeModal from '@/components/EditEmployeeModal'
-import Icon from '@/components/Icon'
-import PageHeader from '@/components/PageHeader'
+} from '@/components/employees/AddEmployeeModal'
+import Button from '@/components/ui/Button'
+import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
+import DeleteEmployeeModal from '@/components/employees/DeleteEmployeeModal'
+import EditEmployeeModal from '@/components/employees/EditEmployeeModal'
+import Icon from '@/components/ui/Icon'
+import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/auth'
 import { countLabel } from '@/lib/dates'
 import {

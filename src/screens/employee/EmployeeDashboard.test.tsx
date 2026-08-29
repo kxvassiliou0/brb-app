@@ -11,7 +11,7 @@ import { setStoredToken } from '@/lib/api'
 import { AuthProvider } from '@/lib/auth'
 import { countDays } from '@/lib/dates'
 import { RECENT_REQUEST_LIMIT } from '@/lib/leaveSummary'
-import { makeUserJwt } from '@/test/jwt'
+import { makeUserJwt } from '@/test-support/jwt'
 import { routes } from '@/routes'
 import type {
   LeaveStatus,

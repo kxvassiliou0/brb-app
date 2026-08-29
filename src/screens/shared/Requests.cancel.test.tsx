@@ -17,7 +17,7 @@ import {
 } from '@/lib/cancelRequest'
 import { REQUESTS_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
-import { makeUserJwt } from '@/test/jwt'
+import { makeUserJwt } from '@/test-support/jwt'
 import type { OwnLeaveRequest, RemainingLeave } from '@/types/api'
 
 const USER_ID = 2
@@ -140,7 +140,7 @@ describe('cancelling a request', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: CANCEL_LABEL }))
 
-    const dialog = await screen.findByTestId('confirm-dialog')
+    const dialog = await screen.findByTestId('modal')
     expect(dialog).toBeInTheDocument()
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
     expect(deleteCalls(fetchMock)).toHaveLength(0)
@@ -150,7 +150,7 @@ describe('cancelling a request', () => {
     )
 
     await waitFor(() =>
-      expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
     )
     expect(deleteCalls(fetchMock)).toHaveLength(0)
     expect(statusCell()).toHaveTextContent('Pending')
@@ -203,7 +203,7 @@ describe('cancelling a request', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(ALREADY_CANCELLED_MESSAGE)
-    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument()
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
   })
 
   it('offers no cancel action on approved or rejected requests', async () => {

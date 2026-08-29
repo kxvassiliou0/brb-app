@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
-import { ErrorState, LoadingState } from '@/components/states'
-import PageHeader from '../../components/PageHeader'
-import StatCard from '@/components/StatCard'
+import { ErrorState, LoadingState } from '@/components/ui/states'
+import PageHeader from '@/components/layout/PageHeader'
+import StatCard from '@/components/ui/StatCard'
 
 interface Counts {
   users: number

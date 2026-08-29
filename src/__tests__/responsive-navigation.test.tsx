@@ -5,8 +5,12 @@ import { AuthProvider } from '@/lib/auth'
 import { setStoredToken } from '@/lib/api'
 import { NAV_BREAKPOINT } from '@/lib/breakpoints'
 import type { Role } from '@/lib/routeAccess'
-import { makeUserJwt } from '@/test/jwt'
-import { desktopWidth, mobileWidth, setViewportWidth } from '@/test/viewport'
+import { makeUserJwt } from '@/test-support/jwt'
+import {
+  desktopWidth,
+  mobileWidth,
+  setViewportWidth,
+} from '@/test-support/viewport'
 import { routes } from '@/routes'
 
 const DESKTOP = desktopWidth(NAV_BREAKPOINT)

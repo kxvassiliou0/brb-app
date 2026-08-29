@@ -1,8 +1,11 @@
-import InputWithLabel from '@/components/InputWithLabel'
-import PageHeader from '@/components/PageHeader'
-import StatCard from '@/components/StatCard'
-import { initialsFromEmail, initialsFromName } from '@/components/UserSummary'
-import { ErrorState, LoadingState } from '@/components/states'
+import InputWithLabel from '@/components/ui/InputWithLabel'
+import PageHeader from '@/components/layout/PageHeader'
+import StatCard from '@/components/ui/StatCard'
+import {
+  initialsFromEmail,
+  initialsFromName,
+} from '@/components/layout/UserSummary'
+import { ErrorState, LoadingState } from '@/components/ui/states'
 import { useAuth } from '@/lib/auth'
 import { countLabel } from '@/lib/dates'
 import { LEAVE_YEAR_RESET_LABEL } from '@/lib/leaveYear'
@@ -159,19 +162,19 @@ export default function Settings() {
         ) : (
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <StatCard
-              tone="recessed"
+              variant="recessed"
               label="Annual allowance"
               value={days(balance.data.data?.annual_allowance)}
               hint={LEAVE_YEAR_RESET_LABEL}
             />
             <StatCard
-              tone="recessed"
+              variant="recessed"
               label="Taken so far"
               value={days(balance.data.data?.days_used)}
               hint="approved leave"
             />
             <StatCard
-              tone="positive"
+              variant="positive"
               label="Remaining"
               value={days(balance.data.data?.days_remaining)}
               hint="left to book"

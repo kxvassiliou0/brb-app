@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BookingConfirmation, {
   useBookingConfirmation,
-} from '@/components/BookingConfirmation'
-import BookTimeOffButton from '@/components/BookTimeOffButton'
-import Button from '@/components/Button'
-import ConfirmDialog from '@/components/ConfirmDialog'
-import DeclineRequestModal from '@/components/DeclineRequestModal'
-import PageHeader from '@/components/PageHeader'
-import RequestDateStrip from '@/components/RequestDateStrip'
-import RequestDetailsModal from '@/components/RequestDetailsModal'
-import RequestsTable from '@/components/RequestsTable'
+} from '@/components/requests/BookingConfirmation'
+import BookTimeOffButton from '@/components/requests/BookTimeOffButton'
+import Button from '@/components/ui/Button'
+import DetailRow from '@/components/ui/DetailRow'
+import FormAlert from '@/components/ui/FormAlert'
+import Modal from '@/components/ui/Modal'
+import DeclineRequestModal from '@/components/requests/DeclineRequestModal'
+import PageHeader from '@/components/layout/PageHeader'
+import RequestDateStrip from '@/components/requests/RequestDateStrip'
+import RequestDetailsModal from '@/components/requests/RequestDetailsModal'
+import RequestsTable from '@/components/requests/RequestsTable'
 import RequestsToolbar, {
   CLEAR_FILTERS_LABEL,
-} from '@/components/RequestsToolbar'
-import ReviewRequestModal from '@/components/ReviewRequestModal'
-import SegmentedControl from '@/components/SegmentedControl'
+} from '@/components/requests/RequestsToolbar'
+import ReviewRequestModal from '@/components/requests/ReviewRequestModal'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import { cachedGet } from '@/lib/apiCache'
 import { useAuth } from '@/lib/auth'
 import {
@@ -391,42 +393,43 @@ export default function Requests() {
       )}
 
       {cancelTarget && (
-        <ConfirmDialog
+        <Modal
           title="Cancel this request?"
-          description="This request will be withdrawn and can not be reinstated."
-          details={
-            <dl className="flex flex-col gap-2">
-              <div className="flex items-baseline justify-between gap-6">
-                <dt className="text-sm text-text-secondary">Dates</dt>
-                <dd className="text-right font-medium text-text-primary">
-                  {formatDateRange(
-                    cancelTarget.start_date,
-                    cancelTarget.end_date
-                  )}
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-6">
-                <dt className="text-sm text-text-secondary">Duration</dt>
-                <dd className="text-right font-medium text-text-primary">
-                  {countLabel(cancelTarget.days_requested, 'day')}
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-6">
-                <dt className="text-sm text-text-secondary">Leave type</dt>
-                <dd className="text-right font-medium text-text-primary">
-                  {cancelTarget.leave_type}
-                </dd>
-              </div>
-            </dl>
-          }
-          consequence="The days return to your allowance and your manager will no longer be asked to review it."
-          confirmLabel={CONFIRM_CANCEL_LABEL}
-          cancelLabel={KEEP_REQUEST_LABEL}
-          error={cancelError}
-          busy={cancellingId === cancelTarget.id}
-          onConfirm={confirmCancel}
           onClose={closeCancelDialog}
-        />
+          description="This request will be withdrawn and can not be reinstated."
+          primary={{
+            label: CONFIRM_CANCEL_LABEL,
+            variant: 'danger',
+            disabled: cancellingId === cancelTarget.id,
+            onClick: confirmCancel,
+          }}
+          secondary={{
+            label: KEEP_REQUEST_LABEL,
+            disabled: cancellingId === cancelTarget.id,
+          }}
+        >
+          <dl className="flex flex-col">
+            <DetailRow
+              label="Dates"
+              value={formatDateRange(
+                cancelTarget.start_date,
+                cancelTarget.end_date
+              )}
+            />
+            <DetailRow
+              label="Duration"
+              value={countLabel(cancelTarget.days_requested, 'day')}
+            />
+            <DetailRow label="Leave type" value={cancelTarget.leave_type} />
+          </dl>
+
+          <p className="text-sm text-text-secondary">
+            The days return to your allowance and your manager will no longer be
+            asked to review it.
+          </p>
+
+          {cancelError && <FormAlert message={cancelError} />}
+        </Modal>
       )}
 
       {reviewing && (

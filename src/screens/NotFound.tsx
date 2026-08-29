@@ -1,4 +1,4 @@
-import LinkButton from '@/components/LinkButton'
+import LinkButton from '@/components/ui/LinkButton'
 import { useAuth } from '@/lib/auth'
 import { HOME_PATH } from '@/lib/routeAccess'
 
