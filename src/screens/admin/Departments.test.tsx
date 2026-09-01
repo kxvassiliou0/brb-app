@@ -14,10 +14,10 @@ import {
   vi,
   type Mock,
 } from 'vitest'
-import AddEmployeeModal from '@/components/employees/AddEmployeeModal'
-import { setStoredToken } from '@/lib/api'
-import { AuthProvider } from '@/lib/auth'
-import { JOB_ROLE, type OrgUnit } from '@/lib/orgUnits'
+import EmployeeFormModal from '@/components/employees/EmployeeFormModal'
+import { setStoredToken } from '@/api/token'
+import { AuthProvider } from '@/features/auth/auth'
+import { JOB_ROLE, type OrgUnit } from '@/features/orgUnits/orgUnits'
 import { makeUserJwt } from '@/test-support/jwt'
 import type { UserListItem } from '@/types/api'
 import Departments from './Departments'
@@ -226,10 +226,10 @@ describe('creating a job role', () => {
     await screen.findByText('Principal Engineer')
 
     render(
-      <AddEmployeeModal
+      <EmployeeFormModal
         employees={[BOB]}
         onClose={vi.fn()}
-        onCreated={vi.fn()}
+        onSaved={vi.fn()}
       />
     )
     await screen.findByTestId('add-employee-form')

@@ -3,7 +3,7 @@ import type { OwnLeaveRequest } from '@/types/api'
 
 export const RECENT_REQUEST_LIMIT = 5
 
-export interface LeaveSummary {
+interface LeaveSummary {
   bookedRequests: number
   pendingRequests: number
   sickDays: number

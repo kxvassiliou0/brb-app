@@ -3,8 +3,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RequestsTable from '@/components/requests/RequestsTable'
-import { setStoredToken } from '@/lib/api'
-import { AuthProvider } from '@/lib/auth'
+import { setStoredToken } from '@/api/token'
+import { AuthProvider } from '@/features/auth/auth'
 import { makeUserJwt } from '@/test-support/jwt'
 import { readFile } from '@/test-support/tokens'
 import Requests from '@/screens/shared/Requests'
@@ -265,10 +265,10 @@ describe('assistive technology announcements', () => {
 describe('table variants', () => {
   it('renders one skeleton cell per column in every row', () => {
     const { container } = renderTable(
-      <TableLoadingState columns={REQUEST_COLUMNS} rows={4} />
+      <TableLoadingState columns={REQUEST_COLUMNS} />
     )
     const rows = Array.from(container.querySelectorAll('tbody tr'))
-    expect(rows).toHaveLength(4)
+    expect(rows).toHaveLength(DEFAULT_SKELETON_ROWS)
     for (const row of rows) {
       expect(row.querySelectorAll('td')).toHaveLength(REQUEST_COLUMNS)
     }
@@ -294,7 +294,7 @@ describe('table variants', () => {
 
   it('reserves the shared row height in every variant', () => {
     for (const variant of [
-      <TableLoadingState key="l" columns={3} rows={1} />,
+      <TableLoadingState key="l" columns={3} />,
       <TableEmptyState key="e" columns={3} message="Nothing to review." />,
       <TableErrorState key="x" columns={3} error={new Error('boom')} />,
     ]) {

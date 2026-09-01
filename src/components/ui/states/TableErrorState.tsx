@@ -1,4 +1,4 @@
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage } from '@/api/client'
 import { TABLE_ROW_HEIGHT } from './metrics'
 
 interface TableErrorStateProps {
@@ -6,7 +6,6 @@ interface TableErrorStateProps {
   error: unknown
   onRetry?: () => void
   fallbackMessage?: string
-  retryLabel?: string
 }
 
 export default function TableErrorState({
@@ -14,7 +13,6 @@ export default function TableErrorState({
   error,
   onRetry,
   fallbackMessage,
-  retryLabel = 'Try again',
 }: TableErrorStateProps) {
   return (
     <tbody data-testid="table-error-state">
@@ -31,7 +29,7 @@ export default function TableErrorState({
                 onClick={onRetry}
                 className="touch-target inline-flex items-center justify-center rounded-full bg-interactive-primary px-4 text-interactive-text hover:bg-interactive-hover"
               >
-                {retryLabel}
+                Try again
               </button>
             )}
           </div>

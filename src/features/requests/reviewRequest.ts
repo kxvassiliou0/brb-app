@@ -1,5 +1,4 @@
-import { apiFetch } from '@/lib/api'
-import { clearApiCache } from '@/lib/apiCache'
+import { reviewLeaveRequest } from '@/api/leaveRequests'
 import type { ReviewLeaveRequestBody } from '@/types/api'
 
 export type ReviewAction = 'approve' | 'reject'
@@ -19,9 +18,5 @@ export async function decideRequest(
     leave_request_id: requestId,
     ...(note ? { reason: note } : {}),
   }
-  await apiFetch(`/api/leave-requests/${action}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  })
-  clearApiCache()
+  await reviewLeaveRequest(action, payload)
 }

@@ -3,7 +3,7 @@ import Icon from '@/components/ui/Icon'
 import Modal from '@/components/ui/Modal'
 import StatusPill from '@/components/ui/StatusPill'
 import { countLabel, formatDate, formatDateRange } from '@/lib/dates'
-import type { RequestRow } from '@/lib/requestFilters'
+import type { RequestRow } from '@/features/requests/requestFilters'
 
 interface RequestDetailsModalProps {
   request: RequestRow

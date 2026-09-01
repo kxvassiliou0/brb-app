@@ -9,7 +9,7 @@ import {
   describeOrgUnits,
   type OrgUnit,
   type OrgUnitKind,
-} from '@/lib/orgUnits'
+} from '@/features/orgUnits/orgUnits'
 
 interface OrgUnitSectionProps {
   kind: OrgUnitKind

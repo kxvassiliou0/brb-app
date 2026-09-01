@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiRequestError } from '@/lib/api'
+import { ApiRequestError } from '@/api/client'
+import { remainingLeavePath } from '@/api/leaveRequests'
 import {
   directReports,
   fetchTeamBalances,
-  remainingLeavePath,
   type TeamMember,
-} from '@/lib/teamBalances'
+} from '@/features/employees/teamBalances'
 import type { CalendarEntry, LeaveRequest, RemainingLeave } from '@/types/api'
 
 function pendingRequest(overrides: Partial<LeaveRequest> = {}): LeaveRequest {

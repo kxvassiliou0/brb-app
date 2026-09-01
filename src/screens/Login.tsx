@@ -4,7 +4,7 @@ import BrandHeader from '@/components/layout/BrandHeader'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import InputWithLabel from '@/components/ui/InputWithLabel'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import { HOME_PATH } from '@/lib/routeAccess'
 import { seasonalBackground } from '@/lib/seasonalBackground'
 

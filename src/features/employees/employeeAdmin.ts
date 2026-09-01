@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
-import { ApiRequestError, apiFetch, getApiErrorMessage } from '@/lib/api'
-import { clearApiCache } from '@/lib/apiCache'
+import { ApiRequestError, getApiErrorMessage } from '@/api/client'
+import { createUser, deleteUser, updateUser } from '@/api/users'
 import type {
   CreateUserBody,
   RoleType,
@@ -48,12 +48,6 @@ export interface EmployeeErrors {
   jobRoleId?: string
   managerId?: string
   password?: string
-}
-
-export const USERS_PATH = '/api/users'
-
-export function userPath(id: number): string {
-  return `${USERS_PATH}/${id}`
 }
 
 export function emptyEmployeeDraft(): EmployeeDraft {
@@ -163,28 +157,19 @@ export function buildCreateBody(draft: EmployeeDraft): CreateUserBody {
   return { ...buildUpdateBody(draft), password: draft.password }
 }
 
-export async function createEmployee(draft: EmployeeDraft): Promise<void> {
-  await apiFetch(USERS_PATH, {
-    method: 'POST',
-    body: JSON.stringify(buildCreateBody(draft)),
-  })
-  clearApiCache()
+export function createEmployee(draft: EmployeeDraft): Promise<void> {
+  return createUser(buildCreateBody(draft))
 }
 
-export async function updateEmployee(
+export function updateEmployee(
   id: number,
   draft: EmployeeDraft
 ): Promise<void> {
-  await apiFetch(userPath(id), {
-    method: 'PATCH',
-    body: JSON.stringify(buildUpdateBody(draft)),
-  })
-  clearApiCache()
+  return updateUser(id, buildUpdateBody(draft))
 }
 
-export async function deleteEmployee(id: number): Promise<void> {
-  await apiFetch(userPath(id), { method: 'DELETE' })
-  clearApiCache()
+export function deleteEmployee(id: number): Promise<void> {
+  return deleteUser(id)
 }
 
 export function fullName(employee: {
@@ -208,7 +193,7 @@ export function directReports(
   return employees.filter((employee) => employee.manager?.id === managerId)
 }
 
-export function couldHaveReviewed(role: RoleType): boolean {
+function couldHaveReviewed(role: RoleType): boolean {
   return role === 'Manager' || role === 'Admin'
 }
 

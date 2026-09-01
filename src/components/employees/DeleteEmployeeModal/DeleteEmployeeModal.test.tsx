@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 import DeleteEmployeeModal from '@/components/employees/DeleteEmployeeModal'
-import { DELETE_ACKNOWLEDGEMENT } from '@/lib/employeeAdmin'
+import { DELETE_ACKNOWLEDGEMENT } from '@/features/employees/employeeAdmin'
 import type { UserListItem } from '@/types/api'
 
 function employee(overrides: Partial<UserListItem> = {}): UserListItem {

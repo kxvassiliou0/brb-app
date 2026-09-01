@@ -4,7 +4,7 @@ import Icon, { type IconName } from '@/components/ui/Icon'
 import UserSummary from '@/components/layout/UserSummary'
 import { NAV_BREAKPOINT } from '@/lib/breakpoints'
 import { useBreakpoint } from '@/lib/useMediaQuery'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import {
   HOME_PATH,
   REQUESTS_PATH,

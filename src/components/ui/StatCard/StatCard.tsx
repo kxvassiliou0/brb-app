@@ -1,6 +1,6 @@
 import Card, { type CardVariant } from '@/components/ui/Card'
 
-export type StatCardVariant = Extract<
+type StatCardVariant = Extract<
   CardVariant,
   'bordered' | 'recessed' | 'positive'
 >

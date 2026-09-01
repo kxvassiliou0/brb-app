@@ -2,7 +2,10 @@ import { useMemo } from 'react'
 import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
 import { initialsFromName } from '@/components/layout/UserSummary'
 import { countLabel } from '@/lib/dates'
-import { REPORTS_COVERAGE_NOTE, type TeamBalance } from '@/lib/teamBalances'
+import {
+  REPORTS_COVERAGE_NOTE,
+  type TeamBalance,
+} from '@/features/employees/teamBalances'
 
 interface TeamBalancesTableProps {
   rows: TeamBalance[] | null

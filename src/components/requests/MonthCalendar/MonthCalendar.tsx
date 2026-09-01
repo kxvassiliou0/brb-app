@@ -12,7 +12,7 @@ import {
   shortName,
   type LeaveSegment,
   type WeekLayout,
-} from '@/lib/teamCalendar'
+} from '@/features/calendar/teamCalendar'
 import type { CalendarEntry } from '@/types/api'
 
 interface MonthCalendarProps {

@@ -5,8 +5,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { getStoredToken, loginRequest, setStoredToken } from '@/lib/api'
-import { clearApiCache } from '@/lib/apiCache'
+import { clearApiCache } from '@/api/cache'
+import { login as requestToken } from '@/api/session'
+import { getStoredToken, setStoredToken } from '@/api/token'
 
 const MS_PER_SECOND = 1000
 
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token])
 
   async function login(email: string, password: string): Promise<AuthUser> {
-    const jwt = await loginRequest(email, password)
+    const jwt = await requestToken(email, password)
     clearApiCache()
     const decoded = decodeUser(jwt)
     if (!decoded) throw new Error('Received an invalid token from the server')

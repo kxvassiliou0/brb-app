@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import DateRangeFilter from '@/components/requests/DateRangeFilter'
 import Icon from '@/components/ui/Icon'
-import type { RequestFilters } from '@/lib/requestFilters'
+import type { RequestFilters } from '@/features/requests/requestFilters'
 import type { DepartmentRow } from '@/types/api'
 
 export const CLEAR_FILTERS_LABEL = 'Clear filters'

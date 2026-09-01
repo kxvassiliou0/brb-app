@@ -9,9 +9,9 @@ import {
   type SelectOption,
 } from '@/components/ui/InputWithLabel'
 import Modal from '@/components/ui/Modal'
-import { apiFetch } from '@/lib/api'
-import { cachedGet, clearApiCache } from '@/lib/apiCache'
-import { useAuth } from '@/lib/auth'
+import { createLeaveRequest, getRemainingLeave } from '@/api/leaveRequests'
+import { listUserProfiles } from '@/api/users'
+import { useAuth } from '@/features/auth/auth'
 import {
   BOOKING_CONFIRMATION_FALLBACK,
   bookingErrorMessage,
@@ -26,18 +26,12 @@ import {
   type BookingDraft,
   type BookingErrors,
   type EmployeeOption,
-} from '@/lib/booking'
+} from '@/features/requests/booking'
 import { countLabel } from '@/lib/dates'
-import { fetchPublicHolidays, holidaysByDate } from '@/lib/publicHolidays'
+import { listPublicHolidays } from '@/api/publicHolidays'
+import { holidaysByDate } from '@/features/calendar/publicHolidays'
 import { isAdmin, REQUESTS_PATH } from '@/lib/routeAccess'
-import { remainingLeavePath } from '@/lib/teamBalances'
-import type {
-  ApiSuccess,
-  LeaveRequest,
-  LeaveType,
-  RemainingLeave,
-  UserProfile,
-} from '@/types/api'
+import type { LeaveType } from '@/types/api'
 
 interface BookTimeOffModalProps {
   onClose: () => void
@@ -75,7 +69,7 @@ export default function BookTimeOffModal({
     if (!user) return
     let cancelled = false
 
-    fetchPublicHolidays()
+    listPublicHolidays()
       .then((res) => {
         if (!cancelled) setHolidays(holidaysByDate(res))
       })
@@ -92,9 +86,9 @@ export default function BookTimeOffModal({
     if (bookingFor === null) return
     let cancelled = false
 
-    cachedGet<ApiSuccess<RemainingLeave>>(remainingLeavePath(bookingFor))
-      .then((res) => {
-        if (!cancelled) setDaysRemaining(res.data.days_remaining)
+    getRemainingLeave(bookingFor)
+      .then((remaining) => {
+        if (!cancelled) setDaysRemaining(remaining.days_remaining)
       })
       .catch(() => {
         if (!cancelled) setDaysRemaining(null)
@@ -109,9 +103,9 @@ export default function BookTimeOffModal({
     if (!canBookForOthers) return
     let cancelled = false
 
-    cachedGet<ApiSuccess<UserProfile[]>>('/api/users')
-      .then((res) => {
-        if (!cancelled) setEmployees(employeeOptions(res.data))
+    listUserProfiles()
+      .then((profiles) => {
+        if (!cancelled) setEmployees(employeeOptions(profiles))
       })
       .catch(() => {
         if (!cancelled) setEmployees([])
@@ -137,26 +131,18 @@ export default function BookTimeOffModal({
     setSubmitError(null)
     setSubmitting(true)
     try {
-      const created = await apiFetch<ApiSuccess<LeaveRequest>>(
-        '/api/leave-requests',
-        {
-          method: 'POST',
-          body: JSON.stringify(
-            buildCreateBody(
-              draft,
-              canBookForOthers && bookingFor !== null ? bookingFor : undefined
-            )
-          ),
-        }
+      const created = await createLeaveRequest(
+        buildCreateBody(
+          draft,
+          canBookForOthers && bookingFor !== null ? bookingFor : undefined
+        )
       )
-      clearApiCache()
       onBooked?.()
       onClose()
       navigate(REQUESTS_PATH, {
         state: {
-          bookingConfirmation:
-            created?.message ?? BOOKING_CONFIRMATION_FALLBACK,
-          bookingRequestId: created?.data?.id,
+          bookingConfirmation: created.message ?? BOOKING_CONFIRMATION_FALLBACK,
+          bookingRequestId: created.request.id,
         } satisfies BookingConfirmationState,
       })
     } catch (err) {

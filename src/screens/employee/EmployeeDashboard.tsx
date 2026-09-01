@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Link } from 'react-router'
 import planNextEscape from '@/assets/backgrounds/plan-next-escape.png'
 import BookTimeOffButton from '@/components/requests/BookTimeOffButton'
@@ -7,73 +7,53 @@ import PageHeader from '@/components/layout/PageHeader'
 import StatCard from '@/components/ui/StatCard'
 import StatusPill from '@/components/ui/StatusPill'
 import { ErrorState, LoadingState } from '@/components/ui/states'
-import { cachedGet } from '@/lib/apiCache'
-import { useAuth } from '@/lib/auth'
+import { getRemainingLeave, listRequestsFor } from '@/api/leaveRequests'
+import { useResource } from '@/api/useResource'
+import { getMyProfile } from '@/api/users'
+import { useAuth } from '@/features/auth/auth'
 import { countLabel, formatDateRange, formatToday } from '@/lib/dates'
 import { greetByName } from '@/lib/greeting'
-import { recentRequests, summariseRequests } from '@/lib/leaveSummary'
+import {
+  recentRequests,
+  summariseRequests,
+} from '@/features/requests/leaveSummary'
 import { REQUESTS_PATH } from '@/lib/routeAccess'
 import { LEAVE_YEAR_LABEL, LEAVE_YEAR_RESET_LABEL } from '@/lib/leaveYear'
-import type {
-  ApiSuccess,
-  OwnLeaveRequest,
-  RemainingLeave,
-  UserProfile,
-} from '@/types/api'
+import type { OwnLeaveRequest } from '@/types/api'
 
 const VIEW_ALL_LINK =
   'touch-target inline-flex items-center rounded-full px-3 text-base font-medium text-text-primary underline decoration-1 underline-offset-4 hover:bg-background-tertiary'
 
 export default function EmployeeDashboard() {
   const { user } = useAuth()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [remaining, setRemaining] = useState<RemainingLeave | null>(null)
-  const [requests, setRequests] = useState<OwnLeaveRequest[] | null>(null)
-  const [error, setError] = useState<unknown>(null)
-  const [attempt, setAttempt] = useState(0)
+  const userId = user?.id
 
+  const profile = useResource(
+    userId === undefined ? null : () => getMyProfile().catch(() => null),
+    [userId]
+  )
+
+  const dashboard = useResource(
+    userId === undefined
+      ? null
+      : async () => {
+          const [remaining, requests] = await Promise.all([
+            getRemainingLeave(userId),
+            listRequestsFor(userId),
+          ])
+          return { remaining, requests }
+        },
+    [userId]
+  )
+
+  const retryProfile = profile.retry
+  const retryDashboard = dashboard.retry
   const retry = useCallback(() => {
-    setRemaining(null)
-    setRequests(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
+    retryProfile()
+    retryDashboard()
+  }, [retryProfile, retryDashboard])
 
-  useEffect(() => {
-    if (!user) return
-    let cancelled = false
-
-    cachedGet<ApiSuccess<UserProfile>>('/api/users/me', attempt > 0)
-      .then((res) => {
-        if (!cancelled) setProfile(res.data)
-      })
-      .catch(() => {
-        if (!cancelled) setProfile(null)
-      })
-
-    Promise.all([
-      cachedGet<ApiSuccess<RemainingLeave>>(
-        `/api/leave-requests/remaining/${user.id}`,
-        attempt > 0
-      ),
-      cachedGet<ApiSuccess<OwnLeaveRequest[]>>(
-        `/api/leave-requests/status/${user.id}`,
-        attempt > 0
-      ),
-    ])
-      .then(([balance, history]) => {
-        if (cancelled) return
-        setRemaining(balance.data)
-        setRequests(history.data)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user, attempt])
+  const requests = dashboard.data?.requests ?? null
 
   const columns = useMemo<DataTableColumn<OwnLeaveRequest>[]>(
     () => [
@@ -103,30 +83,30 @@ export default function EmployeeDashboard() {
       className="flex flex-col gap-6"
     >
       <PageHeader
-        title={greetByName(profile?.firstName)}
+        title={greetByName(profile.data?.firstName)}
         description={`${formatToday()} • ${LEAVE_YEAR_LABEL}`}
         action={<BookTimeOffButton onBooked={retry} />}
       />
 
-      {error ? (
+      {dashboard.error ? (
         <ErrorState
-          error={error}
+          error={dashboard.error}
           onRetry={retry}
           fallbackMessage="Failed to load your dashboard"
         />
-      ) : remaining === null || requests === null ? (
+      ) : dashboard.data === null ? (
         <LoadingState label="Loading your dashboard" />
       ) : (
         <>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Remaining leave"
-              value={countLabel(remaining.days_remaining, 'day')}
-              hint={`of ${remaining.annual_allowance} annual allowance`}
+              value={countLabel(dashboard.data.remaining.days_remaining, 'day')}
+              hint={`of ${dashboard.data.remaining.annual_allowance} annual allowance`}
             />
             <StatCard
               label="Booked this year"
-              value={countLabel(remaining.days_used, 'day')}
+              value={countLabel(dashboard.data.remaining.days_used, 'day')}
               hint={`across ${countLabel(summary.bookedRequests, 'request')}`}
             />
             <StatCard
@@ -170,8 +150,9 @@ export default function EmployeeDashboard() {
             <div className="absolute inset-0 bg-linear-to-r from-background-secondary from-30% to-transparent" />
             <div className="relative flex min-w-0 flex-col items-start gap-4 p-4 sm:max-w-3/5 sm:p-6 lg:min-h-44 lg:justify-center">
               <h2 className="text-xl md:text-2xl">
-                You have {countLabel(remaining.days_remaining, 'day')} left.
-                Plan your next escape
+                You have{' '}
+                {countLabel(dashboard.data.remaining.days_remaining, 'day')}{' '}
+                left. Plan your next escape
               </h2>
               <BookTimeOffButton onBooked={retry} />
             </div>

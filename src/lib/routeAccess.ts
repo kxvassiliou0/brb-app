@@ -8,7 +8,7 @@ export const SETTINGS_PATH = '/settings'
 
 export const ADMIN_ROLES: Role[] = ['Admin']
 
-export const MANAGER_ROLES: Role[] = ['Manager']
+const MANAGER_ROLES: Role[] = ['Manager']
 
 export const TEAM_ROLES: Role[] = [...MANAGER_ROLES, ...ADMIN_ROLES]
 

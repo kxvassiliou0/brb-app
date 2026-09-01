@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
-import EditEmployeeModal from '@/components/employees/EditEmployeeModal'
-import { PASSWORD_MIN_LENGTH } from '@/lib/employeeAdmin'
+import EmployeeFormModal from '@/components/employees/EmployeeFormModal'
+import {
+  DUPLICATE_EMAIL_MESSAGE,
+  PASSWORD_MIN_LENGTH,
+} from '@/features/employees/employeeAdmin'
 import type { UpdateUserBody, UserListItem, UserRecord } from '@/types/api'
 
 const DAVID: UserListItem = {
@@ -86,7 +89,7 @@ function renderModal(record: UserRecord = RECORD, saveError?: string) {
   const onClose = vi.fn()
   const onSaved = vi.fn()
   render(
-    <EditEmployeeModal
+    <EmployeeFormModal
       employee={DAVID}
       employees={[BOB, DAVID]}
       onClose={onClose}
@@ -280,15 +283,31 @@ describe('saving an edited employee', () => {
     expect(patchBody().annualLeaveAllowance).toBe(30)
   })
 
-  it('keeps the form open and reports why the server refused', async () => {
+  it('reads a refused duplicate email back against the email field', async () => {
     const { onSaved, onClose } = renderModal(RECORD, 'Email already in use')
     await loaded()
 
     save()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Email already in use'
+    expect(await screen.findByText(DUPLICATE_EMAIL_MESSAGE)).toBeInTheDocument()
+    expect(field('Email')).toHaveAccessibleDescription(DUPLICATE_EMAIL_MESSAGE)
+    expect(onSaved).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('keeps the form open and reports any other refusal', async () => {
+    const { onSaved, onClose } = renderModal(
+      RECORD,
+      'Annual leave allowance must be a positive number'
     )
+    await loaded()
+
+    save()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Annual leave allowance must be a positive number'
+    )
+    expect(screen.getByTestId('edit-employee-form')).toBeInTheDocument()
     expect(onSaved).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })

@@ -10,7 +10,7 @@ export const LEAVE_YEAR_LABEL = 'Leave year 1 April to 31 March'
 
 export const LEAVE_YEAR_RESET_LABEL = 'resets 1 April'
 
-export interface LeaveYear {
+interface LeaveYear {
   start: string
   end: string
 }

@@ -1,8 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import UserSummary from '@/components/layout/UserSummary'
-import { clearApiCache } from '@/lib/apiCache'
-import type { AuthUser } from '@/lib/auth'
+import { clearApiCache } from '@/api/cache'
+import type { AuthUser } from '@/features/auth/auth'
 import type { UserProfile } from '@/types/api'
 
 const USER: AuthUser = {

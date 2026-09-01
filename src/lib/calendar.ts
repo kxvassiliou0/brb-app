@@ -1,6 +1,6 @@
 const LOCALE = 'en-GB'
 
-export const DAYS_IN_WEEK = 7
+const DAYS_IN_WEEK = 7
 
 const DAYS_IN_GRID = 42
 

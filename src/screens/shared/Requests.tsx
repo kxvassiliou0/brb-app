@@ -17,14 +17,21 @@ import RequestsToolbar, {
 } from '@/components/requests/RequestsToolbar'
 import ReviewRequestModal from '@/components/requests/ReviewRequestModal'
 import SegmentedControl from '@/components/ui/SegmentedControl'
-import { cachedGet } from '@/lib/apiCache'
-import { useAuth } from '@/lib/auth'
+import {
+  getRemainingLeave,
+  listAllRequests,
+  listPendingForManager,
+  listRequestsFor,
+} from '@/api/leaveRequests'
+import { listDepartments } from '@/api/orgUnits'
+import { useResource } from '@/api/useResource'
+import { useAuth } from '@/features/auth/auth'
 import {
   cancelErrorMessage,
   cancelRequest,
   CONFIRM_CANCEL_LABEL,
   KEEP_REQUEST_LABEL,
-} from '@/lib/cancelRequest'
+} from '@/features/requests/cancelRequest'
 import { countLabel, formatDateRange } from '@/lib/dates'
 import {
   countInLeaveYear,
@@ -38,17 +45,13 @@ import {
   type RequestRow,
   type ScopeFilter,
   type StatusFilter,
-} from '@/lib/requestFilters'
+} from '@/features/requests/requestFilters'
 import { canReviewRequests, isAdmin } from '@/lib/routeAccess'
-import { decideRequest, type ReviewAction } from '@/lib/reviewRequest'
-import { remainingLeavePath } from '@/lib/teamBalances'
-import type {
-  ApiSuccess,
-  DepartmentRow,
-  LeaveRequest,
-  OwnLeaveRequest,
-  RemainingLeave,
-} from '@/types/api'
+import {
+  decideRequest,
+  type ReviewAction,
+} from '@/features/requests/reviewRequest'
+import type { RemainingLeave } from '@/types/api'
 
 const SCOPE_OPTIONS = [
   { value: 'all' as ScopeFilter, label: 'All' },
@@ -68,14 +71,8 @@ export default function Requests() {
 
   const [scope, setScope] = useState<ScopeFilter>(canReview ? 'all' : 'mine')
   const [filters, setFilters] = useState<RequestFilters>(EMPTY_FILTERS)
-  const [attempt, setAttempt] = useState(0)
-
-  const [own, setOwn] = useState<OwnLeaveRequest[] | null>(null)
-  const [team, setTeam] = useState<LeaveRequest[] | null>(null)
-  const [balance, setBalance] = useState<RemainingLeave | null>(null)
-  const [departments, setDepartments] = useState<DepartmentRow[]>([])
-  const [error, setError] = useState<unknown>(null)
   const [deciding, setDeciding] = useState<number | null>(null)
+  const [decideError, setDecideError] = useState<unknown>(null)
   const [reviewingId, setReviewingId] = useState<number | null>(null)
   const [decliningId, setDecliningId] = useState<number | null>(null)
   const [detailsId, setDetailsId] = useState<number | null>(null)
@@ -86,68 +83,48 @@ export default function Requests() {
   const [pendingCancelId, setPendingCancelId] = useState<number | null>(null)
   const [cancelError, setCancelError] = useState<string | null>(null)
 
+  const userId = user?.id
+
+  const mine = useResource(
+    userId === undefined
+      ? null
+      : async () => {
+          const [requests, remaining] = await Promise.all([
+            listRequestsFor(userId),
+            getRemainingLeave(userId),
+          ])
+          return { requests, remaining }
+        },
+    [userId]
+  )
+
+  const review = useResource(
+    userId === undefined || !canReview
+      ? null
+      : async () => {
+          const [requests, departments] = await Promise.all([
+            isAdminUser ? listAllRequests() : listPendingForManager(userId),
+            listDepartments().catch(() => []),
+          ])
+          return { requests, departments }
+        },
+    [userId, canReview, isAdminUser]
+  )
+
+  const own = mine.data?.requests ?? null
+  const balance = mine.data?.remaining ?? null
+  const team = review.data?.requests ?? null
+  const departments = review.data?.departments ?? []
+  const error = mine.error ?? review.error ?? decideError
+
+  const retryMine = mine.retry
+  const retryReview = review.retry
+  const setMine = mine.setData
+  const setReview = review.setData
   const refresh = useCallback(() => {
-    setOwn(null)
-    setTeam(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
-
-  useEffect(() => {
-    if (!user) return
-    let cancelled = false
-    const force = attempt > 0
-
-    Promise.all([
-      cachedGet<ApiSuccess<OwnLeaveRequest[]>>(
-        `/api/leave-requests/status/${user.id}`,
-        force
-      ),
-      cachedGet<ApiSuccess<RemainingLeave>>(remainingLeavePath(user.id), force),
-    ])
-      .then(([requests, remaining]) => {
-        if (cancelled) return
-        setOwn(requests.data)
-        setBalance(remaining.data)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user, attempt])
-
-  useEffect(() => {
-    if (!user || !canReview) return
-    let cancelled = false
-    const force = attempt > 0
-
-    const path = isAdminUser
-      ? '/api/leave-requests'
-      : `/api/leave-requests/pending/manager/${user.id}`
-
-    cachedGet<ApiSuccess<LeaveRequest[]>>(path, force)
-      .then((res) => {
-        if (!cancelled) setTeam(res.data)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-
-    cachedGet<ApiSuccess<DepartmentRow[]>>('/api/departments', force)
-      .then((res) => {
-        if (!cancelled) setDepartments(res.data)
-      })
-      .catch(() => {
-        if (!cancelled) setDepartments([])
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user, canReview, isAdminUser, attempt])
+    retryMine()
+    retryReview()
+  }, [retryMine, retryReview])
 
   const showingTeam = canReview && scope === 'all'
 
@@ -180,11 +157,9 @@ export default function Requests() {
     if (reviewing === null) return
     let cancelled = false
 
-    cachedGet<ApiSuccess<RemainingLeave>>(
-      remainingLeavePath(reviewing.employee_id)
-    )
-      .then((res) => {
-        if (!cancelled) setReviewBalance(res.data)
+    getRemainingLeave(reviewing.employee_id)
+      .then((remaining) => {
+        if (!cancelled) setReviewBalance(remaining)
       })
       .catch(() => {
         if (!cancelled) setReviewBalance(null)
@@ -213,10 +188,10 @@ export default function Requests() {
         return
       }
       setDeciding(requestId)
-      setError(null)
+      setDecideError(null)
       decideRequest(action, requestId)
         .then(() => refresh())
-        .catch((err) => setError(err))
+        .catch((err: unknown) => setDecideError(err))
         .finally(() => setDeciding(null))
     },
     [refresh]
@@ -247,27 +222,39 @@ export default function Requests() {
                 row.id === requestId ? { ...row, status: result.status } : row
               )
 
-        setOwn(markCancelled)
-        setTeam(markCancelled)
+        const daysRemaining = result.new_days_remaining
 
-        if (result.new_days_remaining !== undefined) {
-          const daysRemaining = result.new_days_remaining
-          setBalance((current) =>
-            current === null
-              ? current
-              : {
-                  ...current,
-                  days_remaining: daysRemaining,
-                  days_used: current.annual_allowance - daysRemaining,
-                }
-          )
-        }
+        setMine((current) =>
+          current === null
+            ? current
+            : {
+                requests: markCancelled(current.requests) ?? current.requests,
+                remaining:
+                  daysRemaining === undefined
+                    ? current.remaining
+                    : {
+                        ...current.remaining,
+                        days_remaining: daysRemaining,
+                        days_used:
+                          current.remaining.annual_allowance - daysRemaining,
+                      },
+              }
+        )
+
+        setReview((current) =>
+          current === null
+            ? current
+            : {
+                ...current,
+                requests: markCancelled(current.requests) ?? current.requests,
+              }
+        )
 
         setPendingCancelId(null)
       })
       .catch((err: unknown) => setCancelError(cancelErrorMessage(err)))
       .finally(() => setCancellingId(null))
-  }, [pendingCancelId])
+  }, [pendingCancelId, setMine, setReview])
 
   const cancelTarget = (own ?? []).find((row) => row.id === pendingCancelId)
 

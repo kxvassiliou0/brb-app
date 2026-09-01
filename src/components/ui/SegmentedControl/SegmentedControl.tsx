@@ -3,7 +3,7 @@ export interface SegmentedOption<T extends string> {
   label: string
 }
 
-export type SegmentedVariant = 'tabs' | 'slider'
+type SegmentedVariant = 'tabs' | 'slider'
 
 interface SegmentedControlProps<T extends string> {
   label: string

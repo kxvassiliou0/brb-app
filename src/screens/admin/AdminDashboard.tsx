@@ -1,8 +1,10 @@
+import { listAllRequests } from '@/api/leaveRequests'
+import { listDepartments } from '@/api/orgUnits'
+import { listUsers } from '@/api/users'
+import { useResource } from '@/api/useResource'
 import PageHeader from '@/components/layout/PageHeader'
 import StatCard from '@/components/ui/StatCard'
 import { ErrorState, LoadingState } from '@/components/ui/states'
-import { useCallback, useEffect, useState } from 'react'
-import { apiFetch } from '../../lib/api'
 
 interface Counts {
   users: number
@@ -10,40 +12,21 @@ interface Counts {
   leaveRequests: number
 }
 
+async function loadCounts(): Promise<Counts> {
+  const [users, departments, leaveRequests] = await Promise.all([
+    listUsers(),
+    listDepartments(),
+    listAllRequests(),
+  ])
+  return {
+    users: users.length,
+    departments: departments.length,
+    leaveRequests: leaveRequests.length,
+  }
+}
+
 export default function AdminDashboard() {
-  const [counts, setCounts] = useState<Counts | null>(null)
-  const [error, setError] = useState<unknown>(null)
-  const [attempt, setAttempt] = useState(0)
-
-  const retry = useCallback(() => {
-    setCounts(null)
-    setError(null)
-    setAttempt((value) => value + 1)
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      apiFetch<{ data: unknown[] }>('/api/users'),
-      apiFetch<{ data: unknown[] }>('/api/departments'),
-      apiFetch<{ data: unknown[] }>('/api/leave-requests'),
-    ])
-      .then(([users, departments, leaveRequests]) => {
-        if (!cancelled) {
-          setCounts({
-            users: users.data.length,
-            departments: departments.data.length,
-            leaveRequests: leaveRequests.data.length,
-          })
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [attempt])
+  const { data: counts, error, retry } = useResource(loadCounts)
 
   return (
     <div data-testid="screen-admin-dashboard">

@@ -4,16 +4,7 @@ export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
 
 export type RoleType = 'Admin' | 'Manager' | 'Employee'
 
-export interface ApiSuccess<T> {
-  data: T
-  message?: string
-}
-
-export interface ApiError {
-  error: string
-}
-
-export interface UserRelation {
+interface UserRelation {
   id: number
   name: string
 }
@@ -102,19 +93,6 @@ export interface CalendarEntry {
   status: LeaveStatus
 }
 
-export interface LeaveUsageEmployee {
-  employee_id: number
-  name: string
-  department_id: number
-  breakdown: Record<LeaveType, number>
-  total_days_used: number
-}
-
-export interface LeaveUsageReport {
-  scope: string
-  employees: LeaveUsageEmployee[]
-}
-
 export interface CreateLeaveRequestBody {
   employee_id?: number
   start_date: string
@@ -137,9 +115,4 @@ export interface ReviewLeaveRequestBody {
 export interface DeleteLeaveRequestResult extends LeaveRequest {
   days_restored?: number
   new_days_remaining?: number
-}
-
-export interface LoginBody {
-  email: string
-  password: string
 }

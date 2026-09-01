@@ -1,5 +1,5 @@
-import { setStoredToken } from '@/lib/api'
-import { AuthProvider } from '@/lib/auth'
+import { setStoredToken } from '@/api/token'
+import { AuthProvider } from '@/features/auth/auth'
 import type { Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
 import { makeUserJwt } from '@/test-support/jwt'

@@ -1,5 +1,4 @@
-import { apiFetch } from '@/lib/api'
-import { clearApiCache } from '@/lib/apiCache'
+import { departments, jobRoles, type OrgUnitOperations } from '@/api/orgUnits'
 import type { DepartmentRow } from '@/types/api'
 
 export type OrgUnit = DepartmentRow
@@ -8,34 +7,30 @@ export interface OrgUnitKind {
   key: 'department' | 'jobRole'
   noun: string
   nounPlural: string
-  apiPath: string
   nameMaxLength: number
   addLabel: string
   nameLabel: string
+  operations: OrgUnitOperations<OrgUnit>
 }
 
 export const DEPARTMENT: OrgUnitKind = {
   key: 'department',
   noun: 'department',
   nounPlural: 'departments',
-  apiPath: '/api/departments',
   nameMaxLength: 100,
   addLabel: 'Add a department',
   nameLabel: 'Department name',
+  operations: departments,
 }
 
 export const JOB_ROLE: OrgUnitKind = {
   key: 'jobRole',
   noun: 'job role',
   nounPlural: 'job roles',
-  apiPath: '/api/job-roles',
   nameMaxLength: 30,
   addLabel: 'Add a job role',
   nameLabel: 'Job role name',
-}
-
-export function orgUnitPath(kind: OrgUnitKind, id: number): string {
-  return `${kind.apiPath}/${id}`
+  operations: jobRoles,
 }
 
 export function peopleNoun(count: number): string {
@@ -77,35 +72,20 @@ export function validateOrgUnitName(
   return undefined
 }
 
-export async function createOrgUnit(
-  kind: OrgUnitKind,
-  name: string
-): Promise<void> {
-  await apiFetch(kind.apiPath, {
-    method: 'POST',
-    body: JSON.stringify({ name: name.trim() }),
-  })
-  clearApiCache()
+export function createOrgUnit(kind: OrgUnitKind, name: string): Promise<void> {
+  return kind.operations.create(name.trim())
 }
 
-export async function updateOrgUnit(
+export function updateOrgUnit(
   kind: OrgUnitKind,
   id: number,
   name: string
 ): Promise<void> {
-  await apiFetch(orgUnitPath(kind, id), {
-    method: 'PATCH',
-    body: JSON.stringify({ name: name.trim() }),
-  })
-  clearApiCache()
+  return kind.operations.rename(id, name.trim())
 }
 
-export async function deleteOrgUnit(
-  kind: OrgUnitKind,
-  id: number
-): Promise<void> {
-  await apiFetch(orgUnitPath(kind, id), { method: 'DELETE' })
-  clearApiCache()
+export function deleteOrgUnit(kind: OrgUnitKind, id: number): Promise<void> {
+  return kind.operations.remove(id)
 }
 
 export function describeOrgUnits(
