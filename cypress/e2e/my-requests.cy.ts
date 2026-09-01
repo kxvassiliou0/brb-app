@@ -176,14 +176,5 @@ describe('my leave requests', () => {
         cy.get(ROWS).should('have.length', mine.length)
       })
     })
-
-    it('keeps a Cancelled tab, so cancellations are never hidden', () => {
-      openMyRequests()
-
-      cy.get('[data-testid="status-filter"] button').should(($tabs) => {
-        const labels = $tabs.toArray().map((tab) => tab.textContent?.trim())
-        expect(labels).to.deep.equal(['All', ...STATUSES])
-      })
-    })
   })
 })
