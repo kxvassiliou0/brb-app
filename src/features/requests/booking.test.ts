@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { describe, expect, it } from 'vitest'
-import { ApiRequestError } from '@/lib/api'
+import { ApiRequestError } from '@/api/client'
 import {
   bookingErrorMessage,
   buildCreateBody,
@@ -11,7 +11,7 @@ import {
   requestedDays,
   validateBooking,
   type BookingDraft,
-} from '@/lib/booking'
+} from '@/features/requests/booking'
 import { countDays, toIsoDate } from '@/lib/dates'
 
 function draft(overrides: Partial<BookingDraft> = {}): BookingDraft {

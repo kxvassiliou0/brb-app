@@ -2,7 +2,7 @@ import spring from '@/assets/backgrounds/spring.png'
 import summer from '@/assets/backgrounds/summer.png'
 import winter from '@/assets/backgrounds/winter.png'
 
-export const SEASONS = ['spring', 'summer', 'winter'] as const
+const SEASONS = ['spring', 'summer', 'winter'] as const
 
 export type Season = (typeof SEASONS)[number]
 

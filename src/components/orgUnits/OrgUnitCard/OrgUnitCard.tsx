@@ -1,6 +1,6 @@
 import Button from '@/components/ui/Button'
 import Icon from '@/components/ui/Icon'
-import { peopleNoun, type OrgUnit } from '@/lib/orgUnits'
+import { peopleNoun, type OrgUnit } from '@/features/orgUnits/orgUnits'
 
 interface OrgUnitCardProps {
   unit: OrgUnit

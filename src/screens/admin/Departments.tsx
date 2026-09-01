@@ -1,17 +1,16 @@
+import { useResource } from '@/api/useResource'
 import OrgUnitSection from '@/components/orgUnits/OrgUnitSection'
-import { DEPARTMENT, JOB_ROLE, type OrgUnit } from '@/lib/orgUnits'
-import { useApiResource } from '@/lib/useApiResource'
-import type { ApiSuccess } from '@/types/api'
+import { DEPARTMENT, JOB_ROLE } from '@/features/orgUnits/orgUnits'
 
 export default function Departments() {
-  const departments = useApiResource<ApiSuccess<OrgUnit[]>>(DEPARTMENT.apiPath)
-  const jobRoles = useApiResource<ApiSuccess<OrgUnit[]>>(JOB_ROLE.apiPath)
+  const departments = useResource(DEPARTMENT.operations.list)
+  const jobRoles = useResource(JOB_ROLE.operations.list)
 
   return (
     <div data-testid="screen-departments" className="flex flex-col gap-12">
       <OrgUnitSection
         kind={DEPARTMENT}
-        units={departments.data?.data ?? null}
+        units={departments.data}
         error={departments.error}
         onRetry={departments.retry}
         onChanged={departments.retry}
@@ -20,7 +19,7 @@ export default function Departments() {
 
       <OrgUnitSection
         kind={JOB_ROLE}
-        units={jobRoles.data?.data ?? null}
+        units={jobRoles.data}
         error={jobRoles.error}
         onRetry={jobRoles.retry}
         onChanged={jobRoles.retry}

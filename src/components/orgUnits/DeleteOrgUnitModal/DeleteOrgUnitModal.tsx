@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import FormAlert from '@/components/ui/FormAlert'
 import Modal from '@/components/ui/Modal'
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage } from '@/api/client'
 import {
   deleteOrgUnit,
   inUseMessage,
   isInUse,
   type OrgUnit,
   type OrgUnitKind,
-} from '@/lib/orgUnits'
+} from '@/features/orgUnits/orgUnits'
 
 interface DeleteOrgUnitModalProps {
   kind: OrgUnitKind

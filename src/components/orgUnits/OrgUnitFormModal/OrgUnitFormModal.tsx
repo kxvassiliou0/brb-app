@@ -2,14 +2,14 @@ import { useState, type FormEvent } from 'react'
 import FormAlert from '@/components/ui/FormAlert'
 import InputWithLabel from '@/components/ui/InputWithLabel'
 import Modal from '@/components/ui/Modal'
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage } from '@/api/client'
 import {
   createOrgUnit,
   updateOrgUnit,
   validateOrgUnitName,
   type OrgUnit,
   type OrgUnitKind,
-} from '@/lib/orgUnits'
+} from '@/features/orgUnits/orgUnits'
 
 interface OrgUnitFormModalProps {
   kind: OrgUnitKind
@@ -19,11 +19,11 @@ interface OrgUnitFormModalProps {
   onSaved: () => void
 }
 
-export function orgUnitFormId(kind: OrgUnitKind): string {
+function orgUnitFormId(kind: OrgUnitKind): string {
   return `${kind.key}-form`
 }
 
-export function orgUnitNameFieldId(kind: OrgUnitKind): string {
+function orgUnitNameFieldId(kind: OrgUnitKind): string {
   return `${kind.key}-name`
 }
 

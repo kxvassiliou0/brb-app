@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { isTokenExpired, useAuth } from '@/lib/auth'
+import { isTokenExpired, useAuth } from '@/features/auth/auth'
 import { HOME_PATH, type Role } from '@/lib/routeAccess'
 
 interface ProtectedRouteProps {

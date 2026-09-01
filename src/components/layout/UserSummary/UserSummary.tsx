@@ -1,8 +1,9 @@
-import type { AuthUser } from '@/lib/auth'
+import type { AuthUser } from '@/features/auth/auth'
 import Icon from '@/components/ui/Icon'
 import { Skeleton } from '@/components/ui/states'
-import { useApiResource } from '@/lib/useApiResource'
-import type { ApiSuccess, UserProfile } from '@/types/api'
+import { getMyProfile } from '@/api/users'
+import { useResource } from '@/api/useResource'
+import type { UserProfile } from '@/types/api'
 
 export function initialsFromName(name: string | null): string {
   if (!name) return '?'
@@ -37,11 +38,11 @@ export function fullName(profile: UserProfile | null): string | null {
 }
 
 export default function UserSummary({ user, onSignOut }: UserSummaryProps) {
-  const { data, error } = useApiResource<ApiSuccess<UserProfile>>(
-    user ? '/api/users/me' : null
-  )
-  const name = fullName(data?.data ?? null)
-  const pending = user !== null && data === null && error === null
+  const { data: profile, error } = useResource(user ? getMyProfile : null, [
+    user,
+  ])
+  const name = fullName(profile)
+  const pending = user !== null && profile === null && error === null
 
   return (
     <div className="flex items-center gap-4">

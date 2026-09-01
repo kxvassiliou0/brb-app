@@ -6,7 +6,7 @@ import Navigation from '@/components/layout/Navigation'
 import UserSummary from '@/components/layout/UserSummary'
 import { NAV_BREAKPOINT } from '@/lib/breakpoints'
 import { useBreakpoint } from '@/lib/useMediaQuery'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 
 export default function AppLayout() {
   const navigate = useNavigate()

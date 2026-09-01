@@ -71,7 +71,7 @@ function segmentFor(
   }
 }
 
-export function layoutWeek(
+function layoutWeek(
   days: CalendarDay[],
   entries: CalendarEntry[]
 ): LeaveSegment[][] {

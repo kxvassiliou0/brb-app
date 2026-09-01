@@ -1,8 +1,15 @@
-import { act, render, screen, within } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { AuthProvider } from '@/lib/auth'
-import { setStoredToken } from '@/lib/api'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AuthProvider } from '@/features/auth/auth'
+import { setStoredToken } from '@/api/token'
 import { NAV_BREAKPOINT } from '@/lib/breakpoints'
 import type { Role } from '@/lib/routeAccess'
 import { makeUserJwt } from '@/test-support/jwt'
@@ -30,6 +37,18 @@ function renderAt(path: string, role: Role) {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [] }),
+    }))
+  )
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('navigation at the nav breakpoint and above', () => {
@@ -110,5 +129,29 @@ describe('navigation when the viewport crosses the nav breakpoint', () => {
 
     act(() => setViewportWidth(MOBILE))
     expect(screen.getAllByRole('navigation', { name: 'Main' })).toHaveLength(1)
+  })
+})
+
+describe('following a sidebar link', () => {
+  it('moves the current-page marker onto the destination', async () => {
+    setViewportWidth(DESKTOP)
+    renderAt('/', 'Admin')
+
+    const sidebar = within(screen.getByTestId('sidebar'))
+    expect(sidebar.getByRole('link', { current: 'page' })).toHaveAttribute(
+      'href',
+      '/'
+    )
+
+    fireEvent.click(sidebar.getByRole('link', { name: 'Employees' }))
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId('sidebar')).getByRole('link', {
+          current: 'page',
+        })
+      ).toHaveAttribute('href', '/employees')
+    )
+    expect(screen.getByTestId('screen-employees')).toBeInTheDocument()
   })
 })

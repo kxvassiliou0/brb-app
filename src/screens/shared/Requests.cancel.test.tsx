@@ -7,14 +7,14 @@ import {
 } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setStoredToken } from '@/lib/api'
-import { AuthProvider } from '@/lib/auth'
+import { setStoredToken } from '@/api/token'
+import { AuthProvider } from '@/features/auth/auth'
 import {
   ALREADY_CANCELLED_MESSAGE,
   CANCEL_LABEL,
   CONFIRM_CANCEL_LABEL,
   KEEP_REQUEST_LABEL,
-} from '@/lib/cancelRequest'
+} from '@/features/requests/cancelRequest'
 import { REQUESTS_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
 import { makeUserJwt } from '@/test-support/jwt'

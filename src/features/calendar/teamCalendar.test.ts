@@ -7,7 +7,7 @@ import {
   segmentLabel,
   shortName,
   type LeaveSegment,
-} from '@/lib/teamCalendar'
+} from '@/features/calendar/teamCalendar'
 import type { CalendarEntry, LeaveStatus } from '@/types/api'
 
 const AUGUST = '2026-08'

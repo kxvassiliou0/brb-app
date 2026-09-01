@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { ApiRequestError } from '@/lib/api'
+import { ApiRequestError } from '@/api/client'
 import { countDays, countLabel, toIsoDate } from '@/lib/dates'
 import type {
   CreateLeaveRequestBody,
@@ -13,7 +13,7 @@ const BALANCE_ERROR = /exceed[s]? remaining balance/i
 
 const INVALID_DATE_ERROR = /YYYY-MM-DD|invalid date|before the start date/i
 
-export const OVERLAP_MESSAGE =
+const OVERLAP_MESSAGE =
   'Those dates clash with a request you have already made. Choose a range that does not overlap an existing request.'
 
 export const INVALID_DATES_MESSAGE =

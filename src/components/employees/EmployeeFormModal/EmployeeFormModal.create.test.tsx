@@ -8,13 +8,13 @@ import {
   vi,
   type Mock,
 } from 'vitest'
-import AddEmployeeModal from '@/components/employees/AddEmployeeModal'
-import { clearApiCache } from '@/lib/apiCache'
+import EmployeeFormModal from '@/components/employees/EmployeeFormModal'
+import { clearApiCache } from '@/api/cache'
 import {
   DEFAULT_ANNUAL_LEAVE_ALLOWANCE,
   DUPLICATE_EMAIL_MESSAGE,
   PASSWORD_MIN_LENGTH,
-} from '@/lib/employeeAdmin'
+} from '@/features/employees/employeeAdmin'
 import type { CreateUserBody, UserListItem } from '@/types/api'
 
 const BOB: UserListItem = {
@@ -86,10 +86,10 @@ function renderModal(failure?: CreateFailure) {
   const onClose = vi.fn()
   const onCreated = vi.fn()
   render(
-    <AddEmployeeModal
+    <EmployeeFormModal
       employees={[BOB]}
       onClose={onClose}
-      onCreated={onCreated}
+      onSaved={onCreated}
     />
   )
   return { onClose, onCreated }

@@ -1,6 +1,6 @@
 import { STATUS_TONE } from '@/components/ui/StatusPill'
 import { formatDate } from '@/lib/dates'
-import { nextDays } from '@/lib/requestFilters'
+import { nextDays } from '@/features/requests/requestFilters'
 import type { LeaveStatus } from '@/types/api'
 
 export default function RequestDateStrip({

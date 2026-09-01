@@ -1,5 +1,5 @@
 import LinkButton from '@/components/ui/LinkButton'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import { HOME_PATH } from '@/lib/routeAccess'
 
 export default function NotFound() {

@@ -24,8 +24,6 @@ interface ModalProps {
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-export const CLOSE_LABEL = 'Close'
-
 export default function Modal({
   title,
   onClose,
@@ -106,7 +104,7 @@ export default function Modal({
             className="touch-target -mt-1 -mr-1 inline-flex shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-background-tertiary hover:text-text-primary"
           >
             <Icon name="cross" />
-            <span className="sr-only">{CLOSE_LABEL}</span>
+            <span className="sr-only">Close</span>
           </button>
         </div>
 

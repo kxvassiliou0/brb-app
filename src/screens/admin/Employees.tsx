@@ -1,31 +1,28 @@
-import AddEmployeeModal, {
+import EmployeeFormModal, {
   ADD_EMPLOYEE_LABEL,
-} from '@/components/employees/AddEmployeeModal'
+} from '@/components/employees/EmployeeFormModal'
 import DeleteEmployeeModal from '@/components/employees/DeleteEmployeeModal'
-import EditEmployeeModal from '@/components/employees/EditEmployeeModal'
 import PageHeader from '@/components/layout/PageHeader'
 import Button from '@/components/ui/Button'
 import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
 import Icon from '@/components/ui/Icon'
-import { useAuth } from '@/lib/auth'
+import { listUsers } from '@/api/users'
+import { useResource } from '@/api/useResource'
+import { useAuth } from '@/features/auth/auth'
 import { countLabel } from '@/lib/dates'
 import {
   canDeleteEmployee,
   fullName,
   SELF_DELETE_MESSAGE,
-  USERS_PATH,
-} from '@/lib/employeeAdmin'
-import { useApiResource } from '@/lib/useApiResource'
-import type { ApiSuccess, UserListItem } from '@/types/api'
+} from '@/features/employees/employeeAdmin'
+import type { UserListItem } from '@/types/api'
 import { useMemo, useState } from 'react'
 
-export const NO_MANAGER = 'None'
-
-export function managerName(employee: UserListItem): string {
-  return employee.manager?.name.trim() ? employee.manager.name : NO_MANAGER
+function managerName(employee: UserListItem): string {
+  return employee.manager?.name.trim() ? employee.manager.name : 'None'
 }
 
-export function describeRoster(employees: UserListItem[] | null): string {
+function describeRoster(employees: UserListItem[] | null): string {
   if (employees === null) return 'Everyone in your organisation.'
   const departments = new Set(
     employees.map((employee) => employee.department.id)
@@ -36,13 +33,10 @@ export function describeRoster(employees: UserListItem[] | null): string {
 
 export default function Employees() {
   const { user } = useAuth()
-  const { data, error, retry } =
-    useApiResource<ApiSuccess<UserListItem[]>>(USERS_PATH)
+  const { data: employees, error, retry } = useResource(listUsers)
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
-
-  const employees = data?.data ?? null
 
   const find = (id: number | null): UserListItem | undefined =>
     id === null
@@ -171,15 +165,15 @@ export default function Employees() {
       </div>
 
       {adding && (
-        <AddEmployeeModal
+        <EmployeeFormModal
           employees={employees ?? []}
           onClose={() => setAdding(false)}
-          onCreated={retry}
+          onSaved={retry}
         />
       )}
 
       {editing && employees && (
-        <EditEmployeeModal
+        <EmployeeFormModal
           employee={editing}
           employees={employees}
           onClose={() => setEditingId(null)}

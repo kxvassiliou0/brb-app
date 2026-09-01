@@ -1,10 +1,5 @@
-import { cachedGet } from '@/lib/apiCache'
-import type {
-  ApiSuccess,
-  CalendarEntry,
-  LeaveRequest,
-  RemainingLeave,
-} from '@/types/api'
+import { getRemainingLeave } from '@/api/leaveRequests'
+import type { CalendarEntry, LeaveRequest, RemainingLeave } from '@/types/api'
 
 export interface TeamMember {
   employee_id: number
@@ -65,28 +60,18 @@ export function directReports(
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export function remainingLeavePath(employeeId: number): string {
-  return `/api/leave-requests/remaining/${employeeId}`
-}
-
 export async function fetchTeamBalances(
-  members: TeamMember[],
-  force = false
+  members: TeamMember[]
 ): Promise<TeamBalance[]> {
   const settled = await Promise.allSettled(
-    members.map((member) =>
-      cachedGet<ApiSuccess<RemainingLeave>>(
-        remainingLeavePath(member.employee_id),
-        force
-      )
-    )
+    members.map((member) => getRemainingLeave(member.employee_id))
   )
 
   return members.map((member, index) => {
     const result = settled[index]
     return {
       ...member,
-      balance: result?.status === 'fulfilled' ? result.value.data : null,
+      balance: result?.status === 'fulfilled' ? result.value : null,
     }
   })
 }

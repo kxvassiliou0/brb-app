@@ -1,4 +1,4 @@
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import AdminDashboard from '@/screens/admin/AdminDashboard'
 import EmployeeDashboard from '@/screens/employee/EmployeeDashboard'
 import ManagerDashboard from '@/screens/manager/ManagerDashboard'

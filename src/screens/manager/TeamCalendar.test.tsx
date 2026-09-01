@@ -1,14 +1,14 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setStoredToken } from '@/lib/api'
-import { AuthProvider } from '@/lib/auth'
-import { NOBODY_OFF_MESSAGE } from '@/lib/teamCalendar'
+import { setStoredToken } from '@/api/token'
+import { AuthProvider } from '@/features/auth/auth'
+import { NOBODY_OFF_MESSAGE } from '@/features/calendar/teamCalendar'
 import { makeUserJwt } from '@/test-support/jwt'
 import { sizeTokens, remToPx } from '@/test-support/tokens'
 import { routes } from '@/routes'
 import type { CalendarEntry, LeaveStatus } from '@/types/api'
-import type { PublicHoliday } from '@/lib/publicHolidays'
+import type { PublicHoliday } from '@/features/calendar/publicHolidays'
 
 const MANAGER_ID = 2
 

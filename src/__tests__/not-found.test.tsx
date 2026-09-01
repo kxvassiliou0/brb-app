@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { AuthProvider } from '@/lib/auth'
-import { setStoredToken } from '@/lib/api'
+import { AuthProvider } from '@/features/auth/auth'
+import { setStoredToken } from '@/api/token'
 import { makeUserJwt } from '@/test-support/jwt'
 import { routes } from '@/routes'
 

@@ -7,8 +7,8 @@ import {
 } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setStoredToken } from '@/lib/api'
-import { AuthProvider } from '@/lib/auth'
+import { setStoredToken } from '@/api/token'
+import { AuthProvider } from '@/features/auth/auth'
 import { HOME_PATH, type Role } from '@/lib/routeAccess'
 import { routes } from '@/routes'
 import { makeUserJwt } from '@/test-support/jwt'
@@ -17,7 +17,7 @@ import {
   mobileWidth,
   setViewportWidth,
 } from '@/test-support/viewport'
-import { SELF_DELETE_MESSAGE } from '@/lib/employeeAdmin'
+import { SELF_DELETE_MESSAGE } from '@/features/employees/employeeAdmin'
 import type { UserListItem, UserRecord } from '@/types/api'
 import Employees from './Employees'
 

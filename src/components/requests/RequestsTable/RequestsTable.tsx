@@ -3,10 +3,13 @@ import Button from '@/components/ui/Button'
 import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
 import Icon from '@/components/ui/Icon'
 import StatusPill from '@/components/ui/StatusPill'
-import { CANCEL_LABEL, isCancellable } from '@/lib/cancelRequest'
+import { CANCEL_LABEL, isCancellable } from '@/features/requests/cancelRequest'
 import { formatDate, formatDateRange } from '@/lib/dates'
-import type { RequestRow } from '@/lib/requestFilters'
-import { REVIEW_LABEL, type ReviewAction } from '@/lib/reviewRequest'
+import type { RequestRow } from '@/features/requests/requestFilters'
+import {
+  REVIEW_LABEL,
+  type ReviewAction,
+} from '@/features/requests/reviewRequest'
 
 const OPENS =
   'touch-target text-left font-medium whitespace-nowrap text-text-primary underline decoration-1 underline-offset-4 hover:text-sage-foreground'

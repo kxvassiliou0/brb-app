@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import BookTimeOffButton from '@/components/requests/BookTimeOffButton'
 import { ErrorState, LoadingState } from '@/components/ui/states'
 import LinkButton from '@/components/ui/LinkButton'
@@ -7,18 +7,24 @@ import PageHeader from '@/components/layout/PageHeader'
 import StatCard from '@/components/ui/StatCard'
 import TeamBalancesTable from '@/components/employees/TeamBalancesTable'
 import { REQUESTS_PATH } from '@/lib/routeAccess'
-import { useApiResource } from '@/lib/useApiResource'
-import { useTeamBalances } from '@/lib/useTeamBalances'
-import type { ApiSuccess } from '@/types/api'
+import { listPendingForManager } from '@/api/leaveRequests'
+import { useResource } from '@/api/useResource'
+import { useTeamBalances } from '@/features/employees/useTeamBalances'
 
 export default function ManagerDashboard() {
   const { user } = useAuth()
-  const { data, error, retry } = useApiResource<ApiSuccess<unknown[]>>(
-    user ? `/api/leave-requests/pending/manager/${user.id}` : null
+  const managerId = user?.id
+  const {
+    data: pending,
+    error,
+    retry,
+  } = useResource(
+    managerId === undefined ? null : () => listPendingForManager(managerId),
+    [managerId]
   )
   const balances = useTeamBalances(user?.id)
 
-  const pendingCount = data === null ? null : data.data.length
+  const pendingCount = pending === null ? null : pending.length
 
   const refresh = useCallback(() => {
     retry()

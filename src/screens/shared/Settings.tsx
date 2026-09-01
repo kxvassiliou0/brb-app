@@ -6,18 +6,20 @@ import {
   initialsFromName,
 } from '@/components/layout/UserSummary'
 import { ErrorState, LoadingState } from '@/components/ui/states'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import { countLabel } from '@/lib/dates'
 import { LEAVE_YEAR_RESET_LABEL } from '@/lib/leaveYear'
-import { useApiResource } from '@/lib/useApiResource'
-import type { ApiSuccess, RemainingLeave, UserProfile } from '@/types/api'
+import { getRemainingLeave } from '@/api/leaveRequests'
+import { getMyProfile } from '@/api/users'
+import { useResource } from '@/api/useResource'
+import type { UserProfile } from '@/types/api'
 
 const UNKNOWN = '—'
 
 const SECTION =
   'flex flex-col gap-5 rounded-2xl border border-border-primary bg-background-secondary p-4 sm:p-6'
 
-export function profileName(profile: UserProfile): string {
+function profileName(profile: UserProfile): string {
   return `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim()
 }
 
@@ -35,10 +37,7 @@ interface ProfileField {
   value: string
 }
 
-export function profileFields(
-  profile: UserProfile,
-  name: string
-): ProfileField[] {
+function profileFields(profile: UserProfile, name: string): ProfileField[] {
   return [
     { id: 'profile-name', label: 'Full name', value: text(name) },
     { id: 'profile-email', label: 'Email address', value: text(profile.email) },
@@ -63,12 +62,14 @@ export function profileFields(
 
 export default function Settings() {
   const { user } = useAuth()
-  const profile = useApiResource<ApiSuccess<UserProfile>>('/api/users/me')
-  const balance = useApiResource<ApiSuccess<RemainingLeave>>(
-    user ? `/api/leave-requests/remaining/${user.id}` : null
+  const profile = useResource(getMyProfile)
+  const userId = user?.id
+  const balance = useResource(
+    userId === undefined ? null : () => getRemainingLeave(userId),
+    [userId]
   )
 
-  const me = profile.data?.data ?? null
+  const me = profile.data
   const name = me ? profileName(me) : ''
 
   return (
@@ -164,19 +165,19 @@ export default function Settings() {
             <StatCard
               variant="recessed"
               label="Annual allowance"
-              value={days(balance.data.data?.annual_allowance)}
+              value={days(balance.data.annual_allowance)}
               hint={LEAVE_YEAR_RESET_LABEL}
             />
             <StatCard
               variant="recessed"
               label="Taken so far"
-              value={days(balance.data.data?.days_used)}
+              value={days(balance.data.days_used)}
               hint="approved leave"
             />
             <StatCard
               variant="positive"
               label="Remaining"
-              value={days(balance.data.data?.days_remaining)}
+              value={days(balance.data.days_remaining)}
               hint="left to book"
             />
           </dl>

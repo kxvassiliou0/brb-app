@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import FormAlert from '@/components/ui/FormAlert'
 import Modal from '@/components/ui/Modal'
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage } from '@/api/client'
 import {
   DELETE_ACKNOWLEDGEMENT,
   deleteEmployee,
   deletionConsequences,
   fullName,
-} from '@/lib/employeeAdmin'
+} from '@/features/employees/employeeAdmin'
 import type { UserListItem } from '@/types/api'
 
 interface DeleteEmployeeModalProps {

@@ -3,7 +3,7 @@ import FormAlert from '@/components/ui/FormAlert'
 import { CONTROL_CLASS } from '@/components/ui/InputWithLabel'
 import Modal from '@/components/ui/Modal'
 import { countLabel, formatDateRange } from '@/lib/dates'
-import { decideRequest, REVIEW_LABEL } from '@/lib/reviewRequest'
+import { decideRequest, REVIEW_LABEL } from '@/features/requests/reviewRequest'
 import type { LeaveRequest } from '@/types/api'
 
 interface DeclineRequestModalProps {

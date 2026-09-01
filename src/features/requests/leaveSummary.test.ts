@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { countDays, formatDateRange } from '@/lib/dates'
 import { greetByName } from '@/lib/greeting'
-import { recentRequests, summariseRequests } from '@/lib/leaveSummary'
+import {
+  recentRequests,
+  summariseRequests,
+} from '@/features/requests/leaveSummary'
 import { getLeaveYear, isWithinLeaveYear } from '@/lib/leaveYear'
 import type { LeaveStatus, LeaveType, OwnLeaveRequest } from '@/types/api'
 

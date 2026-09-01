@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { makeExpiredUserJwt, makeJwt, makeUserJwt } from '@/test-support/jwt'
-import { AuthProvider, isTokenExpired, useAuth } from '@/lib/auth'
-import { setStoredToken } from '@/lib/api'
+import { AuthProvider, isTokenExpired, useAuth } from '@/features/auth/auth'
+import { setStoredToken } from '@/api/token'
 
 function Probe() {
   const { user } = useAuth()

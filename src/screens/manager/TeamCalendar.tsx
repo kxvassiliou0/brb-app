@@ -7,10 +7,11 @@ import PageHeader from '@/components/layout/PageHeader'
 import { ErrorState, LoadingState } from '@/components/ui/states'
 import { monthGridRange, monthOf } from '@/lib/calendar'
 import { formatDateFull, toIsoDate } from '@/lib/dates'
-import { holidaysByDate, type PublicHoliday } from '@/lib/publicHolidays'
-import { calendarSummary } from '@/lib/teamCalendar'
-import { useApiResource } from '@/lib/useApiResource'
-import type { ApiSuccess, CalendarEntry } from '@/types/api'
+import { holidaysByDate } from '@/features/calendar/publicHolidays'
+import { calendarSummary } from '@/features/calendar/teamCalendar'
+import { listCalendar } from '@/api/leaveRequests'
+import { listPublicHolidays } from '@/api/publicHolidays'
+import { useResource } from '@/api/useResource'
 
 interface SelectedRange {
   startDate: string
@@ -27,14 +28,13 @@ export default function TeamCalendar() {
   const [range, setRange] = useState<SelectedRange | null>(null)
 
   const { from, to } = monthGridRange(month)
-  const { data, error, retry } = useApiResource<ApiSuccess<CalendarEntry[]>>(
-    `/api/leave-requests/calendar?from=${from}&to=${to}`
-  )
-  const { data: holidayData } = useApiResource<PublicHoliday[]>(
-    '/api/public-holidays'
-  )
+  const {
+    data: entries,
+    error,
+    retry,
+  } = useResource(() => listCalendar(from, to), [from, to])
+  const { data: holidayData } = useResource(listPublicHolidays)
 
-  const entries = data?.data ?? null
   const holidays = useMemo(
     () => holidaysByDate(Array.isArray(holidayData) ? holidayData : []),
     [holidayData]

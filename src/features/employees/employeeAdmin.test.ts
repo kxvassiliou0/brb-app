@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { describe, expect, it } from 'vitest'
-import { ApiRequestError } from '@/lib/api'
+import { ApiRequestError } from '@/api/client'
 import {
   buildCreateBody,
   buildUpdateBody,
@@ -17,7 +17,7 @@ import {
   validateEmployee,
   validateNewEmployee,
   type EmployeeDraft,
-} from '@/lib/employeeAdmin'
+} from '@/features/employees/employeeAdmin'
 import type { UserListItem, UserRecord } from '@/types/api'
 
 const RECORD: UserRecord = {

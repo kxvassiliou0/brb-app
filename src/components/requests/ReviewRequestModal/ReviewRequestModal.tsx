@@ -5,8 +5,8 @@ import Icon from '@/components/ui/Icon'
 import Modal from '@/components/ui/Modal'
 import { initialsFromName } from '@/components/layout/UserSummary'
 import { countLabel, formatDate, formatDateRange } from '@/lib/dates'
-import { overlappingNames } from '@/lib/requestFilters'
-import { decideRequest, REVIEW_LABEL } from '@/lib/reviewRequest'
+import { overlappingNames } from '@/features/requests/requestFilters'
+import { decideRequest, REVIEW_LABEL } from '@/features/requests/reviewRequest'
 import type { LeaveRequest, RemainingLeave } from '@/types/api'
 
 interface ReviewRequestModalProps {

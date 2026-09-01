@@ -12,7 +12,7 @@ export function errorId(id: string): string {
   return `${id}-error`
 }
 
-export function controlClass(error?: string, readOnly?: boolean): string {
+function controlClass(error?: string, readOnly?: boolean): string {
   return `${CONTROL_CLASS} ${error ? INVALID_CLASS : ''} ${
     readOnly ? READ_ONLY_CLASS : ''
   }`
@@ -26,7 +26,7 @@ interface FieldProps {
   children: ReactNode
 }
 
-export function Field({ id, label, hint, error, children }: FieldProps) {
+function Field({ id, label, hint, error, children }: FieldProps) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <label htmlFor={id} className="text-sm text-text-secondary">
@@ -47,19 +47,29 @@ export function Field({ id, label, hint, error, children }: FieldProps) {
   )
 }
 
-interface InputWithLabelProps {
+interface CommonInputProps {
   id: string
   label: string
   value: string
-  onChange?: (value: string) => void
   type?: 'text' | 'email' | 'password' | 'date' | 'number'
   placeholder?: string
   autoComplete?: string
   required?: boolean
-  readOnly?: boolean
   hint?: string
   error?: string
 }
+
+interface EditableInputProps extends CommonInputProps {
+  onChange: (value: string) => void
+  readOnly?: false
+}
+
+interface ReadOnlyInputProps extends CommonInputProps {
+  onChange?: never
+  readOnly: true
+}
+
+type InputWithLabelProps = EditableInputProps | ReadOnlyInputProps
 
 export default function InputWithLabel({
   id,

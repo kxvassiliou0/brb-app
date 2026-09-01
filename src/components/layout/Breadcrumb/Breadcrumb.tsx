@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/features/auth/auth'
 import {
   canReviewRequests,
   REQUESTS_PATH,
@@ -16,7 +16,7 @@ const SECTION_TIME_OFF = { section: 'Time off', sectionPath: REQUESTS_PATH }
 
 const SECTION_PEOPLE = { section: 'People', sectionPath: '/employees' }
 
-export function crumbFor(pathname: string, canReview: boolean): Crumb {
+function crumbFor(pathname: string, canReview: boolean): Crumb {
   if (pathname === '/') {
     return { section: 'Dashboard', sectionPath: '/', page: 'Overview' }
   }

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 export type CardVariant = 'raised' | 'bordered' | 'recessed' | 'positive'
 
-export type CardSize = 'sm' | 'lg'
+type CardSize = 'sm' | 'lg'
 
 const VARIANT: Record<CardVariant, string> = {
   raised: 'bg-background-secondary shadow-xl shadow-black/10',
