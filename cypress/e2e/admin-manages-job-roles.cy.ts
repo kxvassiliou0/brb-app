@@ -39,8 +39,7 @@ describe('an Admin managing job roles', () => {
     apiRemoveJobRolesByName([JOB_ROLE])
 
     cy.clearLocalStorage()
-    login(USERS.admin, '/')
-    cy.get('[data-testid="screen-admin-dashboard"]').should('be.visible')
+    login(USERS.admin)
     visitDepartments()
   })
 

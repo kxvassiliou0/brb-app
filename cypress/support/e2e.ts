@@ -15,12 +15,15 @@ export const API_URL = Cypress.env('apiUrl') ?? 'http://localhost:3000'
 
 export const PASSWORD = 'Password123!'
 
-export function login(email: string, landsOn: string): void {
+export function login(email: string, landsOn = '/'): void {
   cy.visit('/login')
   cy.get('#email').type(email)
   cy.get('#password').type(PASSWORD)
   cy.contains('button', 'Sign in').click()
-  cy.url().should('include', landsOn)
+
+  cy.get('[data-testid="app-layout"]').should('exist')
+  cy.url().should('not.include', '/login')
+  if (landsOn !== '/') cy.url().should('include', landsOn)
 }
 
 export function tokenFor(email: string): Cypress.Chainable<string> {
