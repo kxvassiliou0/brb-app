@@ -299,7 +299,7 @@ describe('employee dashboard recent requests', () => {
     renderDashboard()
 
     const link = await screen.findByRole('link', { name: 'View all' })
-    expect(link).toHaveAttribute('href', '/requests')
+    expect(link).toHaveAttribute('href', '/requests?scope=mine')
   })
 })
 
