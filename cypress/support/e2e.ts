@@ -105,35 +105,43 @@ export function apiRemoveUsersByEmail(emails: string[]): void {
   )
 }
 
-export interface ApiJobRole {
+export interface ApiOrgUnit {
   id: number
   name: string
   userCount: number
 }
 
-export function apiJobRoles(): Cypress.Chainable<ApiJobRole[]> {
+function apiOrgUnits(basePath: string): Cypress.Chainable<ApiOrgUnit[]> {
   return asAdmin((headers) =>
     cy
-      .request({ method: 'GET', url: `${API_URL}/api/job-roles`, headers })
-      .then((response) => (response.body.data ?? []) as ApiJobRole[])
+      .request({ method: 'GET', url: `${API_URL}${basePath}`, headers })
+      .then((response) => (response.body.data ?? []) as ApiOrgUnit[])
   )
 }
 
-export function apiRemoveJobRolesByName(names: string[]): void {
-  apiJobRoles().then((jobRoles) => {
-    jobRoles
-      .filter((jobRole) => names.includes(jobRole.name))
-      .forEach((jobRole) => {
+function apiRemoveOrgUnitsByName(basePath: string, names: string[]): void {
+  apiOrgUnits(basePath).then((units) => {
+    units
+      .filter((unit) => names.includes(unit.name))
+      .forEach((unit) => {
         asAdmin((headers) =>
           cy.request({
             method: 'DELETE',
-            url: `${API_URL}/api/job-roles/${jobRole.id}`,
+            url: `${API_URL}${basePath}/${unit.id}`,
             headers,
             failOnStatusCode: false,
           })
         )
       })
   })
+}
+
+export function apiRemoveJobRolesByName(names: string[]): void {
+  apiRemoveOrgUnitsByName('/api/job-roles', names)
+}
+
+export function apiRemoveDepartmentsByName(names: string[]): void {
+  apiRemoveOrgUnitsByName('/api/departments', names)
 }
 
 export function apiAddPublicHoliday(date: string, name: string): void {
