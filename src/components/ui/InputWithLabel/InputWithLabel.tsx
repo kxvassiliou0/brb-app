@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const CONTROL_CLASS =
-  'touch-target w-full rounded-lg border-border-primary bg-background-secondary px-4 py-2 text-base text-text-primary placeholder:text-text-secondary'
+  'touch-target w-full rounded-lg border-border-interactive bg-background-secondary px-4 py-2 text-base text-text-primary placeholder:text-text-secondary'
 
 export function errorId(id: string): string {
   return `${id}-error`

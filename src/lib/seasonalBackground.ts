@@ -1,6 +1,6 @@
-import spring from '@/assets/backgrounds/spring.png'
-import summer from '@/assets/backgrounds/summer.png'
-import winter from '@/assets/backgrounds/winter.png'
+import spring from '@/assets/backgrounds/spring.webp'
+import summer from '@/assets/backgrounds/summer.webp'
+import winter from '@/assets/backgrounds/winter.webp'
 
 const SEASONS = ['spring', 'summer', 'winter'] as const
 

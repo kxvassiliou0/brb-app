@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router'
+import Button from '@/components/ui/Button'
 import InputWithLabel from '@/components/ui/InputWithLabel'
 import PageHeader from '@/components/layout/PageHeader'
 import StatCard from '@/components/ui/StatCard'
@@ -61,7 +63,8 @@ function profileFields(profile: UserProfile, name: string): ProfileField[] {
 }
 
 export default function Settings() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const profile = useResource(getMyProfile)
   const userId = user?.id
   const balance = useResource(
@@ -71,6 +74,11 @@ export default function Settings() {
 
   const me = profile.data
   const name = me ? profileName(me) : ''
+
+  function handleSignOut(): void {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div data-testid="screen-settings" className="flex flex-col gap-6">
@@ -182,6 +190,24 @@ export default function Settings() {
             />
           </dl>
         )}
+      </section>
+
+      <section
+        aria-labelledby="session-heading"
+        data-testid="session-section"
+        className={SECTION}
+      >
+        <h2 id="session-heading" className="text-xl md:text-2xl">
+          Session
+        </h2>
+        <p className="text-sm text-text-secondary">
+          Signed in as {text(me?.email ?? user?.email)}.
+        </p>
+        <div>
+          <Button variant="secondary" onClick={handleSignOut}>
+            Sign out
+          </Button>
+        </div>
       </section>
     </div>
   )

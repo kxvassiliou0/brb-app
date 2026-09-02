@@ -86,7 +86,7 @@ export default function Modal({
         aria-label={label ?? title}
         tabIndex={-1}
         data-testid="modal"
-        className="my-auto flex w-full max-w-xl flex-col gap-5 rounded-t-2xl bg-background-secondary p-4 shadow-xl shadow-black/20 outline-none sm:rounded-2xl sm:p-6"
+        className="flex w-full max-w-xl flex-col gap-5 rounded-t-2xl bg-background-secondary p-4 shadow-xl shadow-black/20 outline-none sm:my-auto sm:rounded-2xl sm:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           {leading}
@@ -115,6 +115,7 @@ export default function Modal({
               <Button
                 type={primary.form ? 'submit' : 'button'}
                 form={primary.form}
+                testId="modal-primary"
                 variant={primary.variant}
                 disabled={primary.disabled}
                 onClick={primary.onClick}
@@ -125,6 +126,7 @@ export default function Modal({
             {secondary && (
               <Button
                 variant={secondary.variant ?? 'secondary'}
+                testId="modal-secondary"
                 disabled={secondary.disabled}
                 onClick={secondary.onClick ?? onClose}
               >

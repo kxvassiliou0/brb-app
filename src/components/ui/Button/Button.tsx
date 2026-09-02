@@ -11,6 +11,7 @@ interface ButtonProps {
   disabled?: boolean
   title?: string
   form?: string
+  testId?: string
   onClick?: () => void
 }
 
@@ -37,6 +38,7 @@ export default function Button({
   disabled = false,
   title,
   form,
+  testId,
   onClick,
 }: ButtonProps) {
   const base = ICON_VARIANTS.includes(variant)
@@ -49,6 +51,7 @@ export default function Button({
       disabled={disabled}
       title={title}
       form={form}
+      data-testid={testId}
       onClick={onClick}
       className={`${base} ${BUTTON_VARIANT[variant]} ${fullWidth ? 'w-full' : ''}`}
     >
