@@ -27,7 +27,11 @@ export default function StatCard({
       >
         {value}
       </dd>
-      {hint && <p className="mt-2 text-sm text-text-secondary">{hint}</p>}
+      {hint && (
+        <p data-testid="stat-hint" className="mt-2 text-sm text-text-secondary">
+          {hint}
+        </p>
+      )}
     </Card>
   )
 }

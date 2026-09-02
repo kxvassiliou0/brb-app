@@ -5,6 +5,7 @@ import type {
   DeleteLeaveRequestBody,
   DeleteLeaveRequestResult,
   LeaveRequest,
+  LeaveUsageReport,
   OwnLeaveRequest,
   RemainingLeave,
   ReviewLeaveRequestBody,
@@ -40,6 +41,15 @@ export function listCalendar(
 ): Promise<CalendarEntry[]> {
   return get<CalendarEntry[]>(
     `${LEAVE_REQUESTS_PATH}/calendar?from=${from}&to=${to}`
+  )
+}
+
+export function getLeaveUsageReport(
+  from: string,
+  to: string
+): Promise<LeaveUsageReport> {
+  return get<LeaveUsageReport>(
+    `${LEAVE_REQUESTS_PATH}/reports/usage?from=${from}&to=${to}`
   )
 }
 

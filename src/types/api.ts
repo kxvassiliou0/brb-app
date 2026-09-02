@@ -116,3 +116,16 @@ export interface DeleteLeaveRequestResult extends LeaveRequest {
   days_restored?: number
   new_days_remaining?: number
 }
+
+export interface LeaveUsageEmployee {
+  employee_id: number
+  name: string
+  department_id: number | null
+  breakdown: Record<LeaveType, number>
+  total_days_used: number
+}
+
+export interface LeaveUsageReport {
+  scope: string
+  employees: LeaveUsageEmployee[]
+}
