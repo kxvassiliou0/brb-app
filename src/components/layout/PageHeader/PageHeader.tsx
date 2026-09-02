@@ -16,7 +16,12 @@ export default function PageHeader({
       <div className="min-w-0">
         <h1 className="text-2xl md:text-3xl">{title}</h1>
         {description && (
-          <p className="mt-1 text-text-secondary">{description}</p>
+          <p
+            data-testid="page-description"
+            className="mt-1 text-text-secondary"
+          >
+            {description}
+          </p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

@@ -98,7 +98,7 @@ export default function Navigation({
       <nav
         data-testid="bottom-nav"
         aria-label="Main"
-        className="sticky bottom-0 z-10 order-last border-t border-border-primary bg-background-secondary"
+        className="sticky bottom-0 z-10 border-t border-border-primary bg-background-secondary"
       >
         <ul key={location.pathname} className="flex items-stretch gap-1 p-2">
           {links.map((l) => (

@@ -144,7 +144,7 @@ export default function Employees() {
         title="Employees"
         description={describeRoster(employees)}
         action={
-          <Button onClick={() => setAdding(true)}>
+          <Button testId="add-employee" onClick={() => setAdding(true)}>
             <Icon name="plus" />
             {ADD_EMPLOYEE_LABEL}
           </Button>

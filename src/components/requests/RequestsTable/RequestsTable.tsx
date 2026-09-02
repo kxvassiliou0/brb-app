@@ -56,6 +56,7 @@ export default function RequestsTable({
           ) : (
             <button
               type="button"
+              data-testid="open-request"
               onClick={() => onOpen(r.id)}
               className={OPENS}
             >
@@ -107,7 +108,12 @@ export default function RequestsTable({
         key: 'employee',
         header: 'Employee',
         cell: (r) => (
-          <button type="button" onClick={() => onOpen(r.id)} className={OPENS}>
+          <button
+            type="button"
+            data-testid="open-request"
+            onClick={() => onOpen(r.id)}
+            className={OPENS}
+          >
             {r.employee_name ?? `#${r.employee_id}`}
           </button>
         ),
@@ -123,6 +129,7 @@ export default function RequestsTable({
             <div className="flex items-center justify-end">
               <Button
                 variant="ghostDanger"
+                testId="reject-request"
                 disabled={decidingId === r.id}
                 onClick={() => onDecide('reject', r.id)}
               >
@@ -131,6 +138,7 @@ export default function RequestsTable({
               </Button>
               <Button
                 variant="ghost"
+                testId="approve-request"
                 disabled={decidingId === r.id}
                 onClick={() => onDecide('approve', r.id)}
               >
@@ -152,6 +160,7 @@ export default function RequestsTable({
             <div className="flex items-center justify-end">
               <button
                 type="button"
+                data-testid="cancel-request"
                 title={CANCEL_LABEL}
                 disabled={cancellingId === r.id}
                 onClick={() => onCancel(r.id)}

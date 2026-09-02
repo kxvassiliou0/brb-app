@@ -12,7 +12,11 @@ export default function BookTimeOffButton({
 
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button
+        variant="primary"
+        testId="book-time-off"
+        onClick={() => setOpen(true)}
+      >
         <Icon name="plus" />
         Book time off
       </Button>

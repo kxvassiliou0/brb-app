@@ -1,4 +1,4 @@
-import planNextEscape from '@/assets/backgrounds/plan-next-escape.png'
+import planNextEscape from '@/assets/backgrounds/plan-next-escape.webp'
 import BookTimeOffButton from '@/components/requests/BookTimeOffButton'
 import { countLabel } from '@/lib/dates'
 

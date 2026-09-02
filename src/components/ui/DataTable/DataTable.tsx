@@ -71,6 +71,7 @@ export default function DataTable<T>({
               <li
                 key={rowKey(row)}
                 data-testid="data-card"
+                data-row-key={rowKey(row)}
                 data-highlighted={isHighlighted(row) ? 'true' : undefined}
                 className={`rounded-xl border p-4 ${
                   isHighlighted(row)
@@ -156,6 +157,8 @@ export default function DataTable<T>({
               <tr
                 key={rowKey(row)}
                 style={{ height: TABLE_ROW_HEIGHT }}
+                data-testid="data-row"
+                data-row-key={rowKey(row)}
                 data-highlighted={isHighlighted(row) ? 'true' : undefined}
                 className={`border-b border-border-primary ${
                   isHighlighted(row) ? 'bg-sage-background' : ''

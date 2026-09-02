@@ -246,3 +246,112 @@ export function assertNoHorizontalScroll(): void {
     ).to.be.at.most(doc.documentElement.clientWidth)
   })
 }
+
+export const WCAG_143_TEXT_MINIMUM = 4.5
+
+export const WCAG_1411_BOUNDARY_MINIMUM = 3
+
+function channel(value: number): number {
+  const c = value / 255
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+
+function parseRgb(value: string): [number, number, number] {
+  const parts = value.match(/\d+(\.\d+)?/g)
+  if (!parts || parts.length < 3) throw new Error(`Unreadable colour ${value}`)
+  return [Number(parts[0]), Number(parts[1]), Number(parts[2])]
+}
+
+export function luminance(value: string): number {
+  const [r, g, b] = parseRgb(value)
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+}
+
+export function contrast(a: string, b: string): number {
+  const x = luminance(a)
+  const y = luminance(b)
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+
+export function backgroundBehind(el: Element, view: Window): string {
+  for (let node: Element | null = el; node; node = node.parentElement) {
+    const colour = view.getComputedStyle(node).backgroundColor
+    if (colour && !colour.startsWith('rgba(0, 0, 0, 0)')) return colour
+  }
+  return 'rgb(255, 255, 255)'
+}
+
+export function tab(): void {
+  cy.press(Cypress.Keyboard.Keys.TAB)
+}
+
+export function focusedDescription(): Cypress.Chainable<string> {
+  return cy
+    .document()
+    .then((doc) => describeElement(doc.activeElement ?? doc.body))
+}
+
+export function signOut(): void {
+  cy.visit('/settings')
+  cy.get('[data-testid="session-section"]').should('be.visible')
+  cy.get('[data-testid="session-section"]').find('button').click()
+  cy.url().should('include', '/login')
+}
+
+export function openRequests(email: string): void {
+  login(email, '/')
+  cy.visit('/requests')
+  cy.get('[data-testid="screen-requests"]').should('be.visible')
+  cy.get('[data-testid="table-loading-state"]').should('not.exist')
+}
+
+export function filterBy(testId: string, value: string): void {
+  cy.get(`[data-testid="${testId}"]`).find(`[data-value="${value}"]`).click()
+}
+
+export function row(id: number): Cypress.Chainable<JQuery<HTMLElement>> {
+  return cy.get(`[data-row-key="${id}"]`)
+}
+
+export function remainingDays(): Cypress.Chainable<number> {
+  return cy
+    .get('[data-testid="page-description"]')
+    .invoke('text')
+    .then((text) => {
+      const match = /(\d+) days remaining/.exec(text)
+      expect(match, 'the header states the balance').to.not.equal(null)
+      return Number(match?.[1])
+    })
+}
+
+export function createRequestAs(
+  email: string,
+  start: string,
+  end: string,
+  reason: string
+): Cypress.Chainable<number> {
+  return authHeaders(email).then((headers) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API_URL}/api/leave-requests`,
+        headers,
+        body: {
+          start_date: start,
+          end_date: end,
+          leave_type: 'Vacation',
+          reason,
+        },
+      })
+      .then((res) => Number(res.body.data.id))
+  )
+}
+
+export function isoDate(monthsAhead: number, dayOfMonth: number): string {
+  const today = new Date()
+  return new Date(
+    Date.UTC(today.getFullYear(), today.getMonth() + monthsAhead, dayOfMonth)
+  )
+    .toISOString()
+    .slice(0, 10)
+}
