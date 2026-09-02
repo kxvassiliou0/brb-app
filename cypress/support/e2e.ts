@@ -136,6 +136,42 @@ export function apiRemoveJobRolesByName(names: string[]): void {
   })
 }
 
+export function apiAddPublicHoliday(date: string, name: string): void {
+  asAdmin((headers) =>
+    cy.request({
+      method: 'POST',
+      url: `${API_URL}/api/public-holidays`,
+      headers,
+      body: { date, name },
+      failOnStatusCode: false,
+    })
+  )
+}
+
+export function apiRemovePublicHolidaysByName(names: string[]): void {
+  asAdmin((headers) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API_URL}/api/public-holidays`,
+        headers,
+      })
+      .then((response) => {
+        const holidays = (response.body ?? []) as { id: number; name: string }[]
+        holidays
+          .filter((holiday) => names.includes(holiday.name))
+          .forEach((holiday) =>
+            cy.request({
+              method: 'DELETE',
+              url: `${API_URL}/api/public-holidays/${holiday.id}`,
+              headers,
+              failOnStatusCode: false,
+            })
+          )
+      })
+  )
+}
+
 export function apiFirstIds(): Cypress.Chainable<{
   departmentId: number
   jobRoleId: number
