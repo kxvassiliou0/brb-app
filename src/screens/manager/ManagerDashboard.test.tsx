@@ -1,21 +1,42 @@
-import { render, screen, within } from '@testing-library/react'
-import { createMemoryRouter, RouterProvider } from 'react-router'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setStoredToken } from '@/api/token'
 import { AuthProvider } from '@/features/auth/auth'
-import { HOME_PATH, type Role } from '@/lib/routeAccess'
-import { REPORTS_COVERAGE_NOTE } from '@/features/employees/teamBalances'
-import { routes } from '@/routes'
 import { makeUserJwt } from '@/test-support/jwt'
-import type { CalendarEntry, LeaveRequest, RemainingLeave } from '@/types/api'
+import type {
+  CalendarEntry,
+  LeaveRequest,
+  OwnLeaveRequest,
+  RemainingLeave,
+  UserProfile,
+} from '@/types/api'
+import ManagerDashboard from './ManagerDashboard'
 
 const MANAGER_ID = 2
 
-const OTHER_MANAGERS_REPORT_ID = 99
+const NOW = new Date(2026, 6, 15, 9)
 
-function teamRequest(overrides: Partial<LeaveRequest> = {}): LeaveRequest {
+const PROFILE: UserProfile = {
+  id: MANAGER_ID,
+  firstName: 'Maya',
+  lastName: 'Bennett',
+  email: 'maya.bennett@company.com',
+  role: 'Manager',
+  annualLeaveAllowance: 25,
+  department: { id: 1, name: 'Commercial' },
+  jobRole: { id: 1, name: 'Manager' },
+}
+
+const REMAINING: RemainingLeave = {
+  annual_allowance: 25,
+  days_used: 7,
+  days_remaining: 18,
+}
+
+function pendingRequest(overrides: Partial<LeaveRequest> = {}): LeaveRequest {
   return {
-    id: 50,
+    id: 1,
     employee_id: 4,
     employee_name: 'David Jones',
     department_id: 1,
@@ -39,302 +60,225 @@ function calendarEntry(overrides: Partial<CalendarEntry> = {}): CalendarEntry {
     name: 'Amara Nwosu',
     department_id: 1,
     leave_type: 'Vacation',
-    start_date: '2026-09-01',
-    end_date: '2026-09-04',
+    start_date: '2026-07-13',
+    end_date: '2026-07-17',
     status: 'Approved',
     ...overrides,
   }
 }
 
-function balance(overrides: Partial<RemainingLeave> = {}): RemainingLeave {
-  return {
-    annual_allowance: 25,
-    days_used: 7,
-    days_remaining: 18,
-    ...overrides,
-  }
-}
+const OWN_REQUESTS: OwnLeaveRequest[] = [
+  {
+    id: 90,
+    leave_type: 'Vacation',
+    start_date: '2026-08-10',
+    end_date: '2026-08-14',
+    days_requested: 5,
+    date_requested: '2026-07-02',
+    status: 'Pending',
+    reason: null,
+    manager_note: null,
+  },
+]
 
 interface StubOptions {
   pending?: LeaveRequest[]
   calendar?: CalendarEntry[]
-  balances?: Record<number, RemainingLeave>
-  forbidden?: number[]
-  pendingFails?: boolean
-  calendarFails?: boolean
-}
-
-function jsonOk(data: unknown): Response {
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ data }),
-  } as unknown as Response
-}
-
-function jsonError(status: number, message: string): Response {
-  return {
-    ok: false,
-    status,
-    json: async () => ({ error: message }),
-  } as unknown as Response
+  own?: OwnLeaveRequest[]
 }
 
 function stubApi({
-  pending = [],
-  calendar = [],
-  balances = {},
-  forbidden = [],
-  pendingFails = false,
-  calendarFails = false,
+  pending = [pendingRequest()],
+  calendar = [calendarEntry()],
+  own = OWN_REQUESTS,
 }: StubOptions = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
-
-    const remaining = url.match(/\/remaining\/(\d+)/)
-    if (remaining) {
-      const id = Number(remaining[1])
-      if (forbidden.includes(id)) {
-        return jsonError(
-          403,
-          'You are not authorised to view leave balance for this employee'
-        )
-      }
-      return jsonOk(balances[id] ?? balance())
-    }
-
-    if (url.includes('/pending/manager/')) {
-      if (pendingFails) return jsonError(500, 'Queue unavailable')
-      return jsonOk(pending)
-    }
-
-    if (url.includes('/calendar')) {
-      if (calendarFails) return jsonError(500, 'Calendar unavailable')
-      return jsonOk(calendar)
-    }
-
-    return jsonOk([])
+    const data = url.includes('/api/users/me')
+      ? PROFILE
+      : url.includes('/pending/manager/')
+        ? pending
+        : url.includes('/calendar')
+          ? calendar
+          : url.includes('/api/departments')
+            ? [{ id: 1, name: 'Engineering', userCount: 3 }]
+            : url.includes('/status/')
+              ? own
+              : url.includes('/remaining/')
+                ? REMAINING
+                : []
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ data }),
+    } as unknown as Response
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
 
-function renderDashboard(role: Role = 'Manager') {
+function renderDashboard() {
   setStoredToken(
-    makeUserJwt({ id: MANAGER_ID, email: `${role}@company.com`, role })
+    makeUserJwt({
+      id: MANAGER_ID,
+      email: 'maya.bennett@company.com',
+      role: 'Manager',
+    })
   )
   render(
-    <AuthProvider>
-      <RouterProvider
-        router={createMemoryRouter(routes, { initialEntries: [HOME_PATH] })}
-      />
-    </AuthProvider>
+    <MemoryRouter>
+      <AuthProvider>
+        <ManagerDashboard />
+      </AuthProvider>
+    </MemoryRouter>
   )
 }
 
-async function balanceRows() {
-  const section = await screen.findByTestId('team-balances')
-  const table = await within(section).findByTestId('data-table')
-  return within(table).findAllByRole('row')
+async function statCard(label: string) {
+  const cards = await screen.findAllByTestId('stat-card')
+  const card = cards.find((node) => node.textContent?.includes(label))
+  expect(card).toBeDefined()
+  return card as HTMLElement
 }
 
 beforeEach(() => {
   localStorage.clear()
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  vi.setSystemTime(NOW)
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
-describe('the team leave balances table', () => {
-  it("lists each report's entitlement, days used and days remaining", async () => {
-    stubApi({
-      pending: [teamRequest({ employee_id: 4, employee_name: 'David Jones' })],
-      balances: {
-        4: { annual_allowance: 25, days_used: 7, days_remaining: 18 },
-      },
-    })
+describe('the manager dashboard header', () => {
+  it('greets the manager by name instead of naming the screen', async () => {
+    stubApi()
     renderDashboard()
 
-    const rows = await balanceRows()
-    const david = rows.find((row) => row.textContent?.includes('David Jones'))
-
-    expect(david).toBeDefined()
-    expect(david).toHaveTextContent('25 days')
-    expect(david).toHaveTextContent('7 days')
-    expect(david).toHaveTextContent('18 days')
-  })
-
-  it('builds the list from the pending queue and the calendar together', async () => {
-    stubApi({
-      pending: [teamRequest({ employee_id: 4, employee_name: 'David Jones' })],
-      calendar: [calendarEntry({ employee_id: 5, name: 'Amara Nwosu' })],
-    })
-    renderDashboard()
-
-    const section = await screen.findByTestId('team-balances')
-    expect(await within(section).findByText('David Jones')).toBeInTheDocument()
-    expect(await within(section).findByText('Amara Nwosu')).toBeInTheDocument()
-  })
-
-  it('shows only the reports the signed-in manager is given', async () => {
-    const fetchMock = stubApi({
-      pending: [teamRequest({ employee_id: 4, employee_name: 'David Jones' })],
-      calendar: [calendarEntry({ employee_id: 5, name: 'Amara Nwosu' })],
-    })
-    renderDashboard()
-
-    const rows = await balanceRows()
-    const names = rows
-      .slice(1)
-      .map((row) => row.textContent ?? '')
-      .join(' ')
-
-    expect(names).toContain('David Jones')
-    expect(names).toContain('Amara Nwosu')
-
-    const queried = fetchMock.mock.calls
-      .map((call) => String(call[0]))
-      .filter((url) => url.includes('/remaining/'))
-
-    expect(queried).toHaveLength(2)
-    expect(queried.join(' ')).not.toContain(
-      `/remaining/${OTHER_MANAGERS_REPORT_ID}`
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+      'Good morning, Maya'
     )
+    expect(screen.queryByText('Manager dashboard')).not.toBeInTheDocument()
   })
 
-  it('scopes both list sources to the signed-in manager', async () => {
-    const fetchMock = stubApi({ pending: [teamRequest()] })
-    renderDashboard()
-
-    await balanceRows()
-
-    const queue = fetchMock.mock.calls
-      .map((call) => String(call[0]))
-      .filter((url) => url.includes('/pending/manager/'))
-
-    expect(queue.length).toBeGreaterThan(0)
-    for (const url of queue) {
-      expect(url).toContain(`/pending/manager/${MANAGER_ID}`)
-    }
-  })
-
-  it('never asks for the balance of somebody outside the team', async () => {
-    const fetchMock = stubApi({
-      pending: [teamRequest({ employee_id: 4 })],
-    })
-    renderDashboard()
-
-    await balanceRows()
-
-    const queried = fetchMock.mock.calls
-      .map((call) => String(call[0]))
-      .filter((url) => url.includes('/remaining/'))
-
-    expect(queried.every((url) => url.endsWith('/remaining/4'))).toBe(true)
-  })
-})
-
-describe('when a balance cannot be read', () => {
-  it('keeps every other row when one employee returns a 403', async () => {
+  it('states the date and how many requests need review', async () => {
     stubApi({
       pending: [
-        teamRequest({ id: 1, employee_id: 4, employee_name: 'David Jones' }),
-        teamRequest({ id: 2, employee_id: 5, employee_name: 'Amara Nwosu' }),
-        teamRequest({ id: 3, employee_id: 6, employee_name: 'Priya Shah' }),
+        pendingRequest({ id: 1 }),
+        pendingRequest({ id: 2, employee_id: 5 }),
       ],
-      balances: {
-        4: balance({ days_remaining: 18 }),
-        6: balance({ days_remaining: 3 }),
-      },
-      forbidden: [5],
     })
     renderDashboard()
 
-    const rows = await balanceRows()
-
-    expect(rows.slice(1)).toHaveLength(3)
     expect(
-      rows.find((row) => row.textContent?.includes('David Jones'))
-    ).toHaveTextContent('18 days')
-    expect(
-      rows.find((row) => row.textContent?.includes('Priya Shah'))
-    ).toHaveTextContent('3 days')
-  })
-
-  it('marks just that employee unavailable rather than blanking the table', async () => {
-    stubApi({
-      pending: [
-        teamRequest({ id: 1, employee_id: 4, employee_name: 'David Jones' }),
-        teamRequest({ id: 2, employee_id: 5, employee_name: 'Amara Nwosu' }),
-      ],
-      forbidden: [5],
-    })
-    renderDashboard()
-
-    const rows = await balanceRows()
-    const amara = rows.find((row) => row.textContent?.includes('Amara Nwosu'))
-
-    expect(amara).toHaveTextContent('Unavailable')
-    expect(
-      rows.find((row) => row.textContent?.includes('David Jones'))
-    ).not.toHaveTextContent('Unavailable')
-    expect(screen.getAllByTestId('balance-unavailable')).toHaveLength(1)
-  })
-
-  it('still lists the team when the calendar fails but the queue answers', async () => {
-    stubApi({
-      pending: [teamRequest({ employee_id: 4, employee_name: 'David Jones' })],
-      calendarFails: true,
-    })
-    renderDashboard()
-
-    const section = await screen.findByTestId('team-balances')
-    expect(await within(section).findByText('David Jones')).toBeInTheDocument()
-  })
-
-  it('still lists the team when the queue fails but the calendar answers', async () => {
-    stubApi({
-      calendar: [calendarEntry({ employee_id: 5, name: 'Amara Nwosu' })],
-      pendingFails: true,
-    })
-    renderDashboard()
-
-    const section = await screen.findByTestId('team-balances')
-    expect(await within(section).findByText('Amara Nwosu')).toBeInTheDocument()
-  })
-
-  it('offers a retry when neither list source answers', async () => {
-    stubApi({ pendingFails: true, calendarFails: true })
-    renderDashboard()
-
-    const section = await screen.findByTestId('team-balances')
-    expect(
-      await within(section).findByRole('button', { name: /try again/i })
-    ).toBeInTheDocument()
-  })
-})
-
-describe('the reports with no leave activity', () => {
-  it('shows an empty table rather than an error when nobody has booked leave', async () => {
-    stubApi({ pending: [], calendar: [] })
-    renderDashboard()
-
-    const section = await screen.findByTestId('team-balances')
-    expect(
-      await within(section).findByText(
-        'Nobody on your team has requested or taken leave yet.'
+      await screen.findByText(
+        /Wednesday, 15 July 2026 • 2 requests need your review/
       )
     ).toBeInTheDocument()
   })
+})
 
-  it('documents that a report with no leave activity will not appear', async () => {
+describe('the manager summary figures', () => {
+  it('shows pending, away today, coverage and approvals this month', async () => {
     stubApi({
-      pending: [teamRequest({ employee_id: 4, employee_name: 'David Jones' })],
+      pending: [
+        pendingRequest({ id: 1, employee_id: 4, start_date: '2026-07-16' }),
+        pendingRequest({ id: 2, employee_id: 5, start_date: '2026-09-01' }),
+      ],
+      calendar: [
+        calendarEntry({
+          employee_id: 5,
+          start_date: '2026-07-13',
+          end_date: '2026-07-17',
+        }),
+      ],
     })
     renderDashboard()
 
-    const note = await screen.findByTestId('reports-coverage-note')
-    expect(note).toHaveTextContent(REPORTS_COVERAGE_NOTE)
+    expect(await statCard('Pending approvals')).toHaveTextContent('2 requests')
+    expect(await statCard('Pending approvals')).toHaveTextContent(
+      '1 starting this week'
+    )
+    expect(await statCard('On leave today')).toHaveTextContent('1 person')
+    expect(await statCard('On leave today')).toHaveTextContent(
+      'of 2 in your team'
+    )
+    expect(await statCard('Team coverage')).toHaveTextContent('50%')
+    expect(await statCard('Approved this month')).toHaveTextContent('1 request')
+  })
+})
+
+describe('the manager dashboard widgets', () => {
+  it('shows every widget from the design', async () => {
+    stubApi()
+    renderDashboard()
+
+    expect(await screen.findByTestId('approvals-queue')).toBeInTheDocument()
+    expect(screen.getByTestId('team-this-week')).toBeInTheDocument()
+    expect(screen.getByTestId('plan-escape-banner')).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: 'My requests' })
+    ).toBeInTheDocument()
+  })
+
+  it('no longer shows the team leave balances table', async () => {
+    stubApi()
+    renderDashboard()
+
+    await screen.findByTestId('approvals-queue')
+    expect(screen.queryByTestId('team-balances')).not.toBeInTheDocument()
+    expect(screen.queryByText('Team leave balances')).not.toBeInTheDocument()
+  })
+
+  it('lists who is off this week with their department', async () => {
+    stubApi({
+      calendar: [
+        calendarEntry({
+          employee_id: 5,
+          name: 'Amara Nwosu',
+          start_date: '2026-07-13',
+          end_date: '2026-07-17',
+        }),
+      ],
+    })
+    renderDashboard()
+
+    const section = await screen.findByTestId('team-this-week')
+    const member = within(section).getByTestId('team-week-member')
+
+    expect(member).toHaveTextContent('Amara Nwosu')
+    expect(member).toHaveTextContent('Engineering')
+    expect(member).toHaveTextContent('13 Jul 2026 – 17 Jul 2026')
+  })
+
+  it('queues each pending request with an approve and a decline control', async () => {
+    stubApi({ pending: [pendingRequest({ employee_name: 'David Jones' })] })
+    renderDashboard()
+
+    const queue = await screen.findByTestId('approvals-queue')
+    expect(within(queue).getByText('David Jones')).toBeInTheDocument()
+    expect(
+      within(queue).getByRole('button', { name: 'Approve' })
+    ).toBeInTheDocument()
+    expect(
+      within(queue).getByRole('button', { name: 'Decline' })
+    ).toBeInTheDocument()
+  })
+
+  it('approves straight from the queue', async () => {
+    const fetchMock = stubApi({ pending: [pendingRequest({ id: 77 })] })
+    renderDashboard()
+
+    const queue = await screen.findByTestId('approvals-queue')
+    within(queue).getByRole('button', { name: 'Approve' }).click()
+
+    await waitFor(() => {
+      const approved = fetchMock.mock.calls
+        .map((call) => String(call[0]))
+        .filter((url) => url.includes('/leave-requests/approve'))
+      expect(approved.length).toBeGreaterThan(0)
+    })
   })
 })
