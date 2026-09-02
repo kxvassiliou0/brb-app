@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import BookingConfirmation, {
   useBookingConfirmation,
 } from '@/components/requests/BookingConfirmation'
@@ -69,7 +70,9 @@ export default function Requests() {
   const canReview = canReviewRequests(user?.role)
   const isAdminUser = isAdmin(user?.role)
 
-  const [scope, setScope] = useState<ScopeFilter>(canReview ? 'all' : 'mine')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const scope: ScopeFilter =
+    canReview && searchParams.get('scope') !== 'mine' ? 'all' : 'mine'
   const [filters, setFilters] = useState<RequestFilters>(EMPTY_FILTERS)
   const [deciding, setDeciding] = useState<number | null>(null)
   const [decideError, setDecideError] = useState<unknown>(null)
@@ -176,10 +179,15 @@ export default function Requests() {
 
   const clearFilters = useCallback(() => setFilters(EMPTY_FILTERS), [])
 
-  const changeScope = useCallback((next: ScopeFilter) => {
-    setScope(next)
-    setFilters(EMPTY_FILTERS)
-  }, [])
+  const changeScope = useCallback(
+    (next: ScopeFilter) => {
+      setSearchParams(next === 'mine' ? { scope: 'mine' } : {}, {
+        replace: true,
+      })
+      setFilters(EMPTY_FILTERS)
+    },
+    [setSearchParams]
+  )
 
   const handleDecide = useCallback(
     (action: ReviewAction, requestId: number) => {
