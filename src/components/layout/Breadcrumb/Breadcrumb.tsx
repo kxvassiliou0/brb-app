@@ -1,44 +1,42 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/auth'
 import {
   canReviewRequests,
+  HOME_PATH,
   REQUESTS_PATH,
   SETTINGS_PATH,
 } from '@/lib/routeAccess'
 
-interface Crumb {
-  section: string
-  sectionPath: string
-  page: string
+const TRAIL_LIMIT = 4
+
+function pageName(pathname: string, canReview: boolean): string {
+  if (pathname === HOME_PATH) return 'Overview'
+  if (pathname.startsWith(REQUESTS_PATH)) {
+    return canReview ? 'Requests' : 'My requests'
+  }
+  if (pathname.startsWith('/team-calendar')) return 'Team calendar'
+  if (pathname.startsWith('/employees')) return 'Employees'
+  if (pathname.startsWith('/departments')) return 'Departments'
+  if (pathname.startsWith(SETTINGS_PATH)) return 'Settings'
+  return 'Not found'
 }
 
-const SECTION_TIME_OFF = { section: 'Time off', sectionPath: REQUESTS_PATH }
+function rootedAt(pathname: string): string[] {
+  return pathname === HOME_PATH ? [HOME_PATH] : [HOME_PATH, pathname]
+}
 
-const SECTION_PEOPLE = { section: 'People', sectionPath: '/employees' }
+function useTrail(pathname: string): string[] {
+  const [trail, setTrail] = useState<string[]>(() => rootedAt(pathname))
 
-function crumbFor(pathname: string, canReview: boolean): Crumb {
-  if (pathname === '/') {
-    return { section: 'Dashboard', sectionPath: '/', page: 'Overview' }
+  if (trail[trail.length - 1] !== pathname) {
+    const visited = trail.indexOf(pathname)
+    const next =
+      visited === -1 ? [...trail, pathname] : trail.slice(0, visited + 1)
+    setTrail(next.slice(-TRAIL_LIMIT))
   }
-  if (pathname.startsWith(REQUESTS_PATH)) {
-    return {
-      ...SECTION_TIME_OFF,
-      page: canReview ? 'Requests' : 'My requests',
-    }
-  }
-  if (pathname.startsWith('/team-calendar')) {
-    return { ...SECTION_TIME_OFF, page: 'Team calendar' }
-  }
-  if (pathname.startsWith('/employees')) {
-    return { ...SECTION_PEOPLE, page: 'Employees' }
-  }
-  if (pathname.startsWith('/departments')) {
-    return { ...SECTION_PEOPLE, page: 'Departments' }
-  }
-  if (pathname.startsWith(SETTINGS_PATH)) {
-    return { section: 'Account', sectionPath: SETTINGS_PATH, page: 'Settings' }
-  }
-  return { section: 'Dashboard', sectionPath: '/', page: 'Not found' }
+
+  return trail[trail.length - 1] === pathname ? trail : rootedAt(pathname)
 }
 
 interface BreadcrumbProps {
@@ -52,7 +50,8 @@ export default function Breadcrumb({
 }: BreadcrumbProps) {
   const location = useLocation()
   const { user } = useAuth()
-  const crumb = crumbFor(location.pathname, canReviewRequests(user?.role))
+  const canReview = canReviewRequests(user?.role)
+  const trail = useTrail(location.pathname)
 
   return (
     <div className="mb-6 flex items-center gap-3 border-b border-border-primary pb-4">
@@ -88,20 +87,35 @@ export default function Breadcrumb({
 
       <nav aria-label="Breadcrumb" data-testid="breadcrumb" className="min-w-0">
         <ol className="flex flex-wrap items-center gap-2 text-sm">
-          <li>
-            <Link
-              to={crumb.sectionPath}
-              className="touch-target inline-flex items-center rounded text-text-secondary underline-offset-4 hover:underline"
-            >
-              {crumb.section}
-            </Link>
-          </li>
-          <li aria-hidden="true" className="text-text-secondary">
-            /
-          </li>
-          <li aria-current="page" className="font-medium text-text-primary">
-            {crumb.page}
-          </li>
+          {trail.map((path, index) => {
+            const last = index === trail.length - 1
+            return (
+              <li key={path} className="flex items-center gap-2">
+                {index > 0 && (
+                  <span aria-hidden="true" className="text-text-secondary">
+                    /
+                  </span>
+                )}
+                {last ? (
+                  <span
+                    aria-current="page"
+                    data-testid="breadcrumb-current"
+                    className="font-medium text-text-primary"
+                  >
+                    {pageName(path, canReview)}
+                  </span>
+                ) : (
+                  <Link
+                    to={path}
+                    data-testid="breadcrumb-ancestor"
+                    className="touch-target inline-flex items-center rounded text-text-secondary underline-offset-4 hover:underline"
+                  >
+                    {pageName(path, canReview)}
+                  </Link>
+                )}
+              </li>
+            )
+          })}
         </ol>
       </nav>
     </div>
