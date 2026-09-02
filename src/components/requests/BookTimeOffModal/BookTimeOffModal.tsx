@@ -1,15 +1,19 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { BookingConfirmationState } from '@/components/requests/BookingConfirmation'
 import DatePicker from '@/components/requests/DatePicker'
 import FormAlert from '@/components/ui/FormAlert'
-import {
+import InputWithLabel, {
   CONTROL_CLASS,
   SelectWithLabel,
   type SelectOption,
 } from '@/components/ui/InputWithLabel'
 import Modal from '@/components/ui/Modal'
-import { createLeaveRequest, getRemainingLeave } from '@/api/leaveRequests'
+import {
+  createLeaveRequest,
+  getRemainingLeave,
+  listAllRequests,
+} from '@/api/leaveRequests'
 import { listUserProfiles } from '@/api/users'
 import { useAuth } from '@/features/auth/auth'
 import {
@@ -19,6 +23,7 @@ import {
   EMPTY_DRAFT,
   employeeOptions,
   hasBookingErrors,
+  holidaysInRange,
   LEAVE_TYPES,
   remainingAfterRequest,
   requestedDays,
@@ -29,9 +34,18 @@ import {
 } from '@/features/requests/booking'
 import { countLabel } from '@/lib/dates'
 import { listPublicHolidays } from '@/api/publicHolidays'
-import { holidaysByDate } from '@/features/calendar/publicHolidays'
+import {
+  approvedClashWarning,
+  holidaysByDate,
+  saveHoliday,
+  validateHoliday,
+  type HolidayErrors,
+  type PublicHoliday,
+} from '@/features/calendar/publicHolidays'
 import { isAdmin, REQUESTS_PATH } from '@/lib/routeAccess'
-import type { LeaveType } from '@/types/api'
+import type { LeaveRequest, LeaveType } from '@/types/api'
+
+const PUBLIC_HOLIDAY_OPTION = 'Public holiday'
 
 interface BookTimeOffModalProps {
   onClose: () => void
@@ -56,9 +70,15 @@ export default function BookTimeOffModal({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null)
-  const [holidays, setHolidays] = useState<Map<string, string>>(new Map())
+  const [holidayList, setHolidayList] = useState<PublicHoliday[]>([])
   const [employees, setEmployees] = useState<EmployeeOption[]>([])
   const [employeeId, setEmployeeId] = useState<number | null>(null)
+  const [addingHoliday, setAddingHoliday] = useState(false)
+  const [holidayName, setHolidayName] = useState('')
+  const [holidayErrors, setHolidayErrors] = useState<HolidayErrors>({})
+  const [approved, setApproved] = useState<LeaveRequest[]>([])
+
+  const holidays = useMemo(() => holidaysByDate(holidayList), [holidayList])
 
   const bookingFor = employeeId ?? user?.id ?? null
 
@@ -71,10 +91,10 @@ export default function BookTimeOffModal({
 
     listPublicHolidays()
       .then((res) => {
-        if (!cancelled) setHolidays(holidaysByDate(res))
+        if (!cancelled) setHolidayList(res)
       })
       .catch(() => {
-        if (!cancelled) setHolidays(new Map())
+        if (!cancelled) setHolidayList([])
       })
 
     return () => {
@@ -111,6 +131,14 @@ export default function BookTimeOffModal({
         if (!cancelled) setEmployees([])
       })
 
+    listAllRequests()
+      .then((requests) => {
+        if (!cancelled) setApproved(Array.isArray(requests) ? requests : [])
+      })
+      .catch(() => {
+        if (!cancelled) setApproved([])
+      })
+
     return () => {
       cancelled = true
     }
@@ -122,8 +150,31 @@ export default function BookTimeOffModal({
     setSubmitError(null)
   }
 
+  async function addPublicHoliday(): Promise<void> {
+    const found = validateHoliday(holidayName, draft.startDate, holidayList)
+    setHolidayErrors(found)
+    if (found.name || found.date) return
+
+    setSubmitError(null)
+    setSubmitting(true)
+    try {
+      await saveHoliday(holidayName, draft.startDate)
+      onBooked?.()
+      onClose()
+    } catch {
+      setSubmitError('Could not add this public holiday. Please try again.')
+      setSubmitting(false)
+    }
+  }
+
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault()
+
+    if (addingHoliday) {
+      await addPublicHoliday()
+      return
+    }
+
     const found = validateBooking(draft)
     setErrors(found)
     if (hasBookingErrors(found)) return
@@ -152,7 +203,11 @@ export default function BookTimeOffModal({
     }
   }
 
-  const days = requestedDays(draft)
+  const days = requestedDays(draft, holidays)
+  const spanned = holidaysInRange(draft, holidays)
+  const clashWarning = addingHoliday
+    ? approvedClashWarning(draft.startDate, approved)
+    : null
 
   const bookingForOptions: SelectOption[] =
     employees.length === 0 && user
@@ -165,15 +220,21 @@ export default function BookTimeOffModal({
 
   return (
     <Modal
-      title="Book time off"
+      title={addingHoliday ? 'Add a public holiday' : 'Book time off'}
       onClose={onClose}
       description={
-        bookingForSomeoneElse
-          ? 'This request will be recorded against the employee you choose.'
-          : 'Your request will be sent to your manager for approval.'
+        addingHoliday
+          ? 'Nobody can book leave on this date once it is saved.'
+          : bookingForSomeoneElse
+            ? 'This request will be recorded against the employee you choose.'
+            : 'Your request will be sent to your manager for approval.'
       }
       primary={{
-        label: submitting ? 'Sending…' : 'Send request',
+        label: submitting
+          ? 'Saving…'
+          : addingHoliday
+            ? 'Add public holiday'
+            : 'Send request',
         disabled: submitting,
         form: FORM_ID,
       }}
@@ -185,7 +246,7 @@ export default function BookTimeOffModal({
         data-testid="book-time-off-form"
         className="flex flex-col gap-5"
       >
-        {canBookForOthers && (
+        {canBookForOthers && !addingHoliday && (
           <SelectWithLabel
             id="booking-employee"
             label="Employee"
@@ -198,48 +259,88 @@ export default function BookTimeOffModal({
         <SelectWithLabel
           id="leave-type"
           label="Leave type"
-          value={draft.leaveType}
-          onChange={(value) => update({ leaveType: value as LeaveType | '' })}
-          options={LEAVE_TYPES.map((type) => ({ value: type, label: type }))}
+          value={addingHoliday ? PUBLIC_HOLIDAY_OPTION : draft.leaveType}
+          onChange={(value) => {
+            setAddingHoliday(value === PUBLIC_HOLIDAY_OPTION)
+            setHolidayErrors({})
+            update({
+              leaveType:
+                value === PUBLIC_HOLIDAY_OPTION ? '' : (value as LeaveType),
+            })
+          }}
+          options={[
+            ...LEAVE_TYPES.map((type) => ({ value: type, label: type })),
+            ...(canBookForOthers
+              ? [{ value: PUBLIC_HOLIDAY_OPTION, label: PUBLIC_HOLIDAY_OPTION }]
+              : []),
+          ]}
           placeholder="Select leave type"
           error={errors.leaveType}
         />
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        {addingHoliday ? (
           <DatePicker
             id="start-date"
-            label="Start date"
+            label="Date"
             value={draft.startDate}
-            onChange={(startDate) => update({ startDate })}
+            onChange={(startDate) => {
+              setHolidayErrors({})
+              update({ startDate })
+            }}
             holidays={holidays}
-            error={errors.startDate}
+            error={holidayErrors.date}
           />
-          <DatePicker
-            id="end-date"
-            label="End date"
-            value={draft.endDate}
-            onChange={(endDate) => update({ endDate })}
-            holidays={holidays}
-            min={draft.startDate || undefined}
-            error={errors.endDate}
-          />
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <DatePicker
+              id="start-date"
+              label="Start date"
+              value={draft.startDate}
+              onChange={(startDate) => update({ startDate })}
+              holidays={holidays}
+              error={errors.startDate}
+            />
+            <DatePicker
+              id="end-date"
+              label="End date"
+              value={draft.endDate}
+              onChange={(endDate) => update({ endDate })}
+              holidays={holidays}
+              min={draft.startDate || undefined}
+              error={errors.endDate}
+            />
+          </div>
+        )}
 
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="reason" className="text-sm text-text-secondary">
-            Note (optional)
-          </label>
-          <textarea
-            id="reason"
-            rows={3}
-            value={draft.reason}
-            placeholder="Family holiday plans"
-            onChange={(event) => update({ reason: event.target.value })}
-            className={CONTROL_CLASS}
+        {addingHoliday ? (
+          <InputWithLabel
+            id="holiday-name"
+            label="Holiday name"
+            value={holidayName}
+            onChange={(value) => {
+              setHolidayName(value)
+              setHolidayErrors({})
+            }}
+            placeholder="Spring bank holiday"
+            error={holidayErrors.name}
           />
-        </div>
+        ) : (
+          <div className="flex min-w-0 flex-col gap-2">
+            <label htmlFor="reason" className="text-sm text-text-secondary">
+              Note (optional)
+            </label>
+            <textarea
+              id="reason"
+              rows={3}
+              value={draft.reason}
+              placeholder="Family holiday plans"
+              onChange={(event) => update({ reason: event.target.value })}
+              className={CONTROL_CLASS}
+            />
+          </div>
+        )}
 
-        {days > 0 && (
+        {!addingHoliday && days > 0 && (
           <p
             data-testid="booking-summary"
             className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-sage-background px-4 py-3 text-sm text-sage-foreground"
@@ -247,12 +348,27 @@ export default function BookTimeOffModal({
             <span className="font-medium">{countLabel(days, 'day')}</span>
             {daysRemaining !== null && (
               <span data-testid="booking-remaining">
-                {countLabel(remainingAfterRequest(daysRemaining, draft), 'day')}{' '}
+                {countLabel(
+                  remainingAfterRequest(daysRemaining, draft, holidays),
+                  'day'
+                )}{' '}
                 remaining after this request
               </span>
             )}
           </p>
         )}
+
+        {!addingHoliday && spanned.length > 0 && (
+          <p
+            data-testid="booking-holidays"
+            className="rounded-lg bg-pending-background px-4 py-3 text-sm text-pending-foreground"
+          >
+            {countLabel(spanned.length, 'public holiday')} in this range is not
+            counted: {spanned.join(', ')}
+          </p>
+        )}
+
+        {clashWarning && <FormAlert message={clashWarning} variant="warning" />}
 
         {submitError && <FormAlert message={submitError} />}
       </form>

@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { ApiRequestError } from '@/api/client'
-import { countDays, countLabel, toIsoDate } from '@/lib/dates'
+import { countDays, countLabel, formatDate, toIsoDate } from '@/lib/dates'
 import type {
   CreateLeaveRequestBody,
   LeaveType,
@@ -13,8 +13,13 @@ const BALANCE_ERROR = /exceed[s]? remaining balance/i
 
 const INVALID_DATE_ERROR = /YYYY-MM-DD|invalid date|before the start date/i
 
+const HOLIDAY_ERROR = /public holiday/i
+
 const OVERLAP_MESSAGE =
   'Those dates clash with a request you have already made. Choose a range that does not overlap an existing request.'
+
+const HOLIDAY_MESSAGE =
+  'Those dates include a public holiday, which cannot be booked as leave. Choose a range that does not include it.'
 
 export const INVALID_DATES_MESSAGE =
   'Those dates were not accepted. Choose a start date, then an end date on or after it, and try again.'
@@ -62,17 +67,37 @@ export function hasBookingErrors(errors: BookingErrors): boolean {
   return Object.keys(errors).length > 0
 }
 
-export function requestedDays(draft: BookingDraft): number {
+export function holidaysInRange(
+  draft: BookingDraft,
+  holidays: Map<string, string>
+): string[] {
+  if (!draft.startDate || !draft.endDate) return []
+  if (draft.endDate < draft.startDate) return []
+  return [...holidays.entries()]
+    .filter(([date]) => date >= draft.startDate && date <= draft.endDate)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, name]) => `${name} on ${formatDate(date)}`)
+}
+
+export function requestedDays(
+  draft: BookingDraft,
+  holidays: Map<string, string> = new Map()
+): number {
   if (!draft.startDate || !draft.endDate) return 0
   if (draft.endDate < draft.startDate) return 0
-  return countDays(draft.startDate, draft.endDate)
+  return Math.max(
+    0,
+    countDays(draft.startDate, draft.endDate) -
+      holidaysInRange(draft, holidays).length
+  )
 }
 
 export function remainingAfterRequest(
   daysRemaining: number,
-  draft: BookingDraft
+  draft: BookingDraft,
+  holidays: Map<string, string> = new Map()
 ): number {
-  return daysRemaining - requestedDays(draft)
+  return daysRemaining - requestedDays(draft, holidays)
 }
 
 export function buildCreateBody(
@@ -123,6 +148,12 @@ export function bookingErrorMessage(
     return daysRemaining === null
       ? `This request is longer than your remaining balance. ${error.message}.`
       : `This request needs ${countLabel(requestedDays(draft), 'day')} but you have only ${countLabel(daysRemaining, 'day')} remaining.`
+  }
+  if (
+    error.status === StatusCodes.BAD_REQUEST &&
+    HOLIDAY_ERROR.test(error.message)
+  ) {
+    return HOLIDAY_MESSAGE
   }
   if (
     error.status === StatusCodes.BAD_REQUEST &&
