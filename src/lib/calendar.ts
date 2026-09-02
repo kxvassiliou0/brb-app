@@ -1,5 +1,3 @@
-const LOCALE = 'en-GB'
-
 const DAYS_IN_WEEK = 7
 
 const DAYS_IN_GRID = 42
@@ -41,7 +39,7 @@ export function addMonths(month: string, delta: number): string {
 
 export function monthLabel(month: string): string {
   const { year, monthIndex } = parseMonth(month)
-  return new Date(Date.UTC(year, monthIndex, 1)).toLocaleDateString(LOCALE, {
+  return new Date(Date.UTC(year, monthIndex, 1)).toLocaleDateString('en-GB', {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',

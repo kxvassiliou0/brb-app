@@ -14,9 +14,6 @@ interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
 }
 
-const BUTTON =
-  'touch-target relative z-10 rounded-full px-4 text-sm font-medium transition-colors'
-
 export default function SegmentedControl<T extends string>({
   label,
   testId,
@@ -65,7 +62,7 @@ export default function SegmentedControl<T extends string>({
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
-            className={`${BUTTON} ${
+            className={`touch-target relative z-10 rounded-full px-4 text-sm font-medium transition-colors ${
               selected
                 ? isSlider
                   ? 'text-interactive-text'

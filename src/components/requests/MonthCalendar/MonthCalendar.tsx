@@ -24,16 +24,8 @@ interface MonthCalendarProps {
   onDayClick: (date: string) => void
 }
 
-const LANE_HEIGHT = '1.5rem'
-
 const NAV_CLASS =
   'touch-target inline-flex items-center justify-center rounded-full border border-border-primary text-lg text-text-primary hover:bg-background-tertiary'
-
-const DAY_CLASS =
-  'touch-target flex w-full flex-col items-start gap-0.5 rounded-lg px-2 py-1 text-left'
-
-const BAR_CLASS =
-  'flex items-center overflow-hidden rounded-sm px-2 text-sm font-medium whitespace-nowrap bg-sage-background text-sage-foreground'
 
 function dayTone(
   day: CalendarDay,
@@ -66,7 +58,7 @@ function DayCell({ day, holiday, selected, onClick }: DayCellProps) {
           : formatDateFull(day.date)
       }
       onClick={onClick}
-      className={`${DAY_CLASS} ${dayTone(day, selected, holiday)}`}
+      className={`touch-target flex w-full flex-col items-start gap-0.5 rounded-lg px-2 py-1 text-left ${dayTone(day, selected, holiday)}`}
     >
       <span aria-hidden="true">{day.dayOfMonth}</span>
       {holiday && (
@@ -91,7 +83,7 @@ function LeaveBar({ segment, lane }: { segment: LeaveSegment; lane: number }) {
         gridColumn: `${segment.column} / span ${segment.span}`,
         gridRow: lane + 1,
       }}
-      className={`${BAR_CLASS} ${segment.continuesBefore ? 'rounded-l-none' : ''} ${
+      className={`flex items-center overflow-hidden rounded-sm px-2 text-sm font-medium whitespace-nowrap bg-sage-background text-sage-foreground ${segment.continuesBefore ? 'rounded-l-none' : ''} ${
         segment.continuesAfter ? 'rounded-r-none' : ''
       }`}
     >
@@ -129,7 +121,7 @@ function WeekRow({ week, holidays, selectionStart, onDayClick }: WeekRowProps) {
       </div>
       <div
         className="mt-1 grid min-h-8 grid-cols-7 gap-1"
-        style={{ gridAutoRows: LANE_HEIGHT }}
+        style={{ gridAutoRows: '1.5rem' }}
       >
         {week.lanes.flatMap((lane, index) =>
           lane.map((segment) => (

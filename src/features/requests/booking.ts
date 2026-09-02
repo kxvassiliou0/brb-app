@@ -15,12 +15,6 @@ const INVALID_DATE_ERROR = /YYYY-MM-DD|invalid date|before the start date/i
 
 const HOLIDAY_ERROR = /public holiday/i
 
-const OVERLAP_MESSAGE =
-  'Those dates clash with a request you have already made. Choose a range that does not overlap an existing request.'
-
-const HOLIDAY_MESSAGE =
-  'Those dates include a public holiday, which cannot be booked as leave. Choose a range that does not include it.'
-
 export const INVALID_DATES_MESSAGE =
   'Those dates were not accepted. Choose a start date, then an end date on or after it, and try again.'
 
@@ -140,7 +134,8 @@ export function bookingErrorMessage(
       ? error.message
       : 'Your request could not be sent. Please try again.'
   }
-  if (error.status === StatusCodes.CONFLICT) return OVERLAP_MESSAGE
+  if (error.status === StatusCodes.CONFLICT)
+    return 'Those dates clash with a request you have already made. Choose a range that does not overlap an existing request.'
   if (
     error.status === StatusCodes.BAD_REQUEST &&
     BALANCE_ERROR.test(error.message)
@@ -153,7 +148,7 @@ export function bookingErrorMessage(
     error.status === StatusCodes.BAD_REQUEST &&
     HOLIDAY_ERROR.test(error.message)
   ) {
-    return HOLIDAY_MESSAGE
+    return 'Those dates include a public holiday, which cannot be booked as leave. Choose a range that does not include it.'
   }
   if (
     error.status === StatusCodes.BAD_REQUEST &&
