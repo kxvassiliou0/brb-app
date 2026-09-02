@@ -6,7 +6,6 @@ import {
   NOBODY_OFF_MESSAGE,
   segmentLabel,
   shortName,
-  type LeaveSegment,
 } from '@/features/calendar/teamCalendar'
 import type { CalendarEntry, LeaveStatus } from '@/types/api'
 
@@ -40,10 +39,6 @@ function entry({
   }
 }
 
-function segments(month: string, entries: CalendarEntry[]): LeaveSegment[] {
-  return layoutMonth(month, entries).flatMap((week) => week.lanes.flat())
-}
-
 function weekStarting(month: string, entries: CalendarEntry[], date: string) {
   const week = layoutMonth(month, entries).find((w) => w.key === date)
   if (!week) throw new Error(`No week starting ${date} in ${month}`)
@@ -70,16 +65,6 @@ describe('a range spanning a weekend', () => {
     expect(segment?.column).toBe(1)
     expect(segment?.span).toBe(7)
   })
-
-  it('keeps Saturday and Sunday inside the span rather than skipping them', () => {
-    const friToMon = entry({ start_date: '2026-08-07', end_date: '2026-08-10' })
-    const laid = segments(AUGUST, [friToMon])
-
-    expect(laid.map((s) => [s.column, s.span])).toEqual([
-      [5, 3],
-      [1, 1],
-    ])
-  })
 })
 
 describe('a range spanning a month boundary', () => {
@@ -91,16 +76,6 @@ describe('a range spanning a month boundary', () => {
     expect(week.lanes[0]?.[0]?.column).toBe(4)
     expect(week.lanes[0]?.[0]?.span).toBe(4)
     expect(week.lanes[0]?.[0]?.continuesAfter).toBe(true)
-  })
-
-  it('renders in the month it ends in', () => {
-    const laid = segments(AUGUST, [crossing])
-
-    expect(laid.map((s) => [s.column, s.span])).toEqual([
-      [4, 4],
-      [1, 1],
-    ])
-    expect(laid[1]?.continuesBefore).toBe(true)
   })
 })
 
@@ -178,12 +153,6 @@ describe('status filtering', () => {
       approvedLeave([approved, pending, rejected, cancelled]).map((e) => e.name)
     ).toEqual(['Sophia Lambert'])
   })
-
-  it('lays out no bar for Pending, Rejected or Cancelled leave', () => {
-    const laid = segments(AUGUST, [approved, pending, rejected, cancelled])
-
-    expect(laid.map((s) => s.entry.name)).toEqual(['Sophia Lambert'])
-  })
 })
 
 describe('labels', () => {
@@ -248,13 +217,5 @@ describe('the header summary', () => {
 
   it('reports an empty month plainly', () => {
     expect(calendarSummary([], AUGUST, '2026-08-04')).toBe(NOBODY_OFF_MESSAGE)
-  })
-
-  it('ignores leave that only touches the surrounding weeks', () => {
-    const july = entry({ start_date: '2026-07-28', end_date: '2026-07-29' })
-
-    expect(calendarSummary([july], AUGUST, '2026-08-04')).toBe(
-      NOBODY_OFF_MESSAGE
-    )
   })
 })

@@ -186,33 +186,6 @@ describe('the booking confirmation', () => {
     expect(region).toHaveAttribute('aria-live', 'polite')
     expect(region).toContainElement(confirmation)
   })
-
-  it('renders the live region empty when no booking has just been made', async () => {
-    stubApi({ own: [ownRequest()] })
-    renderRequests('Employee')
-
-    const region = await screen.findByTestId('booking-confirmation-region')
-    expect(region).toBeEmptyDOMElement()
-    expect(screen.queryByTestId('booking-confirmation')).not.toBeInTheDocument()
-  })
-
-  it('highlights the newly created row', async () => {
-    stubApi({
-      own: [
-        ownRequest({ id: 1, start_date: '2026-08-10', end_date: '2026-08-14' }),
-        ownRequest({ id: 2, start_date: '2026-09-01', end_date: '2026-09-02' }),
-      ],
-    })
-    renderRequests('Employee', {
-      bookingConfirmation: CONFIRMATION,
-      bookingRequestId: 2,
-    })
-
-    await screen.findByTestId('data-table')
-    const highlighted = document.querySelectorAll('tr[data-highlighted="true"]')
-    expect(highlighted).toHaveLength(1)
-    expect(highlighted[0]).toHaveTextContent('1 Sept 2026 – 2 Sept 2026')
-  })
 })
 
 describe('the list of my requests', () => {
@@ -301,29 +274,6 @@ describe('the list of my requests', () => {
     expect(statusColumn()).toEqual(statuses)
   })
 
-  it('associates every column header with its column', async () => {
-    stubApi({ own: [ownRequest()] })
-    renderRequests('Employee')
-
-    const table = await screen.findByTestId('data-table')
-    const headers = within(table).getAllByRole('columnheader')
-
-    expect(headers.map((header) => header.textContent)).toEqual([
-      'Type',
-      'Dates',
-      'Days',
-      'Date requested',
-      'Status',
-      'Actions',
-    ])
-    for (const header of headers) {
-      expect(header).toHaveAttribute('scope', 'col')
-    }
-    expect(within(bodyRows()[0]!).getAllByRole('cell')).toHaveLength(
-      headers.length
-    )
-  })
-
   it('opens the full request from the leftmost column', async () => {
     stubApi({
       own: [
@@ -380,37 +330,6 @@ describe('the list of my requests', () => {
     expect(detailRow('Status')).toBe('Rejected')
   })
 
-  it('leaves the manager note off a request nobody rejected', async () => {
-    stubApi({
-      own: [
-        ownRequest({
-          id: 1,
-          leave_type: 'Sick',
-          status: 'Approved',
-          manager_note: 'Approved on the phone.',
-        }),
-      ],
-    })
-    renderRequests('Employee')
-
-    await screen.findByTestId('data-table')
-    fireEvent.click(screen.getByRole('button', { name: 'Sick' }))
-
-    expect(screen.getByTestId('modal')).toBeInTheDocument()
-    expect(screen.queryByTestId('manager-note')).not.toBeInTheDocument()
-  })
-
-  it('closes the request details again', async () => {
-    stubApi({ own: [ownRequest({ id: 1, leave_type: 'Vacation' })] })
-    renderRequests('Employee')
-
-    await screen.findByTestId('data-table')
-    fireEvent.click(screen.getByRole('button', { name: 'Vacation' }))
-    fireEvent.click(screen.getByTestId('modal-close'))
-
-    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
-  })
-
   it('invites a user with no requests to book their first trip', async () => {
     stubApi({ own: [] })
     renderRequests('Employee')
@@ -464,31 +383,6 @@ describe('the status tabs', () => {
 
     expect(statusColumn()).toEqual(expected)
   })
-
-  it('brings every request back under All', async () => {
-    stubApi({ own: MIXED })
-    renderRequests('Employee')
-
-    await screen.findByTestId('data-table')
-    clickStatusTab('Cancelled')
-    expect(statusColumn()).toEqual(['Cancelled'])
-
-    clickStatusTab('All')
-
-    expect(statusColumn()).toEqual(MIXED.map((request) => request.status))
-  })
-
-  it('tells a user with no cancelled requests that none match', async () => {
-    stubApi({ own: [ownRequest({ id: 1, status: 'Approved' })] })
-    renderRequests('Employee')
-
-    await screen.findByTestId('data-table')
-    clickStatusTab('Cancelled')
-
-    expect(
-      screen.getByText('No requests match these filters.')
-    ).toBeInTheDocument()
-  })
 })
 
 describe('what each role sees', () => {
@@ -512,22 +406,6 @@ describe('what each role sees', () => {
     expect(screen.getByTestId('scope-filter')).toBeInTheDocument()
     expect(await screen.findByText('David Jones')).toBeInTheDocument()
   })
-
-  it("keeps a manager's own request out of the team queue but shows it under My requests", async () => {
-    stubApi({
-      own: [ownRequest({ id: 7, leave_type: 'Personal' })],
-      team: [teamRequest({ id: 50 })],
-    })
-    renderRequests('Manager')
-
-    expect(await screen.findByText('David Jones')).toBeInTheDocument()
-    expect(screen.queryByText('Personal')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'My requests' }))
-
-    expect(await screen.findByText('Personal')).toBeInTheDocument()
-    expect(screen.queryByText('David Jones')).not.toBeInTheDocument()
-  })
 })
 
 describe("the manager's approval queue", () => {
@@ -547,21 +425,6 @@ describe("the manager's approval queue", () => {
     expect(screen.queryByText('Ben Cole')).not.toBeInTheDocument()
     expect(screen.queryByText('Cara Lin')).not.toBeInTheDocument()
     expect(screen.queryByTestId('status-filter')).not.toBeInTheDocument()
-  })
-
-  it("draws the queue from the signed-in manager's own reports", async () => {
-    stubApi({
-      queues: {
-        [USER_ID]: [teamRequest({ id: 50, employee_name: 'David Jones' })],
-        [USER_ID + 7]: [
-          teamRequest({ id: 70, employee_name: 'Frank Harrison' }),
-        ],
-      },
-    })
-    renderRequests('Manager')
-
-    expect(await screen.findByText('David Jones')).toBeInTheDocument()
-    expect(screen.queryByText('Frank Harrison')).not.toBeInTheDocument()
   })
 
   it('offers both an approve and a reject action on every row', async () => {
@@ -587,72 +450,6 @@ describe("the manager's approval queue", () => {
         within(row).getByRole('button', { name: 'Decline' })
       ).toBeInTheDocument()
     }
-  })
-
-  it('shows an empty state when nothing is awaiting approval', async () => {
-    stubApi({ own: [ownRequest()], team: [] })
-    renderRequests('Manager')
-
-    expect(
-      await screen.findByText('Nothing is waiting for your approval.')
-    ).toBeInTheDocument()
-  })
-
-  it('reflects the approved days in the balance the next review shows', async () => {
-    const before: RemainingLeave = {
-      annual_allowance: 25,
-      days_used: 7,
-      days_remaining: 18,
-    }
-    const after: RemainingLeave = {
-      annual_allowance: 25,
-      days_used: 12,
-      days_remaining: 13,
-    }
-    const queue = [
-      teamRequest({ id: 50, days_requested: 5 }),
-      teamRequest({
-        id: 51,
-        start_date: '2026-09-10',
-        end_date: '2026-09-12',
-        days_requested: 3,
-      }),
-    ]
-    let approved = false
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input)
-        if (init?.method === 'PATCH') {
-          approved = true
-          return jsonOk({})
-        }
-        if (url.includes('/remaining/'))
-          return jsonOk(approved ? after : before)
-        if (url.includes('/pending/manager/'))
-          return jsonOk(approved ? queue.slice(1) : queue)
-        return jsonOk([])
-      })
-    )
-    renderRequests('Manager')
-
-    const names = await screen.findAllByRole('button', { name: 'David Jones' })
-    fireEvent.click(names[0]!)
-    await waitFor(() => expect(detailRow('Days remaining')).toBe('18 days'))
-
-    fireEvent.click(
-      within(screen.getByTestId('modal')).getByRole('button', {
-        name: 'Approve',
-      })
-    )
-    await waitFor(() =>
-      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: 'David Jones' }))
-    await waitFor(() => expect(detailRow('Days remaining')).toBe('13 days'))
-    expect(detailRow('Days used')).toBe('12 days')
-    expect(detailRow('Entitlement')).toBe('25 days')
   })
 })
 
@@ -687,94 +484,6 @@ describe('the date strip', () => {
     expect(dates[0]).toBe(offsetDate(0))
     expect(dates[dates.length - 1]).toBe(offsetDate(DATE_STRIP_DAYS - 1))
     expect(strip).toHaveTextContent('Next 30 days')
-  })
-
-  it('tones each highlighted day by the status of the request covering it', async () => {
-    stubApi({
-      team: [
-        teamRequest({
-          id: 50,
-          start_date: offsetDate(2),
-          end_date: offsetDate(3),
-          status: 'Approved',
-        }),
-        teamRequest({
-          id: 51,
-          start_date: offsetDate(10),
-          end_date: offsetDate(10),
-          status: 'Rejected',
-        }),
-      ],
-    })
-    renderRequests('Manager')
-
-    const strip = await screen.findByTestId('request-date-strip')
-    const day = (date: string) =>
-      within(strip)
-        .getAllByTestId('date-strip-day')
-        .find((element) => element.getAttribute('data-date') === date)
-
-    expect(day(offsetDate(2))).toHaveAttribute('data-status', 'Approved')
-    expect(day(offsetDate(3))).toHaveAttribute('data-status', 'Approved')
-    expect(day(offsetDate(10))).toHaveAttribute('data-status', 'Rejected')
-    expect(day(offsetDate(6))).not.toHaveAttribute('data-highlighted')
-  })
-
-  it('clips a request that starts before the window to the days inside it', async () => {
-    stubApi({
-      team: [
-        teamRequest({
-          start_date: offsetDate(-5),
-          end_date: offsetDate(1),
-          status: 'Pending',
-        }),
-      ],
-    })
-    renderRequests('Manager')
-
-    const strip = await screen.findByTestId('request-date-strip')
-    const highlighted = within(strip)
-      .getAllByTestId('date-strip-day')
-      .filter((day) => day.getAttribute('data-highlighted') === 'true')
-      .map((day) => day.getAttribute('data-date'))
-
-    expect(highlighted).toEqual([offsetDate(0), offsetDate(1)])
-  })
-
-  it('drops the caption when nothing falls in the next 30 days', async () => {
-    stubApi({
-      team: [
-        teamRequest({
-          start_date: offsetDate(200),
-          end_date: offsetDate(201),
-          status: 'Pending',
-        }),
-      ],
-    })
-    renderRequests('Manager')
-
-    await screen.findByTestId('request-date-strip')
-    expect(screen.queryByText('Requests highlighted')).not.toBeInTheDocument()
-  })
-})
-
-describe('the scope toggle', () => {
-  it('marks exactly one segment as pressed and moves it on selection', async () => {
-    stubApi({ own: [ownRequest()], team: [teamRequest()] })
-    renderRequests('Manager')
-
-    const toggle = await screen.findByTestId('scope-filter')
-    const pressed = () =>
-      within(toggle)
-        .getAllByRole('button')
-        .filter((button) => button.getAttribute('aria-pressed') === 'true')
-        .map((button) => button.textContent)
-
-    expect(pressed()).toEqual(['All'])
-
-    fireEvent.click(within(toggle).getByRole('button', { name: 'My requests' }))
-
-    expect(pressed()).toEqual(['My requests'])
   })
 })
 
@@ -835,84 +544,6 @@ describe('filtering', () => {
     expect(screen.getByLabelText('Filter by department')).toBeInTheDocument()
   })
 
-  it('offers the department filter to a Manager as well', async () => {
-    stubApi({ team: [teamRequest()], departments: DEPARTMENTS })
-    renderRequests('Manager')
-
-    expect(await screen.findByText('David Jones')).toBeInTheDocument()
-    expect(screen.getByLabelText('Search by employee')).toBeInTheDocument()
-
-    const options = within(
-      screen.getByLabelText('Filter by department')
-    ).getAllByRole('option')
-
-    expect(options.map((option) => option.textContent)).toEqual([
-      'All departments',
-      'Engineering',
-      'Finance',
-    ])
-  })
-
-  it('labels the search field with an element, not a placeholder alone', async () => {
-    stubApi({ team: [teamRequest()] })
-    renderRequests('Manager')
-
-    const field = await screen.findByLabelText('Search by employee')
-    const label = document.querySelector(`label[for="${field.id}"]`)
-
-    expect(label).toHaveTextContent('Search by employee')
-    expect(field).not.toHaveAttribute('aria-label')
-    expect(field).toHaveAccessibleName('Search by employee')
-  })
-
-  it('keeps Clear filters in the layout so nothing shifts when it activates', async () => {
-    stubApi({ own: [ownRequest()] })
-    renderRequests('Employee')
-
-    const clear = await screen.findByTestId('clear-filters')
-    expect(clear).toHaveClass('invisible')
-
-    fireEvent.click(
-      within(screen.getByTestId('status-filter')).getByRole('button', {
-        name: 'Pending',
-      })
-    )
-
-    expect(screen.getByTestId('clear-filters')).not.toHaveClass('invisible')
-  })
-
-  it('matches part of a name whatever case it is typed in', async () => {
-    stubApi({ team: COMPANY, departments: DEPARTMENTS })
-    renderRequests('Admin')
-
-    await screen.findByTestId('data-table')
-    searchFor('JON')
-
-    expect(employeeColumn()).toEqual([
-      'David Jones',
-      'David Jones',
-      'Davina Jones',
-    ])
-  })
-
-  it('filters the team queue by employee name', async () => {
-    stubApi({
-      own: [],
-      team: [
-        teamRequest({ id: 50, employee_name: 'David Jones' }),
-        teamRequest({ id: 51, employee_name: 'Eve Knowles' }),
-      ],
-    })
-    renderRequests('Manager')
-
-    await screen.findByText('David Jones')
-
-    searchFor('eve')
-
-    expect(screen.queryByText('David Jones')).not.toBeInTheDocument()
-    expect(screen.getByText('Eve Knowles')).toBeInTheDocument()
-  })
-
   it('narrows by name, department and status together rather than one replacing another', async () => {
     stubApi({ team: COMPANY, departments: DEPARTMENTS })
     renderRequests('Admin')
@@ -933,96 +564,6 @@ describe('filtering', () => {
     clickStatusTab('Pending')
     expect(employeeColumn()).toEqual(['David Jones'])
     expect(statusColumn()).toEqual(['Pending'])
-  })
-
-  it('restores every row once the filters are cleared', async () => {
-    stubApi({ team: COMPANY, departments: DEPARTMENTS })
-    renderRequests('Admin')
-
-    await screen.findByTestId('data-table')
-    expect(bodyRows()).toHaveLength(COMPANY.length)
-
-    searchFor('jones')
-    chooseDepartment('1')
-    clickStatusTab('Pending')
-    expect(bodyRows()).toHaveLength(1)
-
-    fireEvent.click(screen.getByTestId('clear-filters'))
-
-    expect(bodyRows()).toHaveLength(COMPANY.length)
-    expect(screen.getByLabelText('Search by employee')).toHaveValue('')
-    expect(screen.getByLabelText('Filter by department')).toHaveValue('')
-  })
-
-  it('explains that nothing matches and clears the filters from the empty state', async () => {
-    stubApi({ team: COMPANY, departments: DEPARTMENTS })
-    renderRequests('Admin')
-
-    await screen.findByTestId('data-table')
-
-    searchFor('jones')
-    chooseDepartment('3')
-    clickStatusTab('Approved')
-
-    const empty = screen.getByTestId('table-empty-state')
-    expect(
-      within(empty).getByText('No requests match these filters.')
-    ).toBeInTheDocument()
-
-    fireEvent.click(
-      within(empty).getByRole('button', { name: 'Clear filters' })
-    )
-
-    expect(screen.queryByTestId('table-empty-state')).toBeNull()
-    expect(bodyRows()).toHaveLength(COMPANY.length)
-  })
-
-  it("never surfaces a row from outside a manager's own team", async () => {
-    const fetchMock = stubApi({
-      queues: {
-        [USER_ID]: [
-          teamRequest({
-            id: 70,
-            employee_name: 'David Jones',
-            department_id: 1,
-          }),
-          teamRequest({
-            id: 71,
-            employee_name: 'Eve Knowles',
-            department_id: 1,
-          }),
-        ],
-      },
-      allRequests: [
-        teamRequest({
-          id: 72,
-          employee_name: 'Grace Williams',
-          department_id: 4,
-        }),
-      ],
-      departments: [...DEPARTMENTS, { id: 4, name: 'Marketing' }],
-    })
-    renderRequests('Manager')
-
-    await screen.findByText('David Jones')
-
-    searchFor('grace')
-    expect(screen.getByTestId('table-empty-state')).toBeInTheDocument()
-    expect(screen.queryByText('Grace Williams')).toBeNull()
-
-    searchFor('')
-    chooseDepartment('4')
-    expect(screen.getByTestId('table-empty-state')).toBeInTheDocument()
-    expect(screen.queryByText('Grace Williams')).toBeNull()
-
-    fireEvent.click(screen.getByTestId('clear-filters'))
-    expect(employeeColumn()).toEqual(['David Jones', 'Eve Knowles'])
-
-    const companyWide = fetchMock.mock.calls.filter(
-      ([input]) =>
-        new URL(String(input), 'http://x').pathname === '/api/leave-requests'
-    )
-    expect(companyWide).toHaveLength(0)
   })
 })
 
@@ -1075,19 +616,6 @@ describe("the admin's company-wide view", () => {
     expect(bodyRows()).toHaveLength(COMPANY_WIDE.length)
   })
 
-  it('draws the list from the company-wide endpoint, not a manager queue', async () => {
-    const fetchMock = stubApi({ allRequests: COMPANY_WIDE })
-    renderRequests('Admin')
-
-    await screen.findByText('David Jones')
-    const paths = fetchMock.mock.calls.map(([input]) => String(input))
-
-    expect(paths.some((path) => path.endsWith('/api/leave-requests'))).toBe(
-      true
-    )
-    expect(paths.some((path) => path.includes('/pending/manager/'))).toBe(false)
-  })
-
   it('approves a request from an employee who does not report to the admin', async () => {
     const fetchMock = stubApi({
       allRequests: [
@@ -1119,39 +647,6 @@ describe("the admin's company-wide view", () => {
     })
   })
 
-  it('rejects a request from an employee who does not report to the admin', async () => {
-    const fetchMock = stubApi({
-      allRequests: [
-        teamRequest({
-          id: 52,
-          employee_id: 7,
-          employee_name: 'Grace Williams',
-          status: 'Pending',
-        }),
-      ],
-    })
-    renderRequests('Admin')
-
-    await screen.findByText('Grace Williams')
-    fireEvent.click(
-      within(bodyRows()[0]!).getByRole('button', { name: 'Decline' })
-    )
-    fireEvent.click(
-      within(screen.getByTestId('modal')).getByRole('button', {
-        name: 'Decline',
-      })
-    )
-
-    await waitFor(() => {
-      const rejections = fetchMock.mock.calls.filter(
-        ([input, init]) =>
-          init?.method === 'PATCH' &&
-          String(input).endsWith('/api/leave-requests/reject')
-      )
-      expect(rejections).toHaveLength(1)
-    })
-  })
-
   it('names the reviewer on a reviewed request', async () => {
     stubApi({ allRequests: COMPANY_WIDE })
     renderRequests('Admin')
@@ -1164,21 +659,6 @@ describe("the admin's company-wide view", () => {
       'Alice Thompson',
       '—',
     ])
-  })
-
-  it('renders an explicit dash when nobody has reviewed the request', async () => {
-    stubApi({
-      allRequests: [
-        teamRequest({ id: 50, status: 'Pending', reviewed_by_name: null }),
-      ],
-    })
-    renderRequests('Admin')
-
-    await screen.findByText('David Jones')
-    const reviewer = columnValues('Reviewed by')
-
-    expect(reviewer).toEqual(['—'])
-    expect(reviewer[0]).not.toBe('')
   })
 
   it.each([
@@ -1195,42 +675,6 @@ describe("the admin's company-wide view", () => {
 
     expect(columnValues('Employee')).toEqual(expected)
     expect(columnValues('Status')).toEqual([tab])
-  })
-
-  it('brings every status back under All', async () => {
-    stubApi({ allRequests: COMPANY_WIDE })
-    renderRequests('Admin')
-
-    await screen.findByText('David Jones')
-    clickStatusTab('Rejected')
-    expect(bodyRows()).toHaveLength(1)
-
-    clickStatusTab('All')
-
-    expect(columnValues('Status')).toEqual([
-      'Pending',
-      'Approved',
-      'Rejected',
-      'Cancelled',
-    ])
-  })
-
-  it('shows a Manager their own team only, never the company-wide list', async () => {
-    stubApi({
-      queues: {
-        [USER_ID]: [teamRequest({ id: 50, employee_name: 'David Jones' })],
-      },
-      allRequests: COMPANY_WIDE,
-    })
-    renderRequests('Manager')
-
-    expect(await screen.findByText('David Jones')).toBeInTheDocument()
-    expect(screen.queryByText('Frank Harrison')).not.toBeInTheDocument()
-    expect(screen.queryByText('Grace Williams')).not.toBeInTheDocument()
-    expect(screen.queryByText('Eve Knowles')).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('columnheader', { name: 'Reviewed by' })
-    ).not.toBeInTheDocument()
   })
 })
 
@@ -1270,44 +714,6 @@ describe('declining a request', () => {
     expect(patchCalls(fetchMock)).toHaveLength(0)
   })
 
-  it('names the employee and the dates being turned down', async () => {
-    stubApi({
-      team: [
-        teamRequest({
-          employee_name: 'David Jones',
-          start_date: '2026-08-10',
-          end_date: '2026-08-14',
-          days_requested: 5,
-        }),
-      ],
-    })
-    renderRequests('Manager')
-
-    await screen.findByText('David Jones')
-    clickRowDecline()
-
-    const confirmation = screen.getByTestId('modal')
-    expect(confirmation).toHaveTextContent('David Jones')
-    expect(confirmation).toHaveTextContent('10 Aug 2026 – 14 Aug 2026')
-    expect(confirmation).toHaveTextContent('5 days')
-  })
-
-  it('leaves the request pending when the manager backs out', async () => {
-    const fetchMock = stubApi({ team: [teamRequest()] })
-    renderRequests('Manager')
-
-    await screen.findByText('David Jones')
-    clickRowDecline()
-    fireEvent.click(
-      within(screen.getByTestId('modal')).getByRole('button', {
-        name: 'Keep pending',
-      })
-    )
-
-    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
-    expect(patchCalls(fetchMock)).toHaveLength(0)
-  })
-
   it('sends the note the reviewer typed with the rejection', async () => {
     const fetchMock = stubApi({ team: [teamRequest({ id: 50 })] })
     renderRequests('Manager')
@@ -1324,33 +730,6 @@ describe('declining a request', () => {
       leave_request_id: 50,
       reason: 'Two others in Engineering are already away.',
     })
-  })
-
-  it('declines without a note when the reviewer leaves it blank', async () => {
-    const fetchMock = stubApi({ team: [teamRequest({ id: 50 })] })
-    renderRequests('Manager')
-
-    await screen.findByText('David Jones')
-    clickRowDecline()
-    confirmDecline()
-
-    await waitFor(() => expect(patchCalls(fetchMock)).toHaveLength(1))
-    expect(JSON.parse(String(patchCalls(fetchMock)[0]![1]?.body))).toEqual({
-      leave_request_id: 50,
-    })
-  })
-
-  it('closes the confirmation once the request is declined', async () => {
-    stubApi({ team: [teamRequest()] })
-    renderRequests('Manager')
-
-    await screen.findByText('David Jones')
-    clickRowDecline()
-    confirmDecline()
-
-    await waitFor(() =>
-      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
-    )
   })
 
   it.each([

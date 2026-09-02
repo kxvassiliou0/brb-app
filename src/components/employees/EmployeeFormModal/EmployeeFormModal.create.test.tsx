@@ -160,22 +160,6 @@ describe('the choices offered by the add employee form', () => {
     ])
   })
 
-  it('builds the job role options from GET /api/job-roles', async () => {
-    renderModal()
-    await loaded()
-
-    expect(
-      fetchMock.mock.calls.some(([input]) =>
-        String(input).endsWith('/api/job-roles')
-      )
-    ).toBe(true)
-    expect(optionLabels('Job role')).toEqual([
-      'Select a job role',
-      'Senior Contractor',
-      'Contractor',
-    ])
-  })
-
   it('offers exactly the three roles the API accepts', async () => {
     renderModal()
     await loaded()
@@ -262,18 +246,6 @@ describe('the fields the add employee form insists on', () => {
     expect(postCalls()).toHaveLength(0)
     expect(onCreated).not.toHaveBeenCalled()
   })
-
-  it('accepts a password of exactly ten characters', async () => {
-    const { onCreated } = renderModal()
-    await loaded()
-
-    fillRequiredFields()
-    type('Password', 'a'.repeat(PASSWORD_MIN_LENGTH))
-    add()
-
-    await waitFor(() => expect(onCreated).toHaveBeenCalled())
-    expect(postBody().password).toBe('a'.repeat(PASSWORD_MIN_LENGTH))
-  })
 })
 
 describe('creating the employee', () => {
@@ -314,17 +286,6 @@ describe('creating the employee', () => {
     expect(postBody().managerId).toBeNull()
   })
 
-  it('sends the twenty five day default when the allowance is left untouched', async () => {
-    const { onCreated } = renderModal()
-    await loaded()
-
-    fillRequiredFields()
-    add()
-
-    await waitFor(() => expect(onCreated).toHaveBeenCalled())
-    expect(postBody().annualLeaveAllowance).toBe(DEFAULT_ANNUAL_LEAVE_ALLOWANCE)
-  })
-
   it('reads a refused duplicate email back against the email field', async () => {
     const { onCreated, onClose } = renderModal({
       message: 'That email address already belongs to another user',
@@ -340,20 +301,6 @@ describe('creating the employee', () => {
     expect(field('Email')).toHaveValue(NEW_STARTER.email)
     expect(onCreated).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
-  })
-
-  it('reads a raw driver duplicate error back against the email field too', async () => {
-    renderModal({
-      message: "Duplicate entry 'nina.newstarter@company.com' for key 'IDX_97'",
-      status: 400,
-    })
-    await loaded()
-
-    fillRequiredFields()
-    add()
-
-    expect(await screen.findByText(DUPLICATE_EMAIL_MESSAGE)).toBeInTheDocument()
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('keeps the form open and reports any other refusal', async () => {

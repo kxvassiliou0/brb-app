@@ -89,12 +89,11 @@ const BOUNDARY_PAIRS = BACKGROUNDS.flatMap((background) =>
 )
 
 describe('design tokens', () => {
-  it.each(Object.entries(DESIGN_TOKENS))(
-    'resolves --color-%s to %s',
-    (name, expected) => {
-      expect(color(name)).toBe(expected)
+  it('resolves every colour token to its design system value', () => {
+    for (const [name, expected] of Object.entries(DESIGN_TOKENS)) {
+      expect(color(name), name).toBe(expected)
     }
-  )
+  })
 
   it('declares exactly the design system colour tokens', () => {
     expect(Object.keys(colorTokens).sort()).toEqual(
@@ -113,12 +112,11 @@ describe('breakpoints', () => {
     ])
   })
 
-  it.each(Object.entries(BREAKPOINTS))(
-    'resolves --breakpoint-%s to %s',
-    (name, expected) => {
-      expect(breakpointTokens[name]).toBe(expected)
+  it('resolves every breakpoint token to its declared width', () => {
+    for (const [name, expected] of Object.entries(BREAKPOINTS)) {
+      expect(breakpointTokens[name], name).toBe(expected)
     }
-  )
+  })
 
   it('states every breakpoint in rem so they track the root font size', () => {
     for (const value of Object.values(breakpointTokens)) {
@@ -159,25 +157,29 @@ describe('typography', () => {
 })
 
 describe('WCAG 1.4.3 text contrast', () => {
-  it.each([...TEXT_ON_BACKGROUND_PAIRS, ...SEMANTIC_PAIRS])(
-    '%s on %s meets 4.5:1',
-    (foreground, background) => {
+  it('holds every text and semantic pair at 4.5:1', () => {
+    for (const [foreground, background] of [
+      ...TEXT_ON_BACKGROUND_PAIRS,
+      ...SEMANTIC_PAIRS,
+    ]) {
       const ratio = contrastRatio(color(foreground), color(background))
       expect(
         ratio,
         `${foreground} on ${background} is ${ratio.toFixed(2)}:1`
       ).toBeGreaterThanOrEqual(4.5)
     }
-  )
+  })
 })
 
 describe('WCAG 1.4.11 non-text contrast', () => {
-  it.each(BOUNDARY_PAIRS)('%s on %s meets 3:1', (boundary, background) => {
-    const ratio = contrastRatio(color(boundary), color(background))
-    expect(
-      ratio,
-      `${boundary} on ${background} is ${ratio.toFixed(2)}:1`
-    ).toBeGreaterThanOrEqual(3)
+  it('holds every boundary against every background at 3:1', () => {
+    for (const [boundary, background] of BOUNDARY_PAIRS) {
+      const ratio = contrastRatio(color(boundary), color(background))
+      expect(
+        ratio,
+        `${boundary} on ${background} is ${ratio.toFixed(2)}:1`
+      ).toBeGreaterThanOrEqual(3)
+    }
   })
 
   it('holds border-interactive at 4.57:1 against its weakest background', () => {
@@ -227,10 +229,10 @@ describe('component code', () => {
     expect(componentFiles.length).toBeGreaterThan(0)
   })
 
-  it.each(componentFiles)('has no raw hex colour in %s', (path) => {
-    const offenders = readFile(path).match(
-      /#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g
+  it('leaves no raw hex colour anywhere in the source', () => {
+    const offenders = componentFiles.filter((path) =>
+      /#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/.test(readFile(path))
     )
-    expect(offenders).toBeNull()
+    expect(offenders).toEqual([])
   })
 })

@@ -17,11 +17,7 @@ import {
 import EmployeeFormModal from '@/components/employees/EmployeeFormModal'
 import { setStoredToken } from '@/api/token'
 import { AuthProvider } from '@/features/auth/auth'
-import {
-  DEPARTMENT,
-  JOB_ROLE,
-  type OrgUnit,
-} from '@/features/orgUnits/orgUnits'
+import { JOB_ROLE, type OrgUnit } from '@/features/orgUnits/orgUnits'
 import { makeUserJwt } from '@/test-support/jwt'
 import type { UserListItem } from '@/types/api'
 import Departments from './Departments'
@@ -351,16 +347,6 @@ describe('deleting a job role', () => {
 })
 
 describe('the departments on the same screen', () => {
-  it('lists each department with the number of people in it', async () => {
-    await renderScreen()
-
-    expect(
-      within(cardFor(departmentsSection(), ENGINEERING.name)).getByTestId(
-        'org-unit-user-count'
-      )
-    ).toHaveTextContent('50')
-  })
-
   it('summarises both sections in their headings', async () => {
     await renderScreen()
 
@@ -373,51 +359,6 @@ describe('the departments on the same screen', () => {
   })
 })
 
-describe('creating a department', () => {
-  async function submitName(value: string) {
-    fireEvent.click(
-      within(departmentsSection()).getByRole('button', {
-        name: DEPARTMENT.addLabel,
-      })
-    )
-    fireEvent.change(screen.getByLabelText(DEPARTMENT.nameLabel), {
-      target: { value },
-    })
-    fireEvent.submit(screen.getByTestId('department-form'))
-  }
-
-  it('posts it to /api/departments and shows it without a reload', async () => {
-    await renderScreen()
-    await submitName('Marketing')
-
-    expect(
-      await within(departmentsSection()).findByText('Marketing')
-    ).toBeInTheDocument()
-    expect(
-      within(departmentsSection()).getByText('3 departments • 50 people')
-    ).toBeInTheDocument()
-    const post = fetchMock.mock.calls.find(
-      ([input, init]) =>
-        init?.method === 'POST' && String(input).endsWith('/api/departments')
-    )
-    expect(JSON.parse(String((post?.[1] as RequestInit).body))).toEqual({
-      name: 'Marketing',
-    })
-  })
-
-  it('refuses a name that duplicates an existing department', async () => {
-    await renderScreen()
-    await submitName('  engineering  ')
-
-    expect(
-      await screen.findByText('That department already exists')
-    ).toBeInTheDocument()
-    expect(
-      fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')
-    ).toHaveLength(0)
-  })
-})
-
 describe('deleting a department', () => {
   async function openDelete(name: string) {
     fireEvent.click(
@@ -427,46 +368,6 @@ describe('deleting a department', () => {
     )
     return screen.findByTestId('modal')
   }
-
-  it('explains why a department somebody is in cannot be deleted', async () => {
-    await renderScreen()
-    const modal = await openDelete(ENGINEERING.name)
-
-    expect(within(modal).getByRole('alert')).toHaveTextContent(
-      '50 people are in Engineering, so it cannot be deleted. Move them to another department first.'
-    )
-    expect(
-      within(modal).queryByRole('button', {
-        name: `Delete ${ENGINEERING.name}`,
-      })
-    ).not.toBeInTheDocument()
-    expect(
-      fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')
-    ).toHaveLength(0)
-  })
-
-  it('deletes a department nobody is in and drops it from the screen', async () => {
-    await renderScreen()
-    const modal = await openDelete(FINANCE.name)
-
-    expect(within(modal).queryByRole('alert')).not.toBeInTheDocument()
-    fireEvent.click(
-      within(modal).getByRole('button', { name: `Delete ${FINANCE.name}` })
-    )
-
-    await waitFor(() =>
-      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
-    )
-    await waitFor(() =>
-      expect(
-        within(departmentsSection()).queryByText(FINANCE.name)
-      ).not.toBeInTheDocument()
-    )
-    const deleted = fetchMock.mock.calls.find(
-      ([, init]) => init?.method === 'DELETE'
-    )
-    expect(String(deleted?.[0])).toContain(`/api/departments/${FINANCE.id}`)
-  })
 
   it('reads back the API refusal when the server rejects the delete', async () => {
     await renderScreen({

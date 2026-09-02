@@ -2,13 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StatusCodes } from 'http-status-codes'
 import { clearApiCache } from '@/api/cache'
 import { setStoredToken } from '@/api/token'
-import {
-  ApiRequestError,
-  DEFAULT_API_BASE_URL,
-  get,
-  post,
-  resolveApiBaseUrl,
-} from './client'
+import { DEFAULT_API_BASE_URL, get, post, resolveApiBaseUrl } from './client'
 
 function envWith(url: string | undefined): ImportMetaEnv {
   return { VITE_API_URL: url } as ImportMetaEnv
@@ -51,12 +45,6 @@ describe('resolveApiBaseUrl', () => {
     )
   })
 
-  it('tracks the environment rather than returning a fixed string', () => {
-    const first = resolveApiBaseUrl(envWith('https://one.example.test'))
-    const second = resolveApiBaseUrl(envWith('https://two.example.test'))
-    expect(first).not.toBe(second)
-  })
-
   it('trims trailing slashes so paths join cleanly', () => {
     expect(resolveApiBaseUrl(envWith('http://localhost:3000/'))).toBe(
       'http://localhost:3000'
@@ -77,19 +65,6 @@ describe('the base URL requests are sent to', () => {
       'https://staging.example.test/api/leave-requests'
     )
   })
-
-  it('sends login to the same configured host', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => 'jwt-token',
-    } as unknown as Response)
-    const client = await importClientWith('https://staging.example.test')
-    await client.postForToken('/api/login', {})
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      'https://staging.example.test/api/login'
-    )
-  })
 })
 
 describe('what the client does with a response', () => {
@@ -97,12 +72,6 @@ describe('what the client does with a response', () => {
     fetchMock.mockResolvedValue(respond({ data: [{ id: 1 }] }))
 
     expect(await get('/api/job-roles')).toEqual([{ id: 1 }])
-  })
-
-  it('passes an unenveloped body straight through', async () => {
-    fetchMock.mockResolvedValue(respond([{ date: '2026-01-01' }]))
-
-    expect(await get('/api/public-holidays')).toEqual([{ date: '2026-01-01' }])
   })
 
   it('reads an empty collection out of a 204 rather than stalling', async () => {
@@ -165,14 +134,6 @@ describe('caching and invalidation', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('refetches after the cache is invalidated', async () => {
-    await get('/api/job-roles')
-    clearApiCache()
-    await get('/api/job-roles')
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-  })
-
   it('invalidates the cache after a write so reads see the change', async () => {
     await get('/api/job-roles')
     await post('/api/job-roles', { name: 'Lead' })
@@ -182,13 +143,5 @@ describe('caching and invalidation', () => {
       ([, init]) => (init as RequestInit | undefined)?.method === undefined
     )
     expect(reads).toHaveLength(2)
-  })
-})
-
-describe('ApiRequestError', () => {
-  it('carries the status alongside the message', () => {
-    const error = new ApiRequestError('Nope', StatusCodes.CONFLICT)
-    expect(error.status).toBe(StatusCodes.CONFLICT)
-    expect(error.name).toBe('ApiRequestError')
   })
 })

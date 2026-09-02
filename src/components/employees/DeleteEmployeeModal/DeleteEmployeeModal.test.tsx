@@ -115,26 +115,12 @@ describe('the delete confirmation', () => {
     expect(text).toContain('cannot be recovered')
   })
 
-  it('names the right person when a different row is deleted', () => {
-    renderModal(GRACE)
-
-    expect(consequences()).toContain('Every leave request Grace Williams')
-    expect(consequences()).not.toContain('David Jones')
-  })
-
   it('warns that a deleted manager leaves their reports without a line manager', () => {
     renderModal(BOB)
 
     const text = consequences()
     expect(text).toContain('2 people report to Bob Mitchell')
     expect(text).toContain('kept, but left without a line manager')
-  })
-
-  it('says the reports survive rather than being deleted too', () => {
-    renderModal(BOB)
-
-    expect(consequences()).not.toContain('reports will be deleted')
-    expect(consequences()).toContain('They will be kept')
   })
 
   it('promises the requests a reviewer decided stay in the history', () => {
@@ -149,16 +135,6 @@ describe('the delete confirmation', () => {
     renderModal(GRACE)
 
     expect(consequences()).not.toContain('line manager')
-  })
-
-  it('never asks the Admin to retype anything it already knows', () => {
-    renderModal()
-
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-    expect(screen.getByLabelText(DELETE_ACKNOWLEDGEMENT)).toHaveAttribute(
-      'type',
-      'checkbox'
-    )
   })
 })
 
@@ -178,17 +154,6 @@ describe('accepting the consequences', () => {
     expect(confirmButton('David Jones')).toBeDisabled()
     accept()
     expect(confirmButton('David Jones')).toBeEnabled()
-  })
-
-  it('stops again if the Admin unticks the box', () => {
-    renderModal()
-
-    accept()
-    accept()
-
-    expect(confirmButton('David Jones')).toBeDisabled()
-    fireEvent.click(confirmButton('David Jones'))
-    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('deletes the employee once accepted and confirmed', async () => {

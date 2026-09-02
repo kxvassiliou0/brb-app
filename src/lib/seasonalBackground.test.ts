@@ -22,8 +22,10 @@ const MONTH_SEASONS: [string, number, Season][] = [
 ]
 
 describe('seasonFor', () => {
-  it.each(MONTH_SEASONS)('maps %s to %s', (_name, month, season) => {
-    expect(seasonFor(new Date(2026, month, 15))).toBe(season)
+  it('maps every month to its season', () => {
+    for (const [name, month, season] of MONTH_SEASONS) {
+      expect(seasonFor(new Date(2026, month, 15)), name).toBe(season)
+    }
   })
 
   it('splits the year into three equal runs of four months', () => {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { AuthProvider } from '@/features/auth/auth'
@@ -11,9 +11,11 @@ beforeEach(() => {
 })
 
 describe('not found', () => {
-  it.each(['/admin/this-does-not-exist', '/manager/this-does-not-exist'])(
-    'renders the not-found screen for unmatched path %s',
-    async (path) => {
+  it('renders the not-found screen for any unmatched path', async () => {
+    for (const path of [
+      '/admin/this-does-not-exist',
+      '/manager/this-does-not-exist',
+    ]) {
       setStoredToken(
         makeUserJwt({ id: 1, email: 'admin@company.com', role: 'Admin' })
       )
@@ -24,7 +26,8 @@ describe('not found', () => {
         </AuthProvider>
       )
 
-      expect(await screen.findByTestId('not-found')).toBeInTheDocument()
+      expect(await screen.findByTestId('not-found'), path).toBeInTheDocument()
+      cleanup()
     }
-  )
+  })
 })

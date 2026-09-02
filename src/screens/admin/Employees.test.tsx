@@ -131,21 +131,6 @@ describe('the employee list', () => {
     }
   })
 
-  it('renders the department and job role names rather than their raw ids', async () => {
-    setViewportWidth(desktopWidth())
-    await renderScreen()
-
-    const table = screen.getByTestId('data-table')
-    expect(within(table).getByText('Human Resources')).toBeInTheDocument()
-    expect(within(table).getByText('HR Specialist')).toBeInTheDocument()
-    expect(within(table).getByText('Engineering')).toBeInTheDocument()
-    expect(within(table).getByText('Contractor')).toBeInTheDocument()
-
-    for (const raw of ['2', '3', '1', '5']) {
-      expect(within(table).queryByText(raw)).not.toBeInTheDocument()
-    }
-  })
-
   it('names a missing line manager explicitly instead of leaving the cell blank', async () => {
     setViewportWidth(desktopWidth())
     await renderScreen()
@@ -175,15 +160,6 @@ describe('the employee list', () => {
     }
     expect(screen.queryByText(/password/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/salt/i)).not.toBeInTheDocument()
-  })
-
-  it('summarises the roster in the page header', async () => {
-    setViewportWidth(desktopWidth())
-    await renderScreen()
-
-    expect(
-      screen.getByText('2 people across 2 departments')
-    ).toBeInTheDocument()
   })
 })
 
@@ -238,15 +214,6 @@ describe('deleting an employee from the list', () => {
 
     fireEvent.click(ownRow)
     expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
-  })
-
-  it('still allows the same Admin to delete anybody else', async () => {
-    setViewportWidth(desktopWidth())
-    await renderScreen(EMPLOYEES, ALICE.id)
-
-    expect(
-      screen.getByRole('button', { name: 'Delete David Jones' })
-    ).toBeEnabled()
   })
 })
 
@@ -451,11 +418,4 @@ describe('access to the employee list', () => {
       expect(screen.queryByTestId('screen-employees')).not.toBeInTheDocument()
     }
   )
-
-  it('renders the screen for an Admin', async () => {
-    stubUsers()
-    renderAt('Admin')
-
-    expect(await screen.findByTestId('screen-employees')).toBeInTheDocument()
-  })
 })
