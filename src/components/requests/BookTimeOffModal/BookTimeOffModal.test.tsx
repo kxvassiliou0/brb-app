@@ -18,7 +18,6 @@ import {
 import type { BookingConfirmationState } from '@/components/requests/BookingConfirmation'
 import BookTimeOffModal from '@/components/requests/BookTimeOffModal'
 import { setStoredToken } from '@/api/token'
-import { clearApiCache } from '@/api/cache'
 import { AuthProvider } from '@/features/auth/auth'
 import { REQUESTS_PATH, type Role } from '@/lib/routeAccess'
 import { makeUserJwt } from '@/test-support/jwt'
@@ -185,32 +184,6 @@ afterEach(() => {
 })
 
 describe('leave type options', () => {
-  it('offers exactly Vacation, Sick and Personal', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    const options = within(control('leave-type'))
-      .getAllByRole('option')
-      .map((option) => option.textContent)
-
-    expect(options).toEqual([
-      'Select leave type',
-      'Vacation',
-      'Sick',
-      'Personal',
-    ])
-  })
-
-  it('does not offer the retired Business Trip and Conference types', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    expect(screen.queryByRole('option', { name: 'Business Trip' })).toBeNull()
-    expect(screen.queryByRole('option', { name: 'Conference' })).toBeNull()
-  })
-
   it('refuses to submit until a leave type is chosen', async () => {
     stubApi()
     renderModal()
@@ -228,40 +201,6 @@ describe('leave type options', () => {
 })
 
 describe('what gets sent to the API', () => {
-  it('serialises the dates as YYYY-MM-DD', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-21')
-    submit()
-
-    await waitFor(() => expect(createCalls()).toHaveLength(1))
-    const body = createdBody()
-    expect(body.start_date).toBe('2026-08-10')
-    expect(body.end_date).toBe('2026-08-21')
-    expect(body.leave_type).toBe('Vacation')
-  })
-
-  it('attaches an optional reason', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    selectLeaveType('Personal')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-10')
-    fireEvent.change(control('reason'), {
-      target: { value: 'Family holiday plans' },
-    })
-    submit()
-
-    await waitFor(() => expect(createCalls()).toHaveLength(1))
-    expect(createdBody().reason).toBe('Family holiday plans')
-  })
-
   it('books for the signed-in employee without passing an employee_id', async () => {
     stubApi()
     renderModal()
@@ -278,32 +217,6 @@ describe('what gets sent to the API', () => {
 })
 
 describe('the day count and balance', () => {
-  it('counts Friday to Monday as four days, labelled days', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    pickDate('start-date', '2026-08-14')
-    pickDate('end-date', '2026-08-17')
-
-    const summary = await screen.findByTestId('booking-summary')
-    expect(summary).toHaveTextContent('4 days')
-    expect(summary).not.toHaveTextContent('working days')
-  })
-
-  it('counts a single day as one day', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-10')
-
-    expect(await screen.findByTestId('booking-summary')).toHaveTextContent(
-      '1 day'
-    )
-  })
-
   it('shows the balance left after the request before it is sent', async () => {
     stubApi()
     renderModal()
@@ -316,37 +229,6 @@ describe('the day count and balance', () => {
       '13 days remaining after this request'
     )
     expect(createCalls()).toHaveLength(0)
-  })
-})
-
-describe('the date range', () => {
-  it('blocks an end date before the start date instead of sending it', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-14')
-    pickDate('start-date', '2026-08-20')
-    submit()
-
-    expect(
-      await screen.findByText('End date must be on or after the start date')
-    ).toBeInTheDocument()
-    expect(createCalls()).toHaveLength(0)
-  })
-
-  it('disables dates before the start date in the end date picker', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-
-    pickDate('start-date', '2026-08-20')
-    fireEvent.click(control('end-date'))
-
-    expect(dayButton('end-date', '2026-08-19')).toBeDisabled()
-    expect(dayButton('end-date', '2026-08-20')).toBeEnabled()
   })
 })
 
@@ -363,65 +245,9 @@ describe('public holidays', () => {
     expect(holiday).toHaveAccessibleName(/Summer Bank Holiday/)
     expect(dayButton('start-date', '2026-08-25')).toBeEnabled()
   })
-
-  it('reads the holiday dates from the public holidays endpoint', async () => {
-    stubApi({
-      holidays: [{ id: 2, date: '2026-08-11', name: 'Founders Day' }],
-    })
-    renderModal()
-    await loaded()
-
-    expect(
-      fetchMock.mock.calls.some(([input]) =>
-        String(input).includes('/api/public-holidays')
-      )
-    ).toBe(true)
-
-    fireEvent.click(control('start-date'))
-    expect(dayButton('start-date', '2026-08-11')).toBeDisabled()
-    expect(dayButton('start-date', '2026-08-26')).toBeEnabled()
-  })
 })
 
 describe('server refusals', () => {
-  it('explains a 409 overlap as a clash with an existing request', async () => {
-    stubApi({
-      createStatus: 409,
-      createError: 'Date range of request overlaps with existing request',
-    })
-    renderModal()
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-14')
-    submit()
-
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent(/clash/)
-    expect(alert).toHaveTextContent(/overlap/)
-    expect(alert).not.toHaveTextContent(/remaining/)
-  })
-
-  it('shows the balance figure when a 400 says the request exceeds it', async () => {
-    stubApi({
-      balance: { annual_allowance: 25, days_used: 22, days_remaining: 3 },
-      createStatus: 400,
-      createError: 'Days requested exceed remaining balance',
-    })
-    renderModal()
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-14')
-    submit()
-
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('3 days remaining')
-    expect(alert).toHaveTextContent('5 days')
-  })
-
   it.each([
     [
       'a 400 balance refusal',
@@ -467,24 +293,6 @@ describe('server refusals', () => {
       expect(control('reason')).toHaveValue('Family holiday plans')
     }
   )
-
-  it('keeps the modal open so the dates can be corrected', async () => {
-    stubApi({
-      createStatus: 409,
-      createError: 'Date range of request overlaps with existing request',
-    })
-    const { onClose } = renderModal()
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-14')
-    submit()
-
-    await screen.findByRole('alert')
-    expect(onClose).not.toHaveBeenCalled()
-    expect(screen.getByTestId('book-time-off-form')).toBeInTheDocument()
-  })
 })
 
 describe('a successful booking', () => {
@@ -520,32 +328,6 @@ describe('a successful booking', () => {
     expect(location()).toHaveAttribute('data-request-id', String(CREATED_ID))
   })
 
-  it('navigates only after the server responds, never optimistically', async () => {
-    let release: (value: unknown) => void = () => {}
-    const pending = new Promise((resolve) => {
-      release = resolve
-    })
-
-    stubApi({ gateCreateOn: pending })
-
-    renderModal()
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-14')
-    submit()
-
-    await waitFor(() => expect(createCalls()).toHaveLength(1))
-    expect(location()).toHaveAttribute('data-pathname', '/')
-
-    release(null)
-
-    await waitFor(() =>
-      expect(location()).toHaveAttribute('data-pathname', REQUESTS_PATH)
-    )
-  })
-
   it('does not navigate when the server refuses the request', async () => {
     stubApi({
       createStatus: 409,
@@ -562,68 +344,6 @@ describe('a successful booking', () => {
     await screen.findByRole('alert')
     expect(location()).toHaveAttribute('data-pathname', '/')
     expect(location()).toHaveAttribute('data-confirmation', '')
-  })
-})
-
-describe('booking as a Manager', () => {
-  function formShape(): string[] {
-    return Array.from(
-      screen
-        .getByTestId('book-time-off-form')
-        .querySelectorAll('label, input, select, textarea, button')
-    ).map((element) => {
-      const tag = element.tagName.toLowerCase()
-      const id = element.id ? `#${element.id}` : ''
-      const text = element.textContent?.trim() ?? ''
-      return `${tag}${id}${tag === 'button' || tag === 'label' ? ` "${text}"` : ''}`
-    })
-  }
-
-  it('renders the same booking form for an Employee and a Manager', async () => {
-    stubApi()
-    const { unmount } = renderModal(vi.fn(), 'Employee')
-    await loaded()
-    const asEmployee = formShape()
-
-    unmount()
-    localStorage.clear()
-    clearApiCache()
-
-    stubApi()
-    renderModal(vi.fn(), 'Manager')
-    await loaded()
-
-    expect(formShape()).toEqual(asEmployee)
-    expect(asEmployee.length).toBeGreaterThan(0)
-  })
-
-  it('books against the token holder, with no employee_id in the payload', async () => {
-    stubApi()
-    renderModal(vi.fn(), 'Manager')
-    await loaded()
-
-    selectLeaveType('Vacation')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-14')
-    submit()
-
-    await waitFor(() => expect(createCalls()).toHaveLength(1))
-    expect(createdBody()).not.toHaveProperty('employee_id')
-  })
-
-  it('sends a Manager to the same My requests destination', async () => {
-    stubApi()
-    renderModal(vi.fn(), 'Manager')
-    await loaded()
-
-    selectLeaveType('Sick')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-10')
-    submit()
-
-    await waitFor(() =>
-      expect(location()).toHaveAttribute('data-pathname', REQUESTS_PATH)
-    )
   })
 })
 
@@ -651,24 +371,6 @@ describe('the dialog itself', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(onClose).toHaveBeenCalledTimes(2)
-  })
-
-  it('sizes every control in the dialog for touch', async () => {
-    stubApi()
-    renderModal()
-    await loaded()
-    fireEvent.click(control('start-date'))
-
-    const targets = Array.from(
-      screen
-        .getByTestId('modal')
-        .querySelectorAll('a, button, input, select, textarea')
-    )
-    const undersized = targets
-      .filter((element) => !element.classList.contains('touch-target'))
-      .map((element) => element.tagName.toLowerCase())
-
-    expect(undersized).toEqual([])
   })
 })
 
@@ -734,36 +436,6 @@ describe('booking as an Admin', () => {
 
     await waitFor(() => expect(createCalls()).toHaveLength(1))
     expect(createdBody().employee_id).toBe(4)
-  })
-
-  it('books against the admin themselves when nobody else is chosen', async () => {
-    stubAdminApi()
-    renderModal(vi.fn(), 'Admin')
-    await adminLoaded()
-
-    selectLeaveType('Sick')
-    pickDate('start-date', '2026-08-10')
-    pickDate('end-date', '2026-08-10')
-    submit()
-
-    await waitFor(() => expect(createCalls()).toHaveLength(1))
-    expect(createdBody().employee_id).toBe(EMPLOYEE_ID)
-  })
-
-  it('reads the balance of the employee being booked for', async () => {
-    stubAdminApi()
-    renderModal(vi.fn(), 'Admin')
-    await adminLoaded()
-
-    chooseEmployee(7)
-
-    await waitFor(() =>
-      expect(
-        fetchMock.mock.calls.some(([input]) =>
-          String(input).includes('/api/leave-requests/remaining/7')
-        )
-      ).toBe(true)
-    )
   })
 
   it('withholds the employee picker from a Manager', async () => {

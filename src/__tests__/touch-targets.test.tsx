@@ -85,19 +85,22 @@ describe('WCAG 2.5.8 target size', () => {
     expect(rule).toContain('min-inline-size: var(--size-touch-target)')
   })
 
-  describe.each(WIDTHS)('at %s width', (_, width) => {
-    it.each(SCREENS)('meets the minimum on $path', async ({ path, role }) => {
-      setViewportWidth(width)
-      const { container } = renderAt(path, role)
-      await screen.findByTestId('app-layout').catch(() => null)
+  it('meets the minimum on every screen at every width', async () => {
+    for (const [label, width] of WIDTHS) {
+      for (const { path, role } of SCREENS) {
+        setViewportWidth(width)
+        const { container, unmount } = renderAt(path, role)
+        await screen.findByTestId('app-layout').catch(() => null)
 
-      const targets = Array.from(container.querySelectorAll(INTERACTIVE))
-      expect(targets.length).toBeGreaterThan(0)
+        const targets = Array.from(container.querySelectorAll(INTERACTIVE))
+        expect(targets.length, `${path} at ${label}`).toBeGreaterThan(0)
 
-      const undersized = targets
-        .filter((el) => !el.classList.contains(TOUCH_TARGET_CLASS))
-        .map(describeTarget)
-      expect(undersized).toEqual([])
-    })
+        const undersized = targets
+          .filter((el) => !el.classList.contains(TOUCH_TARGET_CLASS))
+          .map(describeTarget)
+        expect(undersized, `${path} at ${label}`).toEqual([])
+        unmount()
+      }
+    }
   })
 })

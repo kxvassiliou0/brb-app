@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/auth'
@@ -57,26 +57,35 @@ const disallowedPaths: Record<Role, string[]> = {
 }
 
 describe('role-scoped route access', () => {
-  for (const role of Object.keys(allowedPaths) as Role[]) {
-    for (const { path, testId } of allowedPaths[role]) {
-      it(`${role} can reach ${path}`, async () => {
+  it('lets every role reach the paths it owns', async () => {
+    for (const role of Object.keys(allowedPaths) as Role[]) {
+      for (const { path, testId } of allowedPaths[role]) {
         seedUser(role)
         renderAt(path)
 
-        expect(await screen.findByTestId(testId)).toBeInTheDocument()
-      })
+        expect(
+          await screen.findByTestId(testId),
+          `${role} reaching ${path}`
+        ).toBeInTheDocument()
+        cleanup()
+      }
     }
+  })
 
-    for (const path of disallowedPaths[role]) {
-      it(`${role} is refused ${path}`, async () => {
+  it('sends every role home from a path it does not own', async () => {
+    for (const role of Object.keys(allowedPaths) as Role[]) {
+      for (const path of disallowedPaths[role]) {
         seedUser(role)
         const router = renderAt(path)
 
         await screen.findByTestId('app-layout')
-        expect(router.state.location.pathname).toBe(HOME_PATH)
-      })
+        expect(router.state.location.pathname, `${role} at ${path}`).toBe(
+          HOME_PATH
+        )
+        cleanup()
+      }
     }
-  }
+  })
 })
 
 describe('cross-role allowances that mirror the backend', () => {

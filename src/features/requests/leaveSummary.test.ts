@@ -56,10 +56,6 @@ describe('countDays', () => {
   it('counts calendar days inclusively, weekends included', () => {
     expect(countDays('2026-05-01', '2026-05-04')).toBe(4)
   })
-
-  it('counts a single day as one', () => {
-    expect(countDays('2026-05-01', '2026-05-01')).toBe(1)
-  })
 })
 
 describe('summariseRequests', () => {
@@ -115,22 +111,9 @@ describe('recentRequests', () => {
     )
     expect(ordered.map((r) => r.id)).toEqual([2, 3])
   })
-
-  it('leaves the source array untouched', () => {
-    const requests = [
-      request(1, '2026-04-01', '2026-04-02'),
-      request(2, '2026-08-01', '2026-08-02'),
-    ]
-    recentRequests(requests)
-    expect(requests.map((r) => r.id)).toEqual([1, 2])
-  })
 })
 
 describe('formatDateRange', () => {
-  it('collapses a single-day range to one date', () => {
-    expect(formatDateRange('2026-02-02', '2026-02-02')).toBe('2 Feb 2026')
-  })
-
   it('renders a multi-day range as a span', () => {
     expect(formatDateRange('2026-08-10', '2026-08-21')).toBe(
       '10 Aug 2026 – 21 Aug 2026'

@@ -41,14 +41,13 @@ const cases: { path: string; testId: string; role: Role }[] = [
 ]
 
 describe('routes', () => {
-  it.each(cases)(
-    'mounts the correct screen for $path as $role',
-    async ({ path, testId, role }) => {
-      renderAt(path, role)
-
+  it('mounts the correct screen for every path', async () => {
+    for (const { path, testId, role } of cases) {
+      const { unmount } = renderAt(path, role)
       expect(await screen.findByTestId(testId)).toBeInTheDocument()
+      unmount()
     }
-  )
+  })
 
   it('mounts the login screen at /login', async () => {
     renderAt('/login')
