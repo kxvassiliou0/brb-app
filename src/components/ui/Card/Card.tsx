@@ -21,6 +21,7 @@ interface CardProps {
   variant?: CardVariant
   size?: CardSize
   testId?: string
+  labelledBy?: string
 }
 
 export default function Card({
@@ -28,12 +29,24 @@ export default function Card({
   variant = 'raised',
   size = 'lg',
   testId,
+  labelledBy,
 }: CardProps) {
+  const className = `w-full ${SIZE[size]} ${VARIANT[variant]}`
+
+  if (labelledBy !== undefined) {
+    return (
+      <section
+        data-testid={testId}
+        aria-labelledby={labelledBy}
+        className={className}
+      >
+        {children}
+      </section>
+    )
+  }
+
   return (
-    <div
-      data-testid={testId}
-      className={`w-full ${SIZE[size]} ${VARIANT[variant]}`}
-    >
+    <div data-testid={testId} className={className}>
       {children}
     </div>
   )
