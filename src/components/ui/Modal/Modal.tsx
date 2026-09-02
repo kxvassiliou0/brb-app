@@ -21,9 +21,6 @@ interface ModalProps {
   children: ReactNode
 }
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
 export default function Modal({
   title,
   onClose,
@@ -53,7 +50,9 @@ export default function Modal({
       const panel = panelRef.current
       if (!panel) return
       const targets = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE)
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
       ).filter((el) => el.offsetParent !== null || el === panel)
       if (targets.length === 0) return
       const first = targets[0]!

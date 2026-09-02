@@ -77,12 +77,6 @@ function navFor(role: Role): NavItem[] {
   ]
 }
 
-const SIDEBAR_LINK =
-  'touch-target flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
-
-const BOTTOM_LINK =
-  'touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
-
 export default function Navigation({
   collapsed = false,
 }: {
@@ -109,7 +103,13 @@ export default function Navigation({
         <ul key={location.pathname} className="flex items-stretch gap-1 p-2">
           {links.map((l) => (
             <li key={l.to} className="flex min-w-0 flex-1">
-              <NavLink to={l.to} end={l.end} className={BOTTOM_LINK}>
+              <NavLink
+                to={l.to}
+                end={l.end}
+                className={
+                  'touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
+                }
+              >
                 <Icon name={l.icon} />
                 <span className="w-full truncate text-center">
                   {l.shortLabel}
@@ -136,7 +136,13 @@ export default function Navigation({
         <ul key={location.pathname} className="flex flex-col gap-1">
           {links.map((l) => (
             <li key={l.to}>
-              <NavLink to={l.to} end={l.end} className={SIDEBAR_LINK}>
+              <NavLink
+                to={l.to}
+                end={l.end}
+                className={
+                  'touch-target flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-text-primary hover:bg-background-tertiary aria-[current=page]:bg-sage-background aria-[current=page]:text-sage-foreground'
+                }
+              >
                 <Icon name={l.icon} />
                 <span className="truncate">{l.label}</span>
               </NavLink>

@@ -16,9 +16,6 @@ export const KEEP_REQUEST_LABEL = 'Keep request'
 export const ALREADY_CANCELLED_MESSAGE =
   'This request has already been cancelled. Refresh the page to see its current status.'
 
-const CANCEL_FAILED_MESSAGE =
-  'Your request could not be cancelled. Please try again.'
-
 const ALREADY_CANCELLED = /already cancelled/i
 
 export function isCancellable(status: LeaveStatus): boolean {
@@ -40,5 +37,8 @@ export function cancelErrorMessage(error: unknown): string {
   ) {
     return ALREADY_CANCELLED_MESSAGE
   }
-  return getApiErrorMessage(error, CANCEL_FAILED_MESSAGE)
+  return getApiErrorMessage(
+    error,
+    'Your request could not be cancelled. Please try again.'
+  )
 }

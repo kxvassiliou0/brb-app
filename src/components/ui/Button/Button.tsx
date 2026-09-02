@@ -17,9 +17,6 @@ interface ButtonProps {
 export const BUTTON_BASE =
   'touch-target inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 text-base leading-5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60'
 
-const BUTTON_ICON_BASE =
-  'touch-target inline-flex items-center justify-center rounded-lg p-1.5 text-base leading-5 font-medium disabled:cursor-not-allowed disabled:opacity-60'
-
 const ICON_VARIANTS: ButtonVariant[] = ['ghost', 'ghostDanger']
 
 export const BUTTON_VARIANT: Record<ButtonVariant, string> = {
@@ -42,7 +39,9 @@ export default function Button({
   form,
   onClick,
 }: ButtonProps) {
-  const base = ICON_VARIANTS.includes(variant) ? BUTTON_ICON_BASE : BUTTON_BASE
+  const base = ICON_VARIANTS.includes(variant)
+    ? 'touch-target inline-flex items-center justify-center rounded-lg p-1.5 text-base leading-5 font-medium disabled:cursor-not-allowed disabled:opacity-60'
+    : BUTTON_BASE
 
   return (
     <button

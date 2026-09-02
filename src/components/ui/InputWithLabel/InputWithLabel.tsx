@@ -3,18 +3,15 @@ import type { ReactNode } from 'react'
 export const CONTROL_CLASS =
   'touch-target w-full rounded-lg border-border-primary bg-background-secondary px-4 py-2 text-base text-text-primary placeholder:text-text-secondary'
 
-const INVALID_CLASS = 'border-error-foreground text-error-foreground'
-
-const READ_ONLY_CLASS =
-  'bg-background-primary text-text-secondary cursor-not-allowed select-none'
-
 export function errorId(id: string): string {
   return `${id}-error`
 }
 
 function controlClass(error?: string, readOnly?: boolean): string {
-  return `${CONTROL_CLASS} ${error ? INVALID_CLASS : ''} ${
-    readOnly ? READ_ONLY_CLASS : ''
+  return `${CONTROL_CLASS} ${error ? 'border-error-foreground text-error-foreground' : ''} ${
+    readOnly
+      ? 'bg-background-primary text-text-secondary cursor-not-allowed select-none'
+      : ''
   }`
 }
 

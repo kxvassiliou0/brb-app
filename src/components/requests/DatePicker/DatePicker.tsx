@@ -18,12 +18,6 @@ interface DatePickerProps {
   error?: string
 }
 
-const TRIGGER_CLASS =
-  'touch-target w-full rounded-lg border px-4 py-2 text-left text-base text-text-primary'
-
-const DAY_CLASS =
-  'touch-target flex items-center justify-center rounded-lg text-sm disabled:cursor-not-allowed disabled:line-through disabled:opacity-40'
-
 export default function DatePicker({
   id,
   label,
@@ -71,7 +65,7 @@ export default function DatePicker({
         aria-expanded={open}
         aria-describedby={error ? errorId : undefined}
         onClick={toggle}
-        className={`${TRIGGER_CLASS} ${
+        className={`touch-target w-full rounded-lg border px-4 py-2 text-left text-base text-text-primary ${
           error
             ? 'border-error-foreground text-error-foreground'
             : 'border-border-interactive'
@@ -142,7 +136,7 @@ export default function DatePicker({
                   }
                   title={holiday ? `${holiday} (public holiday)` : undefined}
                   onClick={() => select(day.date)}
-                  className={`${DAY_CLASS} ${
+                  className={`touch-target flex items-center justify-center rounded-lg text-sm disabled:cursor-not-allowed disabled:line-through disabled:opacity-40 ${
                     selected
                       ? 'bg-interactive-primary text-interactive-text'
                       : day.inMonth
