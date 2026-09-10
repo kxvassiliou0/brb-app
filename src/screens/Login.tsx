@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate, type Location } from 'react-router'
+import { getApiErrorMessage } from '@/api/client'
 import BrandHeader from '@/components/layout/BrandHeader'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -29,7 +30,7 @@ export default function Login() {
         replace: true,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(getApiErrorMessage(err))
     } finally {
       setSubmitting(false)
     }

@@ -4,7 +4,7 @@ import OrgUnitCard from '@/components/orgUnits/OrgUnitCard'
 import OrgUnitFormModal from '@/components/orgUnits/OrgUnitFormModal'
 import Button from '@/components/ui/Button'
 import Icon from '@/components/ui/Icon'
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/states'
+import { useResourceState } from '@/components/ui/states'
 import {
   describeOrgUnits,
   type OrgUnit,
@@ -39,6 +39,16 @@ export default function OrgUnitSection({
     </Button>
   )
 
+  const state = useResourceState({
+    data: units,
+    error,
+    onRetry,
+    label: `Loading ${kind.nounPlural}`,
+    fallbackMessage: `Failed to load ${kind.nounPlural}`,
+    emptyMessage: `No ${kind.nounPlural} have been created yet.`,
+    emptyAction: addAction,
+  })
+
   return (
     <section data-testid={`${kind.key}-section`} aria-label={kind.nounPlural}>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -51,22 +61,9 @@ export default function OrgUnitSection({
         <div className="shrink-0">{addAction}</div>
       </div>
 
-      {error ? (
-        <ErrorState
-          error={error}
-          onRetry={onRetry}
-          fallbackMessage={`Failed to load ${kind.nounPlural}`}
-        />
-      ) : units === null ? (
-        <LoadingState label={`Loading ${kind.nounPlural}`} />
-      ) : units.length === 0 ? (
-        <EmptyState
-          message={`No ${kind.nounPlural} have been created yet.`}
-          action={addAction}
-        />
-      ) : (
+      {state.ready ? (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {units.map((unit) => (
+          {state.data.map((unit) => (
             <OrgUnitCard
               key={unit.id}
               unit={unit}
@@ -75,6 +72,8 @@ export default function OrgUnitSection({
             />
           ))}
         </ul>
+      ) : (
+        state.fallback
       )}
 
       {adding && (

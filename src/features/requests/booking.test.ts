@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { describe, expect, it } from 'vitest'
-import { ApiRequestError } from '@/api/client'
+import { ApiRequestError, apiErrorMessage } from '@/api/client'
 import {
   bookingErrorMessage,
   buildCreateBody,
@@ -90,11 +90,20 @@ describe('validation before submission', () => {
 })
 
 describe('server error messages', () => {
+  function refusal(status: number, detail: string): ApiRequestError {
+    return new ApiRequestError(
+      apiErrorMessage(status),
+      status,
+      'constructive',
+      detail
+    )
+  }
+
   it('explains a 409 overlap as a clash with an existing request', () => {
     const message = bookingErrorMessage(
-      new ApiRequestError(
-        'Date range of request overlaps with existing request',
-        StatusCodes.CONFLICT
+      refusal(
+        StatusCodes.CONFLICT,
+        'Date range of request overlaps with existing request'
       ),
       draft(),
       18
@@ -111,7 +120,7 @@ describe('server error messages', () => {
       'End date of 2026-08-01 is before the start date of 2026-08-10',
     ]) {
       const message = bookingErrorMessage(
-        new ApiRequestError(serverError, StatusCodes.BAD_REQUEST),
+        refusal(StatusCodes.BAD_REQUEST, serverError),
         draft(),
         18
       )
@@ -122,23 +131,23 @@ describe('server error messages', () => {
 
   it('gives the three backend refusals three different messages', () => {
     const balance = bookingErrorMessage(
-      new ApiRequestError(
-        'Days requested exceed remaining balance',
-        StatusCodes.BAD_REQUEST
+      refusal(
+        StatusCodes.BAD_REQUEST,
+        'Days requested exceed remaining balance'
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
     )
     const overlap = bookingErrorMessage(
-      new ApiRequestError(
-        'Date range of request overlaps with existing request',
-        StatusCodes.CONFLICT
+      refusal(
+        StatusCodes.CONFLICT,
+        'Date range of request overlaps with existing request'
       ),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
     )
     const dates = bookingErrorMessage(
-      new ApiRequestError('Invalid date format', StatusCodes.BAD_REQUEST),
+      refusal(StatusCodes.BAD_REQUEST, 'Invalid date format'),
       draft({ startDate: '2026-08-10', endDate: '2026-08-14' }),
       3
     )

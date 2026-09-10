@@ -209,7 +209,7 @@ describe('settings failure states', () => {
 
     const section = await screen.findByTestId('profile-section')
     await waitFor(() =>
-      expect(section).toHaveTextContent('Service unavailable')
+      expect(section).toHaveTextContent('Could not load your profile')
     )
     expect(
       await screen.findByTestId('leave-allowance-section')
@@ -223,7 +223,7 @@ describe('settings failure states', () => {
     await loadedProfile()
     await waitFor(() =>
       expect(screen.getByTestId('leave-allowance-section')).toHaveTextContent(
-        'Service unavailable'
+        'Could not load your leave allowance'
       )
     )
     expect(screen.getByLabelText('Email address')).toHaveValue(EMAIL)

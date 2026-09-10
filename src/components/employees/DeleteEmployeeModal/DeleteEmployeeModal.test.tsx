@@ -185,7 +185,9 @@ describe('accepting the consequences', () => {
     accept()
     fireEvent.click(confirmButton('David Jones'))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('User not found')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not delete David Jones'
+    )
     expect(onDeleted).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })

@@ -9,7 +9,7 @@ import InputWithLabel, {
   type SelectOption,
 } from '@/components/ui/InputWithLabel'
 import Modal from '@/components/ui/Modal'
-import { ErrorState, LoadingState } from '@/components/ui/states'
+import { useResourceState } from '@/components/ui/states'
 import {
   createEmployee,
   draftFromRecord,
@@ -79,9 +79,22 @@ export default function EmployeeFormModal({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const draft: EmployeeDraft | null = choices
-    ? { ...choices.draft, ...edits }
-    : null
+  const state = useResourceState({
+    data: choices,
+    error: loadError,
+    onRetry: retry,
+    label: editing
+      ? `Loading ${name}'s record`
+      : 'Loading departments and job roles',
+    fallbackMessage: editing
+      ? `Could not load ${name}'s record`
+      : 'Could not load departments and job roles',
+  })
+
+  const draft: EmployeeDraft = {
+    ...(choices?.draft ?? emptyEmployeeDraft()),
+    ...edits,
+  }
 
   function update(patch: Partial<EmployeeDraft>): void {
     setEdits((current) => ({ ...current, ...patch }))
@@ -91,7 +104,7 @@ export default function EmployeeFormModal({
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault()
-    if (draft === null) return
+    if (!state.ready) return
 
     const found = editing
       ? validateEmployee(draft, employeeId)
@@ -140,9 +153,8 @@ export default function EmployeeFormModal({
           : 'They can sign in and book leave as soon as you save them.'
       }
       primary={
-        loadError || draft === null
-          ? undefined
-          : {
+        state.ready
+          ? {
               label: submitting
                 ? editing
                   ? 'Saving…'
@@ -153,28 +165,11 @@ export default function EmployeeFormModal({
               disabled: submitting,
               form: formId,
             }
+          : undefined
       }
       secondary={{ label: 'Cancel', disabled: submitting }}
     >
-      {loadError ? (
-        <ErrorState
-          error={loadError}
-          onRetry={retry}
-          fallbackMessage={
-            editing
-              ? `Could not load ${name}'s record`
-              : 'Could not load departments and job roles'
-          }
-        />
-      ) : choices === null || draft === null ? (
-        <LoadingState
-          label={
-            editing
-              ? `Loading ${name}'s record`
-              : 'Loading departments and job roles'
-          }
-        />
-      ) : (
+      {state.ready ? (
         <form
           id={formId}
           onSubmit={handleSubmit}
@@ -216,7 +211,7 @@ export default function EmployeeFormModal({
               label="Department"
               value={draft.departmentId}
               onChange={(departmentId) => update({ departmentId })}
-              options={namedOptions(choices.departments)}
+              options={namedOptions(state.data.departments)}
               placeholder="Select a department"
               error={errors.departmentId}
             />
@@ -225,7 +220,7 @@ export default function EmployeeFormModal({
               label="Job role"
               value={draft.jobRoleId}
               onChange={(jobRoleId) => update({ jobRoleId })}
-              options={namedOptions(choices.jobRoles)}
+              options={namedOptions(state.data.jobRoles)}
               placeholder="Select a job role"
               error={errors.jobRoleId}
             />
@@ -286,6 +281,8 @@ export default function EmployeeFormModal({
 
           {submitError && <FormAlert message={submitError} />}
         </form>
+      ) : (
+        state.fallback
       )}
     </Modal>
   )

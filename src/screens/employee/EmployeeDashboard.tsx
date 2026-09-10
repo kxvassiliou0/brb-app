@@ -4,7 +4,7 @@ import MyRequestsCard from '@/components/requests/MyRequestsCard'
 import PlanEscapeBanner from '@/components/requests/PlanEscapeBanner'
 import PageHeader from '@/components/layout/PageHeader'
 import StatCard from '@/components/ui/StatCard'
-import { ErrorState, LoadingState } from '@/components/ui/states'
+import { useResourceState } from '@/components/ui/states'
 import { getRemainingLeave, listRequestsFor } from '@/api/leaveRequests'
 import { useResource } from '@/api/useResource'
 import { getMyProfile } from '@/api/users'
@@ -45,6 +45,14 @@ export default function EmployeeDashboard() {
 
   const requests = dashboard.data?.requests ?? null
 
+  const state = useResourceState({
+    data: dashboard.data,
+    error: dashboard.error,
+    onRetry: retry,
+    label: 'Loading your dashboard',
+    fallbackMessage: 'Failed to load your dashboard',
+  })
+
   const summary = useMemo(() => summariseRequests(requests ?? []), [requests])
 
   return (
@@ -58,25 +66,17 @@ export default function EmployeeDashboard() {
         action={<BookTimeOffButton onBooked={retry} />}
       />
 
-      {dashboard.error ? (
-        <ErrorState
-          error={dashboard.error}
-          onRetry={retry}
-          fallbackMessage="Failed to load your dashboard"
-        />
-      ) : dashboard.data === null ? (
-        <LoadingState label="Loading your dashboard" />
-      ) : (
+      {state.ready ? (
         <>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Remaining leave"
-              value={countLabel(dashboard.data.remaining.days_remaining, 'day')}
-              hint={`of ${dashboard.data.remaining.annual_allowance} annual allowance`}
+              value={countLabel(state.data.remaining.days_remaining, 'day')}
+              hint={`of ${state.data.remaining.annual_allowance} annual allowance`}
             />
             <StatCard
               label="Booked this year"
-              value={countLabel(dashboard.data.remaining.days_used, 'day')}
+              value={countLabel(state.data.remaining.days_used, 'day')}
               hint={`across ${countLabel(summary.bookedRequests, 'request')}`}
             />
             <StatCard
@@ -91,13 +91,15 @@ export default function EmployeeDashboard() {
             />
           </dl>
 
-          <MyRequestsCard requests={dashboard.data.requests} onBooked={retry} />
+          <MyRequestsCard requests={state.data.requests} onBooked={retry} />
 
           <PlanEscapeBanner
-            daysRemaining={dashboard.data.remaining.days_remaining}
+            daysRemaining={state.data.remaining.days_remaining}
             onBooked={retry}
           />
         </>
+      ) : (
+        state.fallback
       )}
     </div>
   )

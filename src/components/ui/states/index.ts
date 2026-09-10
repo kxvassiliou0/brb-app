@@ -5,6 +5,7 @@ export { default as ErrorState } from './ErrorState'
 export { default as TableLoadingState } from './TableLoadingState'
 export { default as TableEmptyState } from './TableEmptyState'
 export { default as TableErrorState } from './TableErrorState'
+export { useResourceState, type ResourceState } from './useResourceState'
 export {
   DEFAULT_SKELETON_ROWS,
   SKELETON_LINE_HEIGHT,

@@ -310,7 +310,7 @@ describe('failures', () => {
     renderCalendar()
 
     expect(await screen.findByTestId('error-state')).toHaveTextContent(
-      'Server error'
+      'Failed to load team calendar'
     )
     expect(
       screen.getByRole('button', { name: 'Try again' })

@@ -96,10 +96,11 @@ describe('EmptyState', () => {
 })
 
 describe('ErrorState', () => {
-  it('renders the message from the shared API error handler', () => {
-    render(<ErrorState error={new Error('Request failed with status 500')} />)
+  it('never repeats the wording of a raw failure back to the reader', () => {
+    render(<ErrorState error={new Error('connect ECONNREFUSED 127.0.0.1')} />)
+    expect(screen.queryByText(/ECONNREFUSED/)).not.toBeInTheDocument()
     expect(
-      screen.getByText('Request failed with status 500')
+      screen.getByText('Something went wrong. Please try again.')
     ).toBeInTheDocument()
   })
 
@@ -127,7 +128,7 @@ describe('assistive technology announcements', () => {
   })
 
   it('announces the error state assertively', () => {
-    render(<ErrorState error={new Error('boom')} />)
-    expect(screen.getByRole('alert')).toHaveTextContent('boom')
+    render(<ErrorState error={new Error('boom')} fallbackMessage="No luck" />)
+    expect(screen.getByRole('alert')).toHaveTextContent('No luck')
   })
 })

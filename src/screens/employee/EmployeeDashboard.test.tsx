@@ -337,7 +337,7 @@ describe('employee dashboard states', () => {
     renderDashboard()
 
     const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Service unavailable')
+    expect(alert).toHaveTextContent('Failed to load your dashboard')
     expect(screen.queryByTestId('stat-card')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))

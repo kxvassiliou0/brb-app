@@ -33,7 +33,7 @@ export function cancelErrorMessage(error: unknown): string {
   if (
     error instanceof ApiRequestError &&
     error.status === StatusCodes.BAD_REQUEST &&
-    ALREADY_CANCELLED.test(error.message)
+    ALREADY_CANCELLED.test(error.detail)
   ) {
     return ALREADY_CANCELLED_MESSAGE
   }

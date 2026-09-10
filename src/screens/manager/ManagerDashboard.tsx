@@ -20,7 +20,7 @@ import Card from '@/components/ui/Card'
 import Icon from '@/components/ui/Icon'
 import DataTable, { type DataTableColumn } from '@/components/ui/DataTable'
 import StatCard from '@/components/ui/StatCard'
-import { ErrorState, LoadingState } from '@/components/ui/states'
+import { useResourceState } from '@/components/ui/states'
 import { useAuth } from '@/features/auth/auth'
 import { summariseTeam, teamThisWeek } from '@/features/manager/teamSummary'
 import { decideRequest, REVIEW_LABEL } from '@/features/requests/reviewRequest'
@@ -75,6 +75,14 @@ export default function ManagerDashboard() {
     () => (data ? teamThisWeek(data.calendar, data.departments) : []),
     [data]
   )
+
+  const state = useResourceState({
+    data: data && summary ? { ...data, summary } : null,
+    error: dashboard.error,
+    onRetry: refresh,
+    label: 'Loading dashboard data',
+    fallbackMessage: 'Failed to load dashboard data',
+  })
 
   const approve = useCallback(
     async (requestId: number) => {
@@ -147,35 +155,30 @@ export default function ManagerDashboard() {
         action={<BookTimeOffButton onBooked={refresh} />}
       />
 
-      {dashboard.error ? (
-        <ErrorState
-          error={dashboard.error}
-          onRetry={refresh}
-          fallbackMessage="Failed to load dashboard data"
-        />
-      ) : data === null || summary === null ? (
-        <LoadingState label="Loading dashboard data" />
-      ) : (
+      {state.ready ? (
         <>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Pending approvals"
-              value={countLabel(summary.pending, 'request')}
-              hint={`${summary.urgent} starting this week`}
+              value={countLabel(state.data.summary.pending, 'request')}
+              hint={`${state.data.summary.urgent} starting this week`}
             />
             <StatCard
               label="On leave today"
-              value={`${summary.onLeaveToday} ${summary.onLeaveToday === 1 ? 'person' : 'people'}`}
-              hint={`of ${summary.teamSize} in your team`}
+              value={`${state.data.summary.onLeaveToday} ${state.data.summary.onLeaveToday === 1 ? 'person' : 'people'}`}
+              hint={`of ${state.data.summary.teamSize} in your team`}
             />
             <StatCard
               label="Team coverage"
-              value={`${summary.coveragePercent}%`}
+              value={`${state.data.summary.coveragePercent}%`}
               hint="healthy this week"
             />
             <StatCard
               label="Approved this month"
-              value={countLabel(summary.approvedThisMonth, 'request')}
+              value={countLabel(
+                state.data.summary.approvedThisMonth,
+                'request'
+              )}
               hint="across your team"
             />
           </dl>
@@ -205,14 +208,14 @@ export default function ManagerDashboard() {
                 <DataTable
                   caption="Requests from your team awaiting your review"
                   columns={columns}
-                  rows={data.pending}
+                  rows={state.data.pending}
                   rowKey={(r) => r.id}
                   emptyMessage="Nobody on your team is waiting on a decision."
                 />
               </Card>
 
               <PlanEscapeBanner
-                daysRemaining={data.remaining.days_remaining}
+                daysRemaining={state.data.remaining.days_remaining}
                 onBooked={refresh}
               />
             </div>
@@ -269,10 +272,12 @@ export default function ManagerDashboard() {
                 )}
               </Card>
 
-              <MyRequestsCard requests={data.own} onBooked={refresh} />
+              <MyRequestsCard requests={state.data.own} onBooked={refresh} />
             </div>
           </div>
         </>
+      ) : (
+        state.fallback
       )}
 
       {declining && (

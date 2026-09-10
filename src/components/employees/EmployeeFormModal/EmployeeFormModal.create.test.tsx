@@ -314,7 +314,7 @@ describe('creating the employee', () => {
     add()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Annual leave allowance must be a positive number'
+      'Could not add this employee'
     )
     expect(screen.getByTestId('add-employee-form')).toBeInTheDocument()
     expect(onCreated).not.toHaveBeenCalled()

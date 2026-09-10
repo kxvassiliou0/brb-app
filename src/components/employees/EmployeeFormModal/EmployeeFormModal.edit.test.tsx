@@ -305,7 +305,7 @@ describe('saving an edited employee', () => {
     save()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Annual leave allowance must be a positive number'
+      'Could not save changes to David Jones'
     )
     expect(screen.getByTestId('edit-employee-form')).toBeInTheDocument()
     expect(onSaved).not.toHaveBeenCalled()

@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { ApiRequestError } from '@/api/client'
+import { ApiRequestError, getApiErrorMessage } from '@/api/client'
 import { countDays, countLabel, formatDate, toIsoDate } from '@/lib/dates'
 import type {
   CreateLeaveRequestBody,
@@ -130,31 +130,32 @@ export function bookingErrorMessage(
   daysRemaining: number | null
 ): string {
   if (!(error instanceof ApiRequestError)) {
-    return error instanceof Error && error.message.trim()
-      ? error.message
-      : 'Your request could not be sent. Please try again.'
+    return 'Your request could not be sent. Please try again.'
   }
   if (error.status === StatusCodes.CONFLICT)
     return 'Those dates clash with a request you have already made. Choose a range that does not overlap an existing request.'
   if (
     error.status === StatusCodes.BAD_REQUEST &&
-    BALANCE_ERROR.test(error.message)
+    BALANCE_ERROR.test(error.detail)
   ) {
     return daysRemaining === null
-      ? `This request is longer than your remaining balance. ${error.message}.`
+      ? 'This request is longer than your remaining balance. Choose a shorter range and try again.'
       : `This request needs ${countLabel(requestedDays(draft), 'day')} but you have only ${countLabel(daysRemaining, 'day')} remaining.`
   }
   if (
     error.status === StatusCodes.BAD_REQUEST &&
-    HOLIDAY_ERROR.test(error.message)
+    HOLIDAY_ERROR.test(error.detail)
   ) {
     return 'Those dates include a public holiday, which cannot be booked as leave. Choose a range that does not include it.'
   }
   if (
     error.status === StatusCodes.BAD_REQUEST &&
-    INVALID_DATE_ERROR.test(error.message)
+    INVALID_DATE_ERROR.test(error.detail)
   ) {
     return INVALID_DATES_MESSAGE
   }
-  return error.message
+  return getApiErrorMessage(
+    error,
+    'Your request could not be sent. Please try again.'
+  )
 }

@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StatusCodes } from 'http-status-codes'
 import { clearApiCache } from '@/api/cache'
 import { setStoredToken } from '@/api/token'
-import { DEFAULT_API_BASE_URL, get, post, resolveApiBaseUrl } from './client'
+import {
+  DEFAULT_API_BASE_URL,
+  get,
+  post,
+  remove,
+  resolveApiBaseUrl,
+} from './client'
 
 function envWith(url: string | undefined): ImportMetaEnv {
   return { VITE_API_URL: url } as ImportMetaEnv
@@ -86,14 +92,45 @@ describe('what the client does with a response', () => {
     expect(await get('/api/job-roles')).toEqual([])
   })
 
-  it('raises the API error message with its status', async () => {
+  it('replaces the server wording with its own, keeping the status', async () => {
     fetchMock.mockResolvedValue(
       respond({ error: 'Job role not found' }, StatusCodes.NOT_FOUND)
     )
 
-    await expect(get('/api/job-roles/9')).rejects.toThrow('Job role not found')
+    await expect(get('/api/job-roles/9')).rejects.toThrow(
+      'Something went wrong. Please try again.'
+    )
     await expect(get('/api/job-roles/9')).rejects.toMatchObject({
       status: StatusCodes.NOT_FOUND,
+      action: 'read',
+      detail: 'Job role not found',
+    })
+  })
+
+  it('never repeats the server wording for a write', async () => {
+    fetchMock.mockResolvedValue(
+      respond(
+        { error: 'Internal server error: duplicate key in users_email_idx' },
+        StatusCodes.INTERNAL_SERVER_ERROR
+      )
+    )
+
+    await expect(post('/api/users', { name: 'Ada' })).rejects.toThrow(
+      'Something went wrong. Please try again.'
+    )
+  })
+
+  it('says no more about a refused delete than that it failed', async () => {
+    fetchMock.mockResolvedValue(
+      respond(
+        { error: 'FK constraint on leave_requests' },
+        StatusCodes.CONFLICT
+      )
+    )
+
+    await expect(remove('/api/users/4')).rejects.toMatchObject({
+      message: 'Something went wrong. Please try again.',
+      action: 'destructive',
     })
   })
 

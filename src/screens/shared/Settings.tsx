@@ -7,7 +7,7 @@ import {
   initialsFromEmail,
   initialsFromName,
 } from '@/components/layout/UserSummary'
-import { ErrorState, LoadingState } from '@/components/ui/states'
+import { useResourceState } from '@/components/ui/states'
 import { useAuth } from '@/features/auth/auth'
 import { countLabel } from '@/lib/dates'
 import { LEAVE_YEAR_RESET_LABEL } from '@/lib/leaveYear'
@@ -75,6 +75,22 @@ export default function Settings() {
   const me = profile.data
   const name = me ? profileName(me) : ''
 
+  const profileState = useResourceState({
+    data: me,
+    error: profile.error,
+    onRetry: profile.retry,
+    label: 'Loading your profile',
+    fallbackMessage: 'Could not load your profile',
+  })
+
+  const balanceState = useResourceState({
+    data: balance.data,
+    error: balance.error,
+    onRetry: balance.retry,
+    label: 'Loading your leave allowance',
+    fallbackMessage: 'Could not load your leave allowance',
+  })
+
   function handleSignOut(): void {
     logout()
     navigate('/login')
@@ -96,15 +112,7 @@ export default function Settings() {
           Profile
         </h2>
 
-        {profile.error ? (
-          <ErrorState
-            error={profile.error}
-            onRetry={profile.retry}
-            fallbackMessage="Could not load your profile"
-          />
-        ) : me === null ? (
-          <LoadingState label="Loading your profile" />
-        ) : (
+        {profileState.ready ? (
           <>
             <div className="flex min-w-0 items-center gap-4">
               <span
@@ -114,8 +122,8 @@ export default function Settings() {
               >
                 {name
                   ? initialsFromName(name)
-                  : me.email
-                    ? initialsFromEmail(me.email)
+                  : profileState.data.email
+                    ? initialsFromEmail(profileState.data.email)
                     : ''}
               </span>
               <span className="flex min-w-0 flex-col gap-1">
@@ -126,13 +134,13 @@ export default function Settings() {
                   {text(name)}
                 </span>
                 <span className="truncate text-text-secondary">
-                  {text(me.email)}
+                  {text(profileState.data.email)}
                 </span>
               </span>
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {profileFields(me, name).map((field) => (
+              {profileFields(profileState.data, name).map((field) => (
                 <InputWithLabel
                   key={field.id}
                   id={field.id}
@@ -148,6 +156,8 @@ export default function Settings() {
               change if anything here is wrong.
             </p>
           </>
+        ) : (
+          profileState.fallback
         )}
       </section>
 
@@ -160,35 +170,29 @@ export default function Settings() {
           Leave allowance
         </h2>
 
-        {balance.error ? (
-          <ErrorState
-            error={balance.error}
-            onRetry={balance.retry}
-            fallbackMessage="Could not load your leave allowance"
-          />
-        ) : balance.data === null ? (
-          <LoadingState label="Loading your leave allowance" />
-        ) : (
+        {balanceState.ready ? (
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <StatCard
               variant="recessed"
               label="Annual allowance"
-              value={days(balance.data.annual_allowance)}
+              value={days(balanceState.data.annual_allowance)}
               hint={LEAVE_YEAR_RESET_LABEL}
             />
             <StatCard
               variant="recessed"
               label="Taken so far"
-              value={days(balance.data.days_used)}
+              value={days(balanceState.data.days_used)}
               hint="approved leave"
             />
             <StatCard
               variant="positive"
               label="Remaining"
-              value={days(balance.data.days_remaining)}
+              value={days(balanceState.data.days_remaining)}
               hint="left to book"
             />
           </dl>
+        ) : (
+          balanceState.fallback
         )}
       </section>
 

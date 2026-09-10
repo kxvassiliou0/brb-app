@@ -5,7 +5,7 @@ import PublicHolidayFormModal from '@/components/holidays/PublicHolidayFormModal
 import Button from '@/components/ui/Button'
 import MonthCalendar from '@/components/requests/MonthCalendar'
 import PageHeader from '@/components/layout/PageHeader'
-import { ErrorState, LoadingState } from '@/components/ui/states'
+import { useResourceState } from '@/components/ui/states'
 import { monthGridRange, monthOf } from '@/lib/calendar'
 import { formatDateFull, toIsoDate } from '@/lib/dates'
 import {
@@ -57,6 +57,14 @@ export default function TeamCalendar() {
 
   const holidays = useMemo(() => holidaysByDate(holidayList), [holidayList])
 
+  const state = useResourceState({
+    data: entries,
+    error,
+    onRetry: retry,
+    label: 'Loading team calendar',
+    fallbackMessage: 'Failed to load team calendar',
+  })
+
   function selectDay(date: string): void {
     if (selectionStart === null) {
       const holiday = holidayList.find(
@@ -107,23 +115,17 @@ export default function TeamCalendar() {
         )}
       </div>
 
-      {error ? (
-        <ErrorState
-          error={error}
-          onRetry={retry}
-          fallbackMessage="Failed to load team calendar"
-        />
-      ) : entries === null ? (
-        <LoadingState label="Loading team calendar" />
-      ) : (
+      {state.ready ? (
         <MonthCalendar
           month={month}
-          entries={entries}
+          entries={state.data}
           holidays={holidays}
           selectionStart={selectionStart}
           onMonthChange={setMonth}
           onDayClick={selectDay}
         />
+      ) : (
+        state.fallback
       )}
 
       {range && (

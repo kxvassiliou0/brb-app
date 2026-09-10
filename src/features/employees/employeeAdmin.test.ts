@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { describe, expect, it } from 'vitest'
-import { ApiRequestError } from '@/api/client'
+import { ApiRequestError, apiErrorMessage } from '@/api/client'
 import {
   buildCreateBody,
   buildUpdateBody,
@@ -195,22 +195,26 @@ describe('the create payload', () => {
 })
 
 describe('recognising a refused duplicate email', () => {
+  function refusal(status: number, detail: string): ApiRequestError {
+    return new ApiRequestError(
+      apiErrorMessage(status),
+      status,
+      'constructive',
+      detail
+    )
+  }
+
   it('recognises the conflict status the API answers with', () => {
-    expect(
-      isDuplicateEmailError(new ApiRequestError('Nope', StatusCodes.CONFLICT))
-    ).toBe(true)
+    expect(isDuplicateEmailError(refusal(StatusCodes.CONFLICT, ''))).toBe(true)
   })
 
   it('recognises every wording the backend uses for it', () => {
-    for (const message of [
+    for (const detail of [
       'That email address already belongs to another user',
       "Duplicate entry 'nina@company.com' for key 'IDX_97'",
       'UNIQUE constraint failed: user.email',
     ]) {
-      expect(
-        isDuplicateEmailError(new ApiRequestError(message, 400)),
-        message
-      ).toBe(true)
+      expect(isDuplicateEmailError(refusal(400, detail)), detail).toBe(true)
     }
   })
 })

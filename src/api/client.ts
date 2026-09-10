@@ -11,26 +11,56 @@ export function resolveApiBaseUrl(env: ImportMetaEnv): string {
 
 const BASE_URL = resolveApiBaseUrl(import.meta.env)
 
+export type ApiAction = 'read' | 'constructive' | 'destructive'
+
+const GENERIC_MESSAGE = 'Something went wrong. Please try again.'
+
 const RATE_LIMIT_MESSAGE =
   'Too many requests. Please wait a few minutes and try again.'
 
+const SESSION_EXPIRED_MESSAGE =
+  'Your session has expired. Please sign in again.'
+
+const LOGIN_FAILED_MESSAGE =
+  'We could not sign you in. Please check your email and password and try again.'
+
+const CALLER_CANNOT_ANTICIPATE = [
+  StatusCodes.UNAUTHORIZED,
+  StatusCodes.TOO_MANY_REQUESTS,
+]
+
+export function apiErrorMessage(status: number): string {
+  if (status === StatusCodes.UNAUTHORIZED) return SESSION_EXPIRED_MESSAGE
+  if (status === StatusCodes.TOO_MANY_REQUESTS) return RATE_LIMIT_MESSAGE
+  return GENERIC_MESSAGE
+}
+
 export class ApiRequestError extends Error {
   readonly status: number
+  readonly action: ApiAction
+  readonly detail: string
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    action: ApiAction = 'read',
+    detail: string = message
+  ) {
     super(message)
     this.name = 'ApiRequestError'
     this.status = status
+    this.action = action
+    this.detail = detail
   }
 }
 
-export function getApiErrorMessage(
-  error: unknown,
-  fallback = 'Something went wrong. Please try again.'
-): string {
-  if (error instanceof Error && error.message.trim()) return error.message
-  if (typeof error === 'string' && error.trim()) return error
-  return fallback
+export function getApiErrorMessage(error: unknown, fallback?: string): string {
+  if (error instanceof ApiRequestError) {
+    return CALLER_CANNOT_ANTICIPATE.includes(error.status)
+      ? error.message
+      : (fallback ?? error.message)
+  }
+  return fallback ?? GENERIC_MESSAGE
 }
 
 function unwrapEnvelope<T>(body: unknown): T {
@@ -43,6 +73,7 @@ function unwrapEnvelope<T>(body: unknown): T {
 
 async function sendRaw(
   path: string,
+  action: ApiAction,
   options: RequestInit = {}
 ): Promise<unknown> {
   const token = getStoredToken()
@@ -52,32 +83,39 @@ async function sendRaw(
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
 
-  if (res.status === StatusCodes.TOO_MANY_REQUESTS) {
-    throw new ApiRequestError(RATE_LIMIT_MESSAGE, res.status)
-  }
   if (res.status === StatusCodes.NO_CONTENT) return []
 
-  const body = await res.json().catch(() => null)
+  const body =
+    res.status === StatusCodes.TOO_MANY_REQUESTS
+      ? null
+      : await res.json().catch(() => null)
+
   if (!res.ok) {
-    const message = (body as { error?: string } | null)?.error
     throw new ApiRequestError(
-      message ?? `Request failed with status ${res.status}`,
-      res.status
+      apiErrorMessage(res.status),
+      res.status,
+      action,
+      (body as { error?: string } | null)?.error ?? ''
     )
   }
   return body
 }
 
-async function send<T>(path: string, options: RequestInit = {}): Promise<T> {
-  return unwrapEnvelope<T>(await sendRaw(path, options))
+async function send<T>(
+  path: string,
+  action: ApiAction,
+  options: RequestInit = {}
+): Promise<T> {
+  return unwrapEnvelope<T>(await sendRaw(path, action, options))
 }
 
 export function get<T>(path: string): Promise<T> {
-  return cached(path, () => send<T>(path))
+  return cached(path, () => send<T>(path, 'read'))
 }
 
 function mutate<T>(method: string, path: string, body?: unknown): Promise<T> {
-  return send<T>(path, {
+  const action: ApiAction = method === 'DELETE' ? 'destructive' : 'constructive'
+  return send<T>(path, action, {
     method,
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   }).then((result) => {
@@ -107,7 +145,7 @@ export async function postWithMessage<T>(
   path: string,
   body: unknown
 ): Promise<Envelope<T>> {
-  const raw = await sendRaw(path, {
+  const raw = await sendRaw(path, 'constructive', {
     method: 'POST',
     body: JSON.stringify(body),
   })
@@ -126,17 +164,20 @@ export async function postForToken(
     body: JSON.stringify(body),
   })
 
-  if (res.status === StatusCodes.TOO_MANY_REQUESTS) {
-    throw new ApiRequestError(RATE_LIMIT_MESSAGE, res.status)
-  }
-
   const text = await res.text()
   if (!res.ok) {
-    let message = 'Login failed'
+    let detail = ''
     try {
-      message = (JSON.parse(text) as { error?: string }).error ?? message
+      detail = (JSON.parse(text) as { error?: string }).error ?? ''
     } catch {}
-    throw new ApiRequestError(message, res.status)
+    throw new ApiRequestError(
+      res.status === StatusCodes.TOO_MANY_REQUESTS
+        ? RATE_LIMIT_MESSAGE
+        : LOGIN_FAILED_MESSAGE,
+      res.status,
+      'constructive',
+      detail
+    )
   }
   return text
 }

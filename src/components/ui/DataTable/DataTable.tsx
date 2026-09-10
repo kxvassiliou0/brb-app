@@ -1,13 +1,5 @@
 import type { ReactNode } from 'react'
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  TABLE_ROW_HEIGHT,
-  TableEmptyState,
-  TableErrorState,
-  TableLoadingState,
-} from '@/components/ui/states'
+import { TABLE_ROW_HEIGHT, useResourceState } from '@/components/ui/states'
 import { TABLE_BREAKPOINT } from '@/lib/breakpoints'
 import { useBreakpoint } from '@/lib/useMediaQuery'
 
@@ -49,25 +41,27 @@ export default function DataTable<T>({
 }: DataTableProps<T>) {
   const asTable = useBreakpoint(TABLE_BREAKPOINT)
 
+  const state = useResourceState({
+    data: rows,
+    error,
+    onRetry,
+    label: loadingLabel,
+    fallbackMessage: errorFallbackMessage,
+    emptyMessage,
+    emptyAction,
+    variant: asTable ? 'table' : 'block',
+    columns: columns.length,
+  })
+
   const isHighlighted = (row: T): boolean =>
     highlightRowKey !== undefined && rowKey(row) === highlightRowKey
 
   if (!asTable) {
     return (
       <section data-testid="data-cards" aria-label={caption}>
-        {error ? (
-          <ErrorState
-            error={error}
-            onRetry={onRetry}
-            fallbackMessage={errorFallbackMessage}
-          />
-        ) : rows === null ? (
-          <LoadingState label={loadingLabel} />
-        ) : rows.length === 0 ? (
-          <EmptyState message={emptyMessage} action={emptyAction} />
-        ) : (
+        {state.ready ? (
           <ul className="flex flex-col gap-3">
-            {rows.map((row) => (
+            {state.data.map((row) => (
               <li
                 key={rowKey(row)}
                 data-testid="data-card"
@@ -107,6 +101,8 @@ export default function DataTable<T>({
               </li>
             ))}
           </ul>
+        ) : (
+          state.fallback
         )}
       </section>
     )
@@ -136,24 +132,9 @@ export default function DataTable<T>({
             ))}
           </tr>
         </thead>
-        {error ? (
-          <TableErrorState
-            columns={columns.length}
-            error={error}
-            onRetry={onRetry}
-            fallbackMessage={errorFallbackMessage}
-          />
-        ) : rows === null ? (
-          <TableLoadingState columns={columns.length} label={loadingLabel} />
-        ) : rows.length === 0 ? (
-          <TableEmptyState
-            columns={columns.length}
-            message={emptyMessage}
-            action={emptyAction}
-          />
-        ) : (
+        {state.ready ? (
           <tbody>
-            {rows.map((row) => (
+            {state.data.map((row) => (
               <tr
                 key={rowKey(row)}
                 style={{ height: TABLE_ROW_HEIGHT }}
@@ -177,6 +158,8 @@ export default function DataTable<T>({
               </tr>
             ))}
           </tbody>
+        ) : (
+          state.fallback
         )}
       </table>
     </div>

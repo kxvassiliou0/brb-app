@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { ApiRequestError, getApiErrorMessage } from '@/api/client'
+import { ApiRequestError } from '@/api/client'
 import { createUser, deleteUser, updateUser } from '@/api/users'
 import type {
   CreateUserBody,
@@ -126,16 +126,16 @@ export function hasEmployeeErrors(errors: EmployeeErrors): boolean {
 }
 
 export function isDuplicateEmailError(error: unknown): boolean {
-  if (error instanceof ApiRequestError && error.status === StatusCodes.CONFLICT)
-    return true
+  if (!(error instanceof ApiRequestError)) return false
+  if (error.status === StatusCodes.CONFLICT) return true
 
-  const message = getApiErrorMessage(error, '').toLowerCase()
-  if (message.includes('duplicate entry')) return true
+  const detail = error.detail.toLowerCase()
+  if (detail.includes('duplicate entry')) return true
   return (
-    message.includes('email') &&
-    (message.includes('already') ||
-      message.includes('unique') ||
-      message.includes('taken'))
+    detail.includes('email') &&
+    (detail.includes('already') ||
+      detail.includes('unique') ||
+      detail.includes('taken'))
   )
 }
 

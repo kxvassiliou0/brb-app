@@ -340,7 +340,7 @@ describe('deleting a job role', () => {
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Cannot delete job role: one or more users are assigned to it'
+      `Could not delete ${LEAD_ENGINEER.name}`
     )
     expect(screen.getByTestId('modal')).toBeInTheDocument()
   })
@@ -381,7 +381,7 @@ describe('deleting a department', () => {
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Cannot delete department: one or more users are assigned to it'
+      `Could not delete ${FINANCE.name}`
     )
     expect(screen.getByTestId('modal')).toBeInTheDocument()
   })
