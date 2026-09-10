@@ -175,7 +175,6 @@ describe('cancelling a leave request', () => {
     seedPendingRequest(USERS.employee, queueStart, queueEnd)
 
     signInAndOpenRequests(USERS.manager)
-    statusTab('Pending')
     cy.contains(
       '[data-testid="data-table"] tbody tr',
       displayDate(queueStart)
@@ -196,7 +195,6 @@ describe('cancelling a leave request', () => {
     cy.contains('button', 'Sign out').click()
 
     signInAndOpenRequests(USERS.manager)
-    statusTab('Pending')
     cy.get('[data-testid="data-table"]').should(
       'not.contain.text',
       displayDate(queueStart)

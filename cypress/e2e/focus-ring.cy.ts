@@ -24,7 +24,9 @@ describe('focus ring', () => {
   it('moves the ring with keyboard focus and leaves no ring behind', () => {
     cy.get('#email').focus()
     cy.get('#password').focus()
-    cy.get('#password').should('have.css', 'outline-width', '3px')
-    cy.get('#email').should('not.have.css', 'outline-width', '3px')
+    cy.get('#password')
+      .should('have.css', 'outline-style', 'solid')
+      .and('have.css', 'outline-width', '3px')
+    cy.get('#email').should('have.css', 'outline-style', 'none')
   })
 })

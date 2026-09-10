@@ -75,9 +75,13 @@ describe('an Admin deleting a manager', () => {
   it('deletes nothing until the consequences are explicitly accepted', () => {
     openDeleteFor(MANAGER)
 
-    cy.contains('button', `Delete ${MANAGER}`).should('be.disabled')
+    cy.get('[data-testid="modal"]')
+      .contains('button', `Delete ${MANAGER}`)
+      .should('be.disabled')
     cy.get('#delete-acknowledgement').check()
-    cy.contains('button', `Delete ${MANAGER}`).should('not.be.disabled')
+    cy.get('[data-testid="modal"]')
+      .contains('button', `Delete ${MANAGER}`)
+      .should('not.be.disabled')
   })
 
   it('leaves the reports in place with no line manager', () => {

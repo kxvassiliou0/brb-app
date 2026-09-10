@@ -1,11 +1,6 @@
 import { getLeaveYear, isWithinLeaveYear } from '../../src/lib/leaveYear'
 import { login, USERS } from '../support/e2e'
 
-const TYPE_CELL = 0
-const DATES_CELL = 1
-const DAYS_CELL = 2
-const STATUS_CELL = 3
-
 interface RequestRow {
   type: string
   startDate: string
@@ -29,20 +24,32 @@ function statNumber(label: string): Cypress.Chainable<number> {
 }
 
 function requestRows(): Cypress.Chainable<RequestRow[]> {
-  return cy.get('[data-testid="data-table"] tbody tr').then(($rows) =>
-    Cypress._.map($rows, (row) => {
-      const cells = Cypress.$(row)
-        .find('td')
-        .toArray()
-        .map((cell) => cell.innerText.trim())
-      return {
-        type: cells[TYPE_CELL]!,
-        startDate: toDateKey(cells[DATES_CELL]!),
-        days: Number(cells[DAYS_CELL]),
-        status: cells[STATUS_CELL]!,
-      }
-    })
-  )
+  return cy.get('[data-testid="data-table"] thead th').then(($headers) => {
+    const headings = Cypress._.map($headers, (header) =>
+      header.innerText.trim()
+    )
+
+    function cell(cells: string[], heading: string): string {
+      const index = headings.indexOf(heading)
+      expect(index, `${heading} column is present`).to.be.at.least(0)
+      return cells[index] ?? ''
+    }
+
+    return cy.get('[data-testid="data-table"] tbody tr').then(($rows) =>
+      Cypress._.map($rows, (row) => {
+        const cells = Cypress.$(row)
+          .find('td')
+          .toArray()
+          .map((td) => td.innerText.trim())
+        return {
+          type: cell(cells, 'Type'),
+          startDate: toDateKey(cell(cells, 'Dates')),
+          days: Number(cell(cells, 'Days')),
+          status: cell(cells, 'Status'),
+        }
+      })
+    )
+  })
 }
 
 function sumDays(rows: RequestRow[]): number {

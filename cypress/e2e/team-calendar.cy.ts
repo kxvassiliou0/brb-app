@@ -107,6 +107,8 @@ describe('the team calendar', () => {
 
   it('reflows to 320px without scrolling the page sideways', () => {
     cy.viewport(NARROW.width, NARROW.height)
+    cy.get('[data-testid="bottom-nav"]').should('be.visible')
+    cy.get('[data-testid="sidebar"]').should('not.exist')
     cy.get('[data-testid="calendar-month"]').should('be.visible')
     assertNoHorizontalScroll()
   })
